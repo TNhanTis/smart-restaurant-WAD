@@ -6,6 +6,7 @@ import { MenuPage } from "./pages/MenuPage";
 import { OrderPage } from "./pages/OrderPage";
 import { AdminDashboard } from "./pages/AdminDashboard";
 import { KitchenDisplay } from "./pages/KitchenDisplay";
+import { OrderHistoryPage } from "./pages/OrderHistoryPage";
 
 function App() {
   return (
@@ -15,9 +16,11 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/menu/:qrCode" element={<MenuPage />} />
-        <Route path="/order/:orderId" element={<OrderPage />} />
+        <Route path="/orders/:orderId" element={<OrderPage />} />
+        <Route path="/orders/qr/:qrCode" element={<OrderPage />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/kitchen" element={<KitchenDisplay />} />
+        <Route path="/order-history" element={<OrderHistoryPage />} />
       </Routes>
     </BrowserRouter>
   );
