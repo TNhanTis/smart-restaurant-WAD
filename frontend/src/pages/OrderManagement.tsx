@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { ordersApi, Order } from "../api/ordersApi";
 import OrderDetailsModal from "../components/OrderDetailsModal";
+import OrderStatusBadge from "../components/OrderStatusBadge";
 import "../App.css";
 
 type OrderStatus = "all" | "pending" | "preparing" | "ready" | "completed";
@@ -81,21 +82,6 @@ export default function OrderManagement() {
       loadOrders();
     } catch (err) {
       console.error("Failed to complete order:", err);
-    }
-  };
-
-  const getStatusBadgeClass = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "pending":
-        return "status-badge received";
-      case "preparing":
-        return "status-badge preparing";
-      case "ready":
-        return "status-badge ready";
-      case "completed":
-        return "status-badge completed";
-      default:
-        return "status-badge";
     }
   };
 
@@ -322,11 +308,7 @@ export default function OrderManagement() {
                       </td>
                       <td>${order.total_price?.toFixed(2) || "0.00"}</td>
                       <td>
-                        <span className={getStatusBadgeClass(order.status)}>
-                          {order.status === "pending" && "🔔 "}
-                          {order.status.charAt(0).toUpperCase() +
-                            order.status.slice(1)}
-                        </span>
+                        <OrderStatusBadge status={order.status} />
                       </td>
                       <td>{new Date(order.created_at).toLocaleTimeString()}</td>
                       <td>

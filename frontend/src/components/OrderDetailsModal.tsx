@@ -1,4 +1,5 @@
 import { Order } from "../api/ordersApi";
+import OrderStatusBadge from "./OrderStatusBadge";
 import "../App.css";
 
 interface OrderDetailsModalProps {
@@ -38,12 +39,7 @@ export default function OrderDetailsModal({
               <div className="detail-item">
                 <span className="detail-label">Status:</span>
                 <span className="detail-value">
-                  <span
-                    className={`status-badge ${order.status.toLowerCase()}`}
-                  >
-                    {order.status.charAt(0).toUpperCase() +
-                      order.status.slice(1)}
-                  </span>
+                  <OrderStatusBadge status={order.status} />
                 </span>
               </div>
               <div className="detail-item">
