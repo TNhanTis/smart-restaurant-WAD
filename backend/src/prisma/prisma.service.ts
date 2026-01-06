@@ -6,6 +6,7 @@ import { Pool } from 'pg';
 @Injectable()
 export class PrismaService implements OnModuleInit, OnModuleDestroy {
   // Expose all Prisma models
+  public user: PrismaClient['user'];
   public table: PrismaClient['table'];
   public menuCategory: PrismaClient['menuCategory'];
   public menuItem: PrismaClient['menuItem'];
@@ -13,6 +14,8 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   public modifierGroup: PrismaClient['modifierGroup'];
   public modifierOption: PrismaClient['modifierOption'];
   public menuItemModifierGroup: PrismaClient['menuItemModifierGroup'];
+  public roles: PrismaClient['roles'];
+  public user_roles: PrismaClient['user_roles'];
 
   private client: PrismaClient;
   private pool: Pool;
@@ -29,6 +32,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     this.client = new PrismaClient({ adapter });
 
     // Initialize all models
+    this.user = this.client.user;
     this.table = this.client.table;
     this.menuCategory = this.client.menuCategory;
     this.menuItem = this.client.menuItem;
@@ -36,6 +40,8 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     this.modifierGroup = this.client.modifierGroup;
     this.modifierOption = this.client.modifierOption;
     this.menuItemModifierGroup = this.client.menuItemModifierGroup;
+    this.roles = this.client.roles;
+    this.user_roles = this.client.user_roles;
   }
 
   async onModuleInit() {
