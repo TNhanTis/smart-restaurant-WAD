@@ -25,6 +25,9 @@ export default function Navigation() {
           <Link to="/modifiers" className={isActive("/modifiers")}>
             ➕ Modifiers
           </Link>
+          <Link to="/admin/orders" className={isActive("/admin/orders")}>
+            📋 Orders
+          </Link>
           <Link to="/menu" className={isActive("/menu")}>
             📱 Guest Menu
           </Link>

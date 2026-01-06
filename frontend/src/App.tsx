@@ -5,6 +5,7 @@ import Menu from "./pages/Menu";
 import CategoriesManagement from "./pages/CategoriesManagement";
 import ModifiersManagement from "./pages/ModifiersManagement";
 import MenuItemsManagement from "./pages/MenuItemsManagement";
+import OrderManagement from "./pages/OrderManagement";
 import "./App.css";
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
         <Route path="/categories" element={<CategoriesManagement />} />
         <Route path="/modifiers" element={<ModifiersManagement />} />
         <Route path="/items" element={<MenuItemsManagement />} />
+        <Route path="/admin/orders" element={<OrderManagement />} />
       </Routes>
     </BrowserRouter>
   );
