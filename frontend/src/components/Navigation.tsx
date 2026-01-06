@@ -13,6 +13,9 @@ export default function Navigation() {
       <div className="nav-container">
         <h2 className="nav-logo">🍽️ Smart Restaurant</h2>
         <div className="nav-links">
+          <Link to="/admin/dashboard" className={isActive("/admin/dashboard")}>
+            📊 Dashboard
+          </Link>
           <Link to="/" className={isActive("/")}>
             🪑 Tables
           </Link>
