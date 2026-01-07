@@ -37,3 +37,5 @@ backend/uploads/
 
 # Test coverage
 coverage/
+
+TUTORIAL_API_INTEGRATION.md
