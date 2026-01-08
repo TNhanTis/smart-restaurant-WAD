@@ -13,6 +13,9 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   public modifierGroup: PrismaClient['modifierGroup'];
   public modifierOption: PrismaClient['modifierOption'];
   public menuItemModifierGroup: PrismaClient['menuItemModifierGroup'];
+  public order: PrismaClient['order'];
+  public orderItem: PrismaClient['orderItem'];
+  public orderItemModifier: PrismaClient['orderItemModifier'];
 
   private client: PrismaClient;
   private pool: Pool;
@@ -36,6 +39,14 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     this.modifierGroup = this.client.modifierGroup;
     this.modifierOption = this.client.modifierOption;
     this.menuItemModifierGroup = this.client.menuItemModifierGroup;
+    this.order = this.client.order;
+    this.orderItem = this.client.orderItem;
+    this.orderItemModifier = this.client.orderItemModifier;
+  }
+
+  // Expose $transaction method
+  async $transaction<T>(fn: (tx: PrismaClient) => Promise<T>): Promise<T> {
+    return this.client.$transaction(fn);
   }
 
   async onModuleInit() {
