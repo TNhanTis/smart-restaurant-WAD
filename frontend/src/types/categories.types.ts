@@ -1,5 +1,6 @@
 export interface Category {
   id: string;
+  restaurant_id: string;
   name: string;
   description?: string;
   display_order: number;

@@ -33,6 +33,7 @@ export class RestaurantsController {
   @Get()
   @Roles('admin', 'super_admin')
   async findAll(@CurrentUser() user: any) {
+    console.log('🔑 [RestaurantsController.findAll] user:', JSON.stringify(user, null, 2));
     return this.restaurantsService.findAll(user.userId, user.roles);
   }
 

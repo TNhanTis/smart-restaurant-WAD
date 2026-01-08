@@ -27,6 +27,7 @@ export interface MenuItem {
 }
 
 export interface CreateMenuItemData {
+  restaurant_id?: string;
   category_id: string;
   name: string;
   description?: string;
@@ -49,6 +50,7 @@ export interface UpdateMenuItemData {
 }
 
 export interface MenuItemFilters {
+  restaurant_id?: string;
   search?: string;
   category_id?: string;
   status?: string;

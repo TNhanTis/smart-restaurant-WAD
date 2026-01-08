@@ -46,13 +46,29 @@ export class TablesService {
     });
   }
 
-  async findAll(filters?: {
-    status?: string;
-    location?: string;
-    sortBy?: string;
-    sortOrder?: 'asc' | 'desc';
-  }): Promise<Table[]> {
+  async findAll(
+    userId: string,
+    userRoles: string[],
+    filters?: {
+      status?: string;
+      location?: string;
+      sortBy?: string;
+      sortOrder?: 'asc' | 'desc';
+    },
+  ): Promise<Table[]> {
+    const isSuperAdmin = userRoles.includes('super_admin');
     const where: any = {};
+
+    // Filter by user's restaurants
+    if (!isSuperAdmin) {
+      const userRestaurants = await this.prisma.restaurant.findMany({
+        where: { owner_id: userId },
+        select: { id: true },
+      });
+      where.restaurant_id = {
+        in: userRestaurants.map((r) => r.id),
+      };
+    }
 
     // Apply filters
     if (filters?.status) {

@@ -31,36 +31,43 @@ async function main() {
     );
   }
 
-  // Create sample restaurants
+  if (!admin) {
+    throw new Error(
+      'Admin user not found. Please run seedUser.ts first.',
+    );
+  }
+
+  // Create sample restaurants - Restaurant 1 owned by admin
   const restaurant1 = await prisma.restaurant.upsert({
     where: { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11' },
-    update: {},
+    update: { owner_id: admin.id }, // Update to admin ownership
     create: {
       id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
       name: 'Smart Restaurant - Downtown',
       address: '123 Main Street, District 1, Ho Chi Minh City',
       phone: '0283 123 4567',
-      owner_id: superAdmin.id,
+      owner_id: admin.id, // Owned by admin
       status: 'active',
     },
   });
 
+  // Restaurant 2 owned by superadmin
   const restaurant2 = await prisma.restaurant.upsert({
     where: { id: 'b1ffcd00-0d1c-5fe9-cc7e-7cc0ce491b22' },
-    update: {},
+    update: { owner_id: superAdmin.id }, // Keep superadmin ownership
     create: {
       id: 'b1ffcd00-0d1c-5fe9-cc7e-7cc0ce491b22',
       name: 'Smart Restaurant - Central Park',
       address: '456 Le Lai Street, District 3, Ho Chi Minh City',
       phone: '0283 765 4321',
-      owner_id: superAdmin.id,
+      owner_id: superAdmin.id, // Owned by superadmin
       status: 'active',
     },
   });
 
   console.log('✅ Restaurants seeded:');
-  console.log(`  - ${restaurant1.name} (ID: ${restaurant1.id})`);
-  console.log(`  - ${restaurant2.name} (ID: ${restaurant2.id})`);
+  console.log(`  - ${restaurant1.name} (Owner: admin@restaurant.com)`);
+  console.log(`  - ${restaurant2.name} (Owner: superadmin@restaurant.com)`);
 }
 
 main()

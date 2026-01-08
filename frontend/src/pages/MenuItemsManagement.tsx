@@ -7,6 +7,8 @@ import type {
 } from "../types/menuItems.types";
 import axiosInstance from "../api/axiosConfig";
 import ImageUpload from "../components/ImageUpload";
+import { useRestaurant } from "../contexts/RestaurantContext";
+import RestaurantSelector from "../components/RestaurantSelector";
 import "../App.css";
 
 interface Category {
@@ -22,6 +24,8 @@ interface ModifierGroup {
 }
 
 export default function MenuItemsManagement() {
+  const { selectedRestaurant } = useRestaurant();
+
   // Data states
   const [items, setItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -60,9 +64,18 @@ export default function MenuItemsManagement() {
 
   // Load menu items
   const loadMenuItems = async () => {
+    if (!selectedRestaurant) {
+      setItems([]);
+      setTotalPages(1);
+      setTotalItems(0);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const response = await menuItemsApi.getAll({
+        restaurant_id: selectedRestaurant.id,
         search: debouncedSearch?.trim() || undefined,
         category_id: categoryFilter || undefined,
         status: statusFilter || undefined,
@@ -86,9 +99,14 @@ export default function MenuItemsManagement() {
 
   // Load categories
   const loadCategories = async () => {
+    if (!selectedRestaurant) {
+      setCategories([]);
+      return;
+    }
+
     try {
       const response = await axiosInstance.get(
-        `/api/admin/menu/categories?status=active`
+        `/api/admin/menu/categories?status=active&restaurant_id=${selectedRestaurant.id}`
       );
       setCategories(response.data);
     } catch (err) {
@@ -98,9 +116,14 @@ export default function MenuItemsManagement() {
 
   // Load modifier groups
   const loadModifierGroups = async () => {
+    if (!selectedRestaurant) {
+      setModifierGroups([]);
+      return;
+    }
+
     try {
       const response = await axiosInstance.get(
-        `/api/admin/menu/modifier-groups?status=active`
+        `/api/admin/menu/modifier-groups?status=active&restaurant_id=${selectedRestaurant.id}`
       );
       setModifierGroups(response.data);
     } catch (err) {
@@ -112,7 +135,7 @@ export default function MenuItemsManagement() {
   useEffect(() => {
     loadCategories();
     loadModifierGroups();
-  }, []);
+  }, [selectedRestaurant]);
 
   // Debounce search query
   useEffect(() => {
@@ -128,6 +151,7 @@ export default function MenuItemsManagement() {
   useEffect(() => {
     loadMenuItems();
   }, [
+    selectedRestaurant,
     debouncedSearch,
     categoryFilter,
     statusFilter,
@@ -139,6 +163,11 @@ export default function MenuItemsManagement() {
   // Handle create
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!selectedRestaurant) {
+      alert("Please select a restaurant first");
+      return;
+    }
 
     // Validation
     if (!formData.category_id) {
@@ -155,7 +184,10 @@ export default function MenuItemsManagement() {
     }
 
     try {
-      await menuItemsApi.create(formData);
+      await menuItemsApi.create({
+        ...formData,
+        restaurant_id: selectedRestaurant.id,
+      });
       setShowCreateModal(false);
       resetForm();
       loadMenuItems();
@@ -321,885 +353,156 @@ export default function MenuItemsManagement() {
             Manage your restaurant menu items ({totalItems} items)
           </p>
         </div>
-        <button
-          className="btn btn-primary"
-          onClick={() => setShowCreateModal(true)}
-          style={{
-            background: "#6366f1",
-            color: "white",
-            padding: "12px 24px",
-            fontSize: "16px",
-            fontWeight: "600",
-            border: "none",
-            borderRadius: "8px",
-            cursor: "pointer",
-            boxShadow: "0 4px 6px rgba(99, 102, 241, 0.4)",
-            transition: "all 0.3s ease",
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.background = "#4f46e5";
-            e.currentTarget.style.transform = "translateY(-2px)";
-            e.currentTarget.style.boxShadow =
-              "0 6px 12px rgba(99, 102, 241, 0.5)";
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.background = "#6366f1";
-            e.currentTarget.style.transform = "translateY(0)";
-            e.currentTarget.style.boxShadow =
-              "0 4px 6px rgba(99, 102, 241, 0.4)";
-          }}
-        >
-          ➕ Add New Item
-        </button>
-      </div>
-
-      {/* Filters */}
-      <div
-        style={{
-          background: "#1e293b",
-          borderRadius: "12px",
-          padding: "25px",
-          marginBottom: "25px",
-          border: "1px solid #334155",
-          boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
-        }}
-      >
-        {/* Search Bar */}
-        <div style={{ marginBottom: "20px" }}>
-          <div style={{ position: "relative" }}>
-            <span
-              style={{
-                position: "absolute",
-                left: "15px",
-                top: "50%",
-                transform: "translateY(-50%)",
-                fontSize: "20px",
-                color: searchQuery !== debouncedSearch ? "#fbbf24" : "#6366f1",
-              }}
-            >
-              {searchQuery !== debouncedSearch ? "⏳" : "🔍"}
-            </span>
-            <input
-              type="text"
-              placeholder="Search by name or description... (Vietnamese supported)"
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-              }}
-              style={{
-                width: "100%",
-                padding: "15px 15px 15px 50px",
-                fontSize: "16px",
-                border: `1px solid ${
-                  searchQuery !== debouncedSearch ? "#fbbf24" : "#334155"
-                }`,
-                borderRadius: "8px",
-                outline: "none",
-                transition: "all 0.3s ease",
-                background: "#0f172a",
-                color: "#f1f5f9",
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = "#6366f1";
-                e.currentTarget.style.boxShadow =
-                  "0 0 0 3px rgba(99, 102, 241, 0.1)";
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = "#334155";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Filter Controls */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: "15px",
-          }}
-        >
-          <div>
-            <label
-              style={{
-                display: "block",
-                marginBottom: "8px",
-                fontWeight: "600",
-                color: "#cbd5e1",
-                fontSize: "14px",
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-              }}
-            >
-              📂 Category
-            </label>
-            <select
-              value={categoryFilter}
-              onChange={(e) => {
-                setCategoryFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              style={{
-                width: "100%",
-                padding: "12px 15px",
-                fontSize: "14px",
-                border: "1px solid #334155",
-                borderRadius: "8px",
-                outline: "none",
-                cursor: "pointer",
-                background: "#0f172a",
-                color: "#f1f5f9",
-                transition: "all 0.3s ease",
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = "#6366f1";
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = "#334155";
-              }}
-            >
-              <option value="">All Categories</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label
-              style={{
-                display: "block",
-                marginBottom: "8px",
-                fontWeight: "600",
-                color: "#cbd5e1",
-                fontSize: "14px",
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-              }}
-            >
-              📊 Status
-            </label>
-            <select
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              style={{
-                width: "100%",
-                padding: "12px 15px",
-                fontSize: "14px",
-                border: "1px solid #334155",
-                borderRadius: "8px",
-                outline: "none",
-                cursor: "pointer",
-                background: "#0f172a",
-                color: "#f1f5f9",
-                transition: "all 0.3s ease",
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = "#6366f1";
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = "#334155";
-              }}
-            >
-              <option value="">All Status</option>
-              <option value="available">✅ Available</option>
-              <option value="unavailable">⏸️ Unavailable</option>
-              <option value="sold_out">🔴 Sold Out</option>
-            </select>
-          </div>
-
-          <div>
-            <label
-              style={{
-                display: "block",
-                marginBottom: "8px",
-                fontWeight: "600",
-                color: "#cbd5e1",
-                fontSize: "14px",
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-              }}
-            >
-              ⭐ Recommendation
-            </label>
-            <select
-              value={chefRecommendedFilter}
-              onChange={(e) => {
-                setChefRecommendedFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              style={{
-                width: "100%",
-                padding: "12px 15px",
-                fontSize: "14px",
-                border: "1px solid #334155",
-                borderRadius: "8px",
-                outline: "none",
-                cursor: "pointer",
-                background: "#0f172a",
-                color: "#f1f5f9",
-                transition: "all 0.3s ease",
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = "#6366f1";
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = "#334155";
-              }}
-            >
-              <option value="">All Items</option>
-              <option value="true">⭐ Chef Recommended</option>
-              <option value="false">Regular Items</option>
-            </select>
-          </div>
-
-          <div>
-            <label
-              style={{
-                display: "block",
-                marginBottom: "8px",
-                fontWeight: "600",
-                color: "#cbd5e1",
-                fontSize: "14px",
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-              }}
-            >
-              🔄 Sort By
-            </label>
-            <select
-              value={sortBy}
-              onChange={(e) => {
-                setSortBy(e.target.value);
-                setCurrentPage(1);
-              }}
-              style={{
-                width: "100%",
-                padding: "12px 15px",
-                fontSize: "14px",
-                border: "1px solid #334155",
-                borderRadius: "8px",
-                outline: "none",
-                cursor: "pointer",
-                background: "#0f172a",
-                color: "#f1f5f9",
-                transition: "all 0.3s ease",
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = "#6366f1";
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = "#334155";
-              }}
-            >
-              <option value="created_at_desc">📅 Newest First</option>
-              <option value="created_at_asc">📅 Oldest First</option>
-              <option value="name_asc">🔤 Name (A-Z)</option>
-              <option value="name_desc">🔤 Name (Z-A)</option>
-              <option value="price_asc">💰 Price (Low to High)</option>
-              <option value="price_desc">💰 Price (High to Low)</option>
-            </select>
-          </div>
+        <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
+          <RestaurantSelector />
+          <button
+            className="btn btn-primary"
+            onClick={() => setShowCreateModal(true)}
+            disabled={!selectedRestaurant}
+            style={{
+              background: selectedRestaurant ? "#6366f1" : "#64748b",
+              color: "white",
+              padding: "12px 24px",
+              fontSize: "16px",
+              fontWeight: "600",
+              border: "none",
+              borderRadius: "8px",
+              cursor: selectedRestaurant ? "pointer" : "not-allowed",
+              boxShadow: selectedRestaurant
+                ? "0 4px 6px rgba(99, 102, 241, 0.4)"
+                : "none",
+              transition: "all 0.3s ease",
+            }}
+          >
+            ➕ Add New Item
+          </button>
         </div>
       </div>
 
-      {/* Results count */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "20px",
-          padding: "15px 20px",
-          background: "#1e293b",
-          borderRadius: "8px",
-          fontSize: "14px",
-          fontWeight: "500",
-          color: "#cbd5e1",
-          border: "1px solid #334155",
-        }}
-      >
-        <span>
-          📊 Showing{" "}
-          <strong style={{ color: "#6366f1" }}>{items.length}</strong> of{" "}
-          <strong style={{ color: "#6366f1" }}>{totalItems}</strong> items
-        </span>
-        {searchQuery && (
-          <span style={{ color: "#a855f7" }}>
-            🔍 Search results for "{searchQuery}"
-          </span>
-        )}
-      </div>
-
-      {/* Error */}
-      {error && (
+      {!selectedRestaurant ? (
         <div
           style={{
-            color: "#fee2e2",
-            padding: "15px 20px",
-            background: "#7f1d1d",
-            borderRadius: "8px",
-            marginBottom: "20px",
-            border: "1px solid #dc2626",
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-          }}
-        >
-          <span style={{ fontSize: "20px" }}>⚠️</span>
-          <span>{error}</span>
-        </div>
-      )}
-
-      {/* Loading */}
-      {loading && (
-        <div
-          style={{
-            textAlign: "center",
+            background: "#1e293b",
+            borderRadius: "12px",
             padding: "40px",
-            background: "#1e293b",
-            borderRadius: "12px",
-            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
-            border: "1px solid #334155",
-          }}
-        >
-          <div style={{ fontSize: "40px", marginBottom: "10px" }}>⏳</div>
-          <p style={{ color: "#a855f7", fontWeight: "500" }}>
-            Loading menu items...
-          </p>
-        </div>
-      )}
-
-      {/* Table */}
-      {!loading && items.length > 0 && (
-        <div
-          style={{
-            background: "#1e293b",
-            borderRadius: "12px",
-            overflow: "hidden",
-            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
-            border: "1px solid #334155",
-          }}
-        >
-          <table
-            style={{
-              width: "100%",
-              borderCollapse: "collapse",
-              fontSize: "14px",
-            }}
-          >
-            <thead>
-              <tr
-                style={{
-                  background:
-                    "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
-                  color: "white",
-                }}
-              >
-                <th
-                  style={{
-                    padding: "16px",
-                    textAlign: "left",
-                    fontWeight: "600",
-                  }}
-                >
-                  Photo
-                </th>
-                <th
-                  style={{
-                    padding: "16px",
-                    textAlign: "left",
-                    fontWeight: "600",
-                  }}
-                >
-                  Name
-                </th>
-                <th
-                  style={{
-                    padding: "16px",
-                    textAlign: "left",
-                    fontWeight: "600",
-                  }}
-                >
-                  Category
-                </th>
-                <th
-                  style={{
-                    padding: "16px",
-                    textAlign: "left",
-                    fontWeight: "600",
-                  }}
-                >
-                  Price
-                </th>
-                <th
-                  style={{
-                    padding: "16px",
-                    textAlign: "left",
-                    fontWeight: "600",
-                  }}
-                >
-                  Prep Time
-                </th>
-                <th
-                  style={{
-                    padding: "16px",
-                    textAlign: "left",
-                    fontWeight: "600",
-                  }}
-                >
-                  Status
-                </th>
-                <th
-                  style={{
-                    padding: "16px",
-                    textAlign: "center",
-                    fontWeight: "600",
-                  }}
-                >
-                  Chef
-                </th>
-                <th
-                  style={{
-                    padding: "16px",
-                    textAlign: "center",
-                    fontWeight: "600",
-                  }}
-                >
-                  Mods
-                </th>
-                <th
-                  style={{
-                    padding: "16px",
-                    textAlign: "center",
-                    fontWeight: "600",
-                  }}
-                >
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item, index) => (
-                <tr
-                  key={item.id}
-                  style={{
-                    borderBottom: "1px solid #334155",
-                    background: index % 2 === 0 ? "#1e293b" : "#0f172a",
-                    transition: "all 0.2s ease",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "#1e40af30";
-                    e.currentTarget.style.transform = "scale(1.005)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background =
-                      index % 2 === 0 ? "#1e293b" : "#0f172a";
-                    e.currentTarget.style.transform = "scale(1)";
-                  }}
-                >
-                  <td style={{ padding: "16px" }}>
-                    {item.primaryPhoto ? (
-                      <img
-                        src={item.primaryPhoto}
-                        alt={item.name}
-                        style={{
-                          width: "60px",
-                          height: "60px",
-                          objectFit: "cover",
-                          borderRadius: "10px",
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                        }}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src =
-                            "https://via.placeholder.com/60?text=No+Image";
-                        }}
-                      />
-                    ) : (
-                      <div
-                        style={{
-                          width: "60px",
-                          height: "60px",
-                          background:
-                            "linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%)",
-                          borderRadius: "10px",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: "28px",
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                        }}
-                      >
-                        🍽️
-                      </div>
-                    )}
-                  </td>
-                  <td style={{ padding: "16px" }}>
-                    <div
-                      style={{
-                        fontWeight: "600",
-                        color: "#f1f5f9",
-                        marginBottom: "4px",
-                      }}
-                    >
-                      {item.name}
-                    </div>
-                    {item.description && (
-                      <div
-                        style={{
-                          fontSize: "13px",
-                          color: "#94a3b8",
-                          lineHeight: "1.4",
-                        }}
-                      >
-                        {item.description.substring(0, 60)}
-                        {item.description.length > 60 ? "..." : ""}
-                      </div>
-                    )}
-                  </td>
-                  <td style={{ padding: "16px" }}>
-                    <span
-                      style={{
-                        background: "#312e81",
-                        color: "#a5b4fc",
-                        padding: "6px 12px",
-                        borderRadius: "20px",
-                        fontSize: "13px",
-                        fontWeight: "500",
-                      }}
-                    >
-                      {item.category.name}
-                    </span>
-                  </td>
-                  <td
-                    style={{
-                      padding: "16px",
-                      fontWeight: "700",
-                      color: "#10b981",
-                      fontSize: "15px",
-                    }}
-                  >
-                    {formatPrice(item.price)}
-                  </td>
-                  <td style={{ padding: "16px", color: "#94a3b8" }}>
-                    ⏱️ {item.prepTimeMinutes} min
-                  </td>
-                  <td style={{ padding: "16px" }}>
-                    <select
-                      value={item.status}
-                      onChange={(e) =>
-                        handleStatusUpdate(item.id, e.target.value)
-                      }
-                      style={{
-                        border: "none",
-                        borderRadius: "20px",
-                        padding: "6px 12px",
-                        fontSize: "13px",
-                        fontWeight: "500",
-                        cursor: "pointer",
-                        background:
-                          item.status === "available"
-                            ? "#064e3b"
-                            : item.status === "sold_out"
-                            ? "#7f1d1d"
-                            : "#78350f",
-                        color:
-                          item.status === "available"
-                            ? "#6ee7b7"
-                            : item.status === "sold_out"
-                            ? "#fca5a5"
-                            : "#fcd34d",
-                      }}
-                    >
-                      <option value="available">✅ Available</option>
-                      <option value="unavailable">⏸️ Unavailable</option>
-                      <option value="sold_out">🔴 Sold Out</option>
-                    </select>
-                  </td>
-                  <td
-                    style={{
-                      padding: "16px",
-                      textAlign: "center",
-                      fontSize: "20px",
-                    }}
-                  >
-                    {item.isChefRecommended ? "⭐" : "-"}
-                  </td>
-                  <td style={{ padding: "16px", textAlign: "center" }}>
-                    <span
-                      style={{
-                        background: "#334155",
-                        padding: "6px 10px",
-                        borderRadius: "8px",
-                        fontWeight: "600",
-                        color: "#cbd5e1",
-                        fontSize: "13px",
-                      }}
-                    >
-                      {item.modifierGroupsCount || 0}
-                    </span>
-                  </td>
-                  <td style={{ padding: "16px" }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "8px",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <button
-                        onClick={() => openEditModal(item)}
-                        title="Edit"
-                        style={{
-                          background: "#3b82f6",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "8px",
-                          padding: "8px 12px",
-                          cursor: "pointer",
-                          fontSize: "16px",
-                          transition: "all 0.2s ease",
-                          boxShadow: "0 2px 4px rgba(59, 130, 246, 0.3)",
-                        }}
-                        onMouseOver={(e) => {
-                          e.currentTarget.style.background = "#2563eb";
-                          e.currentTarget.style.transform = "translateY(-2px)";
-                          e.currentTarget.style.boxShadow =
-                            "0 4px 8px rgba(59, 130, 246, 0.4)";
-                        }}
-                        onMouseOut={(e) => {
-                          e.currentTarget.style.background = "#3b82f6";
-                          e.currentTarget.style.transform = "translateY(0)";
-                          e.currentTarget.style.boxShadow =
-                            "0 2px 4px rgba(59, 130, 246, 0.3)";
-                        }}
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item.id, item.name)}
-                        title="Delete"
-                        style={{
-                          background: "#ef4444",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "8px",
-                          padding: "8px 12px",
-                          cursor: "pointer",
-                          fontSize: "16px",
-                          transition: "all 0.2s ease",
-                          boxShadow: "0 2px 4px rgba(239, 68, 68, 0.3)",
-                        }}
-                        onMouseOver={(e) => {
-                          e.currentTarget.style.background = "#dc2626";
-                          e.currentTarget.style.transform = "translateY(-2px)";
-                          e.currentTarget.style.boxShadow =
-                            "0 4px 8px rgba(239, 68, 68, 0.4)";
-                        }}
-                        onMouseOut={(e) => {
-                          e.currentTarget.style.background = "#ef4444";
-                          e.currentTarget.style.transform = "translateY(0)";
-                          e.currentTarget.style.boxShadow =
-                            "0 2px 4px rgba(239, 68, 68, 0.3)";
-                        }}
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* No results */}
-      {!loading && items.length === 0 && (
-        <div
-          style={{
             textAlign: "center",
-            padding: "60px 40px",
-            background: "#1e293b",
-            borderRadius: "12px",
-            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
-            border: "1px solid #334155",
+            border: "2px dashed #475569",
           }}
         >
-          <div style={{ fontSize: "80px", marginBottom: "20px" }}>🍽️</div>
-          <h3
-            style={{ color: "#cbd5e1", marginBottom: "10px", fontSize: "20px" }}
-          >
-            No menu items found
-          </h3>
-          <p style={{ color: "#64748b", marginBottom: "20px" }}>
-            {searchQuery || categoryFilter || statusFilter
-              ? "Try adjusting your filters or search terms"
-              : "Get started by creating your first menu item!"}
+          <p style={{ fontSize: "1.2em", color: "#cbd5e1", margin: 0 }}>
+            🏪 Please select a restaurant to manage menu items
           </p>
-          {!searchQuery && !categoryFilter && !statusFilter && (
-            <button
-              onClick={() => setShowCreateModal(true)}
-              style={{
-                background: "#6366f1",
-                color: "white",
-                padding: "12px 30px",
-                border: "none",
-                borderRadius: "8px",
-                fontSize: "16px",
-                fontWeight: "600",
-                cursor: "pointer",
-                boxShadow: "0 4px 6px rgba(99, 102, 241, 0.4)",
-                transition: "all 0.3s ease",
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.transform = "translateY(-2px)";
-                e.currentTarget.style.boxShadow =
-                  "0 6px 12px rgba(99, 102, 241, 0.5)";
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow =
-                  "0 4px 6px rgba(99, 102, 241, 0.4)";
-              }}
-            >
-              ➕ Create First Item
-            </button>
-          )}
         </div>
-      )}
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div
-          style={{
-            marginTop: "30px",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            gap: "10px",
-            padding: "20px",
-            background: "#1e293b",
-            borderRadius: "12px",
-            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
-            border: "1px solid #334155",
-          }}
-        >
-          <button
-            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-            disabled={currentPage === 1}
+      ) : (
+        <>
+          {/* Filters */}
+          <div
             style={{
-              padding: "10px 20px",
+              background: "#1e293b",
+              borderRadius: "12px",
+              padding: "25px",
+              marginBottom: "25px",
               border: "1px solid #334155",
-              borderRadius: "8px",
-              background: currentPage === 1 ? "#0f172a" : "#1e293b",
-              color: currentPage === 1 ? "#475569" : "#a5b4fc",
-              fontWeight: "600",
-              cursor: currentPage === 1 ? "not-allowed" : "pointer",
-              transition: "all 0.2s ease",
-            }}
-            onMouseOver={(e) => {
-              if (currentPage !== 1) {
-                e.currentTarget.style.background = "#334155";
-                e.currentTarget.style.borderColor = "#6366f1";
-              }
-            }}
-            onMouseOut={(e) => {
-              if (currentPage !== 1) {
-                e.currentTarget.style.background = "#1e293b";
-                e.currentTarget.style.borderColor = "#334155";
-              }
+              boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
             }}
           >
-            ← Previous
-          </button>
-          <span
-            style={{
-              padding: "10px 20px",
-              fontWeight: "600",
-              color: "#cbd5e1",
-              background: "#0f172a",
-              borderRadius: "8px",
-              minWidth: "140px",
-              textAlign: "center",
-              border: "1px solid #334155",
-            }}
-          >
-            Page {currentPage} of {totalPages}
-          </span>
-          <button
-            onClick={() =>
-              setCurrentPage(Math.min(totalPages, currentPage + 1))
-            }
-            disabled={currentPage === totalPages}
-            style={{
-              padding: "10px 20px",
-              border: "1px solid #334155",
-              borderRadius: "8px",
-              background: currentPage === totalPages ? "#0f172a" : "#1e293b",
-              color: currentPage === totalPages ? "#475569" : "#a5b4fc",
-              fontWeight: "600",
-              cursor: currentPage === totalPages ? "not-allowed" : "pointer",
-              transition: "all 0.2s ease",
-            }}
-            onMouseOver={(e) => {
-              if (currentPage !== totalPages) {
-                e.currentTarget.style.background = "#334155";
-                e.currentTarget.style.borderColor = "#6366f1";
-              }
-            }}
-            onMouseOut={(e) => {
-              if (currentPage !== totalPages) {
-                e.currentTarget.style.background = "#1e293b";
-                e.currentTarget.style.borderColor = "#334155";
-              }
-            }}
-          >
-            Next →
-          </button>
-        </div>
-      )}
-
-      {/* Create Modal */}
-      {showCreateModal && (
-        <div
-          className="modal-overlay"
-          onClick={() => setShowCreateModal(false)}
-        >
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>Create New Menu Item</h2>
-            <form onSubmit={handleCreate}>
-              <div className="form-group">
-                <label>Name *</label>
+            {/* Search Bar */}
+            <div style={{ marginBottom: "20px" }}>
+              <div style={{ position: "relative" }}>
+                <span
+                  style={{
+                    position: "absolute",
+                    left: "15px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    fontSize: "20px",
+                    color:
+                      searchQuery !== debouncedSearch ? "#fbbf24" : "#6366f1",
+                  }}
+                >
+                  {searchQuery !== debouncedSearch ? "⏳" : "🔍"}
+                </span>
                 <input
                   type="text"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  required
-                  minLength={2}
-                  maxLength={80}
-                  placeholder="e.g., Grilled Salmon"
+                  placeholder="Search by name or description... (Vietnamese supported)"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                  }}
+                  style={{
+                    width: "100%",
+                    padding: "15px 15px 15px 50px",
+                    fontSize: "16px",
+                    border: `1px solid ${
+                      searchQuery !== debouncedSearch ? "#fbbf24" : "#334155"
+                    }`,
+                    borderRadius: "8px",
+                    outline: "none",
+                    transition: "all 0.3s ease",
+                    background: "#0f172a",
+                    color: "#f1f5f9",
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "#6366f1";
+                    e.currentTarget.style.boxShadow =
+                      "0 0 0 3px rgba(99, 102, 241, 0.1)";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "#334155";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
                 />
               </div>
+            </div>
 
-              <div className="form-group">
-                <label>Category *</label>
-                <select
-                  value={formData.category_id}
-                  onChange={(e) =>
-                    setFormData({ ...formData, category_id: e.target.value })
-                  }
-                  required
+            {/* Filter Controls */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gap: "15px",
+              }}
+            >
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontWeight: "600",
+                    color: "#cbd5e1",
+                    fontSize: "14px",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                  }}
                 >
-                  <option value="">Select category</option>
+                  📂 Category
+                </label>
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => {
+                    setCategoryFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  style={{
+                    width: "100%",
+                    padding: "12px 15px",
+                    fontSize: "14px",
+                    border: "1px solid #334155",
+                    borderRadius: "8px",
+                    outline: "none",
+                    cursor: "pointer",
+                    background: "#0f172a",
+                    color: "#f1f5f9",
+                    transition: "all 0.3s ease",
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "#6366f1";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "#334155";
+                  }}
+                >
+                  <option value="">All Categories</option>
                   {categories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
                       {cat.name}
@@ -1208,411 +511,1180 @@ export default function MenuItemsManagement() {
                 </select>
               </div>
 
-              <div className="form-group">
-                <label>Description</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  rows={3}
-                  maxLength={500}
-                  placeholder="Optional description"
-                />
-              </div>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "15px",
-                }}
-              >
-                <div className="form-group">
-                  <label>Price (VND) *</label>
-                  <input
-                    type="number"
-                    value={formData.price || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        price:
-                          e.target.value === ""
-                            ? 0
-                            : parseFloat(e.target.value),
-                      })
-                    }
-                    required
-                    min={1}
-                    step={1}
-                    placeholder="50000"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Prep Time (minutes)</label>
-                  <input
-                    type="number"
-                    value={formData.prep_time_minutes || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        prep_time_minutes:
-                          e.target.value === "" ? 0 : parseInt(e.target.value),
-                      })
-                    }
-                    min={0}
-                    max={240}
-                    placeholder="15"
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Status</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) =>
-                    setFormData({ ...formData, status: e.target.value })
-                  }
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontWeight: "600",
+                    color: "#cbd5e1",
+                    fontSize: "14px",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                  }}
                 >
-                  <option value="available">Available</option>
-                  <option value="unavailable">Unavailable</option>
-                  <option value="sold_out">Sold Out</option>
+                  📊 Status
+                </label>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  style={{
+                    width: "100%",
+                    padding: "12px 15px",
+                    fontSize: "14px",
+                    border: "1px solid #334155",
+                    borderRadius: "8px",
+                    outline: "none",
+                    cursor: "pointer",
+                    background: "#0f172a",
+                    color: "#f1f5f9",
+                    transition: "all 0.3s ease",
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "#6366f1";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "#334155";
+                  }}
+                >
+                  <option value="">All Status</option>
+                  <option value="available">✅ Available</option>
+                  <option value="unavailable">⏸️ Unavailable</option>
+                  <option value="sold_out">🔴 Sold Out</option>
                 </select>
               </div>
 
-              <div className="form-group">
+              <div>
                 <label
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    cursor: "pointer",
+                    display: "block",
+                    marginBottom: "8px",
+                    fontWeight: "600",
+                    color: "#cbd5e1",
+                    fontSize: "14px",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
                   }}
                 >
-                  <input
-                    type="checkbox"
-                    checked={formData.is_chef_recommended}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        is_chef_recommended: e.target.checked,
-                      })
-                    }
-                    style={{ width: "auto", margin: 0 }}
-                  />
-                  <span>Chef Recommended</span>
+                  ⭐ Recommendation
                 </label>
+                <select
+                  value={chefRecommendedFilter}
+                  onChange={(e) => {
+                    setChefRecommendedFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  style={{
+                    width: "100%",
+                    padding: "12px 15px",
+                    fontSize: "14px",
+                    border: "1px solid #334155",
+                    borderRadius: "8px",
+                    outline: "none",
+                    cursor: "pointer",
+                    background: "#0f172a",
+                    color: "#f1f5f9",
+                    transition: "all 0.3s ease",
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "#6366f1";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "#334155";
+                  }}
+                >
+                  <option value="">All Items</option>
+                  <option value="true">⭐ Chef Recommended</option>
+                  <option value="false">Regular Items</option>
+                </select>
               </div>
 
-              <div className="form-group">
-                <label>Modifier Groups</label>
-                <div
+              <div>
+                <label
                   style={{
-                    maxHeight: "150px",
-                    overflowY: "auto",
-                    border: "1px solid var(--border)",
-                    padding: "10px",
-                    borderRadius: "8px",
-                    background: "var(--bg-main)",
+                    display: "block",
+                    marginBottom: "8px",
+                    fontWeight: "600",
+                    color: "#cbd5e1",
+                    fontSize: "14px",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
                   }}
                 >
-                  {modifierGroups.length === 0 && (
+                  🔄 Sort By
+                </label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => {
+                    setSortBy(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  style={{
+                    width: "100%",
+                    padding: "12px 15px",
+                    fontSize: "14px",
+                    border: "1px solid #334155",
+                    borderRadius: "8px",
+                    outline: "none",
+                    cursor: "pointer",
+                    background: "#0f172a",
+                    color: "#f1f5f9",
+                    transition: "all 0.3s ease",
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "#6366f1";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "#334155";
+                  }}
+                >
+                  <option value="created_at_desc">📅 Newest First</option>
+                  <option value="created_at_asc">📅 Oldest First</option>
+                  <option value="name_asc">🔤 Name (A-Z)</option>
+                  <option value="name_desc">🔤 Name (Z-A)</option>
+                  <option value="price_asc">💰 Price (Low to High)</option>
+                  <option value="price_desc">💰 Price (High to Low)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Results count */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "20px",
+              padding: "15px 20px",
+              background: "#1e293b",
+              borderRadius: "8px",
+              fontSize: "14px",
+              fontWeight: "500",
+              color: "#cbd5e1",
+              border: "1px solid #334155",
+            }}
+          >
+            <span>
+              📊 Showing{" "}
+              <strong style={{ color: "#6366f1" }}>{items.length}</strong> of{" "}
+              <strong style={{ color: "#6366f1" }}>{totalItems}</strong> items
+            </span>
+            {searchQuery && (
+              <span style={{ color: "#a855f7" }}>
+                🔍 Search results for "{searchQuery}"
+              </span>
+            )}
+          </div>
+
+          {/* Error */}
+          {error && (
+            <div
+              style={{
+                color: "#fee2e2",
+                padding: "15px 20px",
+                background: "#7f1d1d",
+                borderRadius: "8px",
+                marginBottom: "20px",
+                border: "1px solid #dc2626",
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+              }}
+            >
+              <span style={{ fontSize: "20px" }}>⚠️</span>
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Loading */}
+          {loading && (
+            <div
+              style={{
+                textAlign: "center",
+                padding: "40px",
+                background: "#1e293b",
+                borderRadius: "12px",
+                boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+                border: "1px solid #334155",
+              }}
+            >
+              <div style={{ fontSize: "40px", marginBottom: "10px" }}>⏳</div>
+              <p style={{ color: "#a855f7", fontWeight: "500" }}>
+                Loading menu items...
+              </p>
+            </div>
+          )}
+
+          {/* Table */}
+          {!loading && items.length > 0 && (
+            <div
+              style={{
+                background: "#1e293b",
+                borderRadius: "12px",
+                overflow: "hidden",
+                boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+                border: "1px solid #334155",
+              }}
+            >
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  fontSize: "14px",
+                }}
+              >
+                <thead>
+                  <tr
+                    style={{
+                      background:
+                        "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
+                      color: "white",
+                    }}
+                  >
+                    <th
+                      style={{
+                        padding: "16px",
+                        textAlign: "left",
+                        fontWeight: "600",
+                      }}
+                    >
+                      Photo
+                    </th>
+                    <th
+                      style={{
+                        padding: "16px",
+                        textAlign: "left",
+                        fontWeight: "600",
+                      }}
+                    >
+                      Name
+                    </th>
+                    <th
+                      style={{
+                        padding: "16px",
+                        textAlign: "left",
+                        fontWeight: "600",
+                      }}
+                    >
+                      Category
+                    </th>
+                    <th
+                      style={{
+                        padding: "16px",
+                        textAlign: "left",
+                        fontWeight: "600",
+                      }}
+                    >
+                      Price
+                    </th>
+                    <th
+                      style={{
+                        padding: "16px",
+                        textAlign: "left",
+                        fontWeight: "600",
+                      }}
+                    >
+                      Prep Time
+                    </th>
+                    <th
+                      style={{
+                        padding: "16px",
+                        textAlign: "left",
+                        fontWeight: "600",
+                      }}
+                    >
+                      Status
+                    </th>
+                    <th
+                      style={{
+                        padding: "16px",
+                        textAlign: "center",
+                        fontWeight: "600",
+                      }}
+                    >
+                      Chef
+                    </th>
+                    <th
+                      style={{
+                        padding: "16px",
+                        textAlign: "center",
+                        fontWeight: "600",
+                      }}
+                    >
+                      Mods
+                    </th>
+                    <th
+                      style={{
+                        padding: "16px",
+                        textAlign: "center",
+                        fontWeight: "600",
+                      }}
+                    >
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((item, index) => (
+                    <tr
+                      key={item.id}
+                      style={{
+                        borderBottom: "1px solid #334155",
+                        background: index % 2 === 0 ? "#1e293b" : "#0f172a",
+                        transition: "all 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = "#1e40af30";
+                        e.currentTarget.style.transform = "scale(1.005)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background =
+                          index % 2 === 0 ? "#1e293b" : "#0f172a";
+                        e.currentTarget.style.transform = "scale(1)";
+                      }}
+                    >
+                      <td style={{ padding: "16px" }}>
+                        {item.primaryPhoto ? (
+                          <img
+                            src={item.primaryPhoto}
+                            alt={item.name}
+                            style={{
+                              width: "60px",
+                              height: "60px",
+                              objectFit: "cover",
+                              borderRadius: "10px",
+                              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                            }}
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src =
+                                "https://via.placeholder.com/60?text=No+Image";
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              width: "60px",
+                              height: "60px",
+                              background:
+                                "linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%)",
+                              borderRadius: "10px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: "28px",
+                              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                            }}
+                          >
+                            🍽️
+                          </div>
+                        )}
+                      </td>
+                      <td style={{ padding: "16px" }}>
+                        <div
+                          style={{
+                            fontWeight: "600",
+                            color: "#f1f5f9",
+                            marginBottom: "4px",
+                          }}
+                        >
+                          {item.name}
+                        </div>
+                        {item.description && (
+                          <div
+                            style={{
+                              fontSize: "13px",
+                              color: "#94a3b8",
+                              lineHeight: "1.4",
+                            }}
+                          >
+                            {item.description.substring(0, 60)}
+                            {item.description.length > 60 ? "..." : ""}
+                          </div>
+                        )}
+                      </td>
+                      <td style={{ padding: "16px" }}>
+                        <span
+                          style={{
+                            background: "#312e81",
+                            color: "#a5b4fc",
+                            padding: "6px 12px",
+                            borderRadius: "20px",
+                            fontSize: "13px",
+                            fontWeight: "500",
+                          }}
+                        >
+                          {item.category.name}
+                        </span>
+                      </td>
+                      <td
+                        style={{
+                          padding: "16px",
+                          fontWeight: "700",
+                          color: "#10b981",
+                          fontSize: "15px",
+                        }}
+                      >
+                        {formatPrice(item.price)}
+                      </td>
+                      <td style={{ padding: "16px", color: "#94a3b8" }}>
+                        ⏱️ {item.prepTimeMinutes} min
+                      </td>
+                      <td style={{ padding: "16px" }}>
+                        <select
+                          value={item.status}
+                          onChange={(e) =>
+                            handleStatusUpdate(item.id, e.target.value)
+                          }
+                          style={{
+                            border: "none",
+                            borderRadius: "20px",
+                            padding: "6px 12px",
+                            fontSize: "13px",
+                            fontWeight: "500",
+                            cursor: "pointer",
+                            background:
+                              item.status === "available"
+                                ? "#064e3b"
+                                : item.status === "sold_out"
+                                ? "#7f1d1d"
+                                : "#78350f",
+                            color:
+                              item.status === "available"
+                                ? "#6ee7b7"
+                                : item.status === "sold_out"
+                                ? "#fca5a5"
+                                : "#fcd34d",
+                          }}
+                        >
+                          <option value="available">✅ Available</option>
+                          <option value="unavailable">⏸️ Unavailable</option>
+                          <option value="sold_out">🔴 Sold Out</option>
+                        </select>
+                      </td>
+                      <td
+                        style={{
+                          padding: "16px",
+                          textAlign: "center",
+                          fontSize: "20px",
+                        }}
+                      >
+                        {item.isChefRecommended ? "⭐" : "-"}
+                      </td>
+                      <td style={{ padding: "16px", textAlign: "center" }}>
+                        <span
+                          style={{
+                            background: "#334155",
+                            padding: "6px 10px",
+                            borderRadius: "8px",
+                            fontWeight: "600",
+                            color: "#cbd5e1",
+                            fontSize: "13px",
+                          }}
+                        >
+                          {item.modifierGroupsCount || 0}
+                        </span>
+                      </td>
+                      <td style={{ padding: "16px" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "8px",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <button
+                            onClick={() => openEditModal(item)}
+                            title="Edit"
+                            style={{
+                              background: "#3b82f6",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "8px",
+                              padding: "8px 12px",
+                              cursor: "pointer",
+                              fontSize: "16px",
+                              transition: "all 0.2s ease",
+                              boxShadow: "0 2px 4px rgba(59, 130, 246, 0.3)",
+                            }}
+                            onMouseOver={(e) => {
+                              e.currentTarget.style.background = "#2563eb";
+                              e.currentTarget.style.transform =
+                                "translateY(-2px)";
+                              e.currentTarget.style.boxShadow =
+                                "0 4px 8px rgba(59, 130, 246, 0.4)";
+                            }}
+                            onMouseOut={(e) => {
+                              e.currentTarget.style.background = "#3b82f6";
+                              e.currentTarget.style.transform = "translateY(0)";
+                              e.currentTarget.style.boxShadow =
+                                "0 2px 4px rgba(59, 130, 246, 0.3)";
+                            }}
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            onClick={() => handleDelete(item.id, item.name)}
+                            title="Delete"
+                            style={{
+                              background: "#ef4444",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "8px",
+                              padding: "8px 12px",
+                              cursor: "pointer",
+                              fontSize: "16px",
+                              transition: "all 0.2s ease",
+                              boxShadow: "0 2px 4px rgba(239, 68, 68, 0.3)",
+                            }}
+                            onMouseOver={(e) => {
+                              e.currentTarget.style.background = "#dc2626";
+                              e.currentTarget.style.transform =
+                                "translateY(-2px)";
+                              e.currentTarget.style.boxShadow =
+                                "0 4px 8px rgba(239, 68, 68, 0.4)";
+                            }}
+                            onMouseOut={(e) => {
+                              e.currentTarget.style.background = "#ef4444";
+                              e.currentTarget.style.transform = "translateY(0)";
+                              e.currentTarget.style.boxShadow =
+                                "0 2px 4px rgba(239, 68, 68, 0.3)";
+                            }}
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* No results */}
+          {!loading && items.length === 0 && (
+            <div
+              style={{
+                textAlign: "center",
+                padding: "60px 40px",
+                background: "#1e293b",
+                borderRadius: "12px",
+                boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+                border: "1px solid #334155",
+              }}
+            >
+              <div style={{ fontSize: "80px", marginBottom: "20px" }}>🍽️</div>
+              <h3
+                style={{
+                  color: "#cbd5e1",
+                  marginBottom: "10px",
+                  fontSize: "20px",
+                }}
+              >
+                No menu items found
+              </h3>
+              <p style={{ color: "#64748b", marginBottom: "20px" }}>
+                {searchQuery || categoryFilter || statusFilter
+                  ? "Try adjusting your filters or search terms"
+                  : "Get started by creating your first menu item!"}
+              </p>
+              {!searchQuery && !categoryFilter && !statusFilter && (
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  style={{
+                    background: "#6366f1",
+                    color: "white",
+                    padding: "12px 30px",
+                    border: "none",
+                    borderRadius: "8px",
+                    fontSize: "16px",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    boxShadow: "0 4px 6px rgba(99, 102, 241, 0.4)",
+                    transition: "all 0.3s ease",
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow =
+                      "0 6px 12px rgba(99, 102, 241, 0.5)";
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow =
+                      "0 4px 6px rgba(99, 102, 241, 0.4)";
+                  }}
+                >
+                  ➕ Create First Item
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div
+              style={{
+                marginTop: "30px",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: "10px",
+                padding: "20px",
+                background: "#1e293b",
+                borderRadius: "12px",
+                boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+                border: "1px solid #334155",
+              }}
+            >
+              <button
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                style={{
+                  padding: "10px 20px",
+                  border: "1px solid #334155",
+                  borderRadius: "8px",
+                  background: currentPage === 1 ? "#0f172a" : "#1e293b",
+                  color: currentPage === 1 ? "#475569" : "#a5b4fc",
+                  fontWeight: "600",
+                  cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                  transition: "all 0.2s ease",
+                }}
+                onMouseOver={(e) => {
+                  if (currentPage !== 1) {
+                    e.currentTarget.style.background = "#334155";
+                    e.currentTarget.style.borderColor = "#6366f1";
+                  }
+                }}
+                onMouseOut={(e) => {
+                  if (currentPage !== 1) {
+                    e.currentTarget.style.background = "#1e293b";
+                    e.currentTarget.style.borderColor = "#334155";
+                  }
+                }}
+              >
+                ← Previous
+              </button>
+              <span
+                style={{
+                  padding: "10px 20px",
+                  fontWeight: "600",
+                  color: "#cbd5e1",
+                  background: "#0f172a",
+                  borderRadius: "8px",
+                  minWidth: "140px",
+                  textAlign: "center",
+                  border: "1px solid #334155",
+                }}
+              >
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() =>
+                  setCurrentPage(Math.min(totalPages, currentPage + 1))
+                }
+                disabled={currentPage === totalPages}
+                style={{
+                  padding: "10px 20px",
+                  border: "1px solid #334155",
+                  borderRadius: "8px",
+                  background:
+                    currentPage === totalPages ? "#0f172a" : "#1e293b",
+                  color: currentPage === totalPages ? "#475569" : "#a5b4fc",
+                  fontWeight: "600",
+                  cursor:
+                    currentPage === totalPages ? "not-allowed" : "pointer",
+                  transition: "all 0.2s ease",
+                }}
+                onMouseOver={(e) => {
+                  if (currentPage !== totalPages) {
+                    e.currentTarget.style.background = "#334155";
+                    e.currentTarget.style.borderColor = "#6366f1";
+                  }
+                }}
+                onMouseOut={(e) => {
+                  if (currentPage !== totalPages) {
+                    e.currentTarget.style.background = "#1e293b";
+                    e.currentTarget.style.borderColor = "#334155";
+                  }
+                }}
+              >
+                Next →
+              </button>
+            </div>
+          )}
+
+          {/* Create Modal */}
+          {showCreateModal && (
+            <div
+              className="modal-overlay"
+              onClick={() => setShowCreateModal(false)}
+            >
+              <div className="modal" onClick={(e) => e.stopPropagation()}>
+                <h2>Create New Menu Item</h2>
+                <form onSubmit={handleCreate}>
+                  <div className="form-group">
+                    <label>Name *</label>
+                    <input
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
+                      required
+                      minLength={2}
+                      maxLength={80}
+                      placeholder="e.g., Grilled Salmon"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Category *</label>
+                    <select
+                      value={formData.category_id}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          category_id: e.target.value,
+                        })
+                      }
+                      required
+                    >
+                      <option value="">Select category</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Description</label>
+                    <textarea
+                      value={formData.description}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          description: e.target.value,
+                        })
+                      }
+                      rows={3}
+                      maxLength={500}
+                      placeholder="Optional description"
+                    />
+                  </div>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "15px",
+                    }}
+                  >
+                    <div className="form-group">
+                      <label>Price (VND) *</label>
+                      <input
+                        type="number"
+                        value={formData.price || ""}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            price:
+                              e.target.value === ""
+                                ? 0
+                                : parseFloat(e.target.value),
+                          })
+                        }
+                        required
+                        min={1}
+                        step={1}
+                        placeholder="50000"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label>Prep Time (minutes)</label>
+                      <input
+                        type="number"
+                        value={formData.prep_time_minutes || ""}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            prep_time_minutes:
+                              e.target.value === ""
+                                ? 0
+                                : parseInt(e.target.value),
+                          })
+                        }
+                        min={0}
+                        max={240}
+                        placeholder="15"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Status</label>
+                    <select
+                      value={formData.status}
+                      onChange={(e) =>
+                        setFormData({ ...formData, status: e.target.value })
+                      }
+                    >
+                      <option value="available">Available</option>
+                      <option value="unavailable">Unavailable</option>
+                      <option value="sold_out">Sold Out</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={formData.is_chef_recommended}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            is_chef_recommended: e.target.checked,
+                          })
+                        }
+                        style={{ width: "auto", margin: 0 }}
+                      />
+                      <span>Chef Recommended</span>
+                    </label>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Modifier Groups</label>
+                    <div
+                      style={{
+                        maxHeight: "150px",
+                        overflowY: "auto",
+                        border: "1px solid var(--border)",
+                        padding: "10px",
+                        borderRadius: "8px",
+                        background: "var(--bg-main)",
+                      }}
+                    >
+                      {modifierGroups.length === 0 && (
+                        <p
+                          style={{
+                            color: "var(--text-secondary)",
+                            fontSize: "0.9em",
+                            margin: 0,
+                          }}
+                        >
+                          No modifier groups available
+                        </p>
+                      )}
+                      {modifierGroups.map((group) => (
+                        <label
+                          key={group.id}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            padding: "5px 0",
+                            cursor: "pointer",
+                            color: "var(--text-primary)",
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={formData.modifier_group_ids?.includes(
+                              group.id
+                            )}
+                            onChange={() => toggleModifierGroup(group.id)}
+                            style={{ width: "auto", margin: 0 }}
+                          />
+                          <span>{group.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Info about photos */}
+                  <div
+                    style={{
+                      padding: "12px 15px",
+                      background: "rgba(99, 102, 241, 0.1)",
+                      border: "1px solid rgba(99, 102, 241, 0.3)",
+                      borderRadius: "8px",
+                      marginBottom: "1rem",
+                    }}
+                  >
                     <p
                       style={{
-                        color: "var(--text-secondary)",
-                        fontSize: "0.9em",
                         margin: 0,
+                        fontSize: "0.9rem",
+                        color: "var(--text-secondary)",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
                       }}
                     >
-                      No modifier groups available
+                      <span style={{ fontSize: "1.2rem" }}>ℹ️</span>
+                      <span>
+                        Photos can be added after creating the item by clicking
+                        the Edit button.
+                      </span>
                     </p>
-                  )}
-                  {modifierGroups.map((group) => (
+                  </div>
+
+                  <div className="modal-actions">
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => {
+                        setShowCreateModal(false);
+                        resetForm();
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button type="submit" className="btn btn-primary">
+                      Create Item
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Edit Modal */}
+          {showEditModal && selectedItem && (
+            <div
+              className="modal-overlay"
+              onClick={() => setShowEditModal(false)}
+            >
+              <div className="modal" onClick={(e) => e.stopPropagation()}>
+                <h2>Edit Menu Item</h2>
+                <form onSubmit={handleEdit}>
+                  <div className="form-group">
+                    <label>Name *</label>
+                    <input
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
+                      required
+                      minLength={2}
+                      maxLength={80}
+                      placeholder="e.g., Grilled Salmon"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Category *</label>
+                    <select
+                      value={formData.category_id}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          category_id: e.target.value,
+                        })
+                      }
+                      required
+                    >
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Description</label>
+                    <textarea
+                      value={formData.description}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          description: e.target.value,
+                        })
+                      }
+                      rows={3}
+                      maxLength={500}
+                      placeholder="Optional description"
+                    />
+                  </div>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "15px",
+                    }}
+                  >
+                    <div className="form-group">
+                      <label>Price (VND) *</label>
+                      <input
+                        type="number"
+                        value={formData.price || ""}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            price:
+                              e.target.value === ""
+                                ? 0
+                                : parseFloat(e.target.value),
+                          })
+                        }
+                        required
+                        min={1}
+                        step={1}
+                        placeholder="50000"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label>Prep Time (minutes)</label>
+                      <input
+                        type="number"
+                        value={formData.prep_time_minutes || ""}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            prep_time_minutes:
+                              e.target.value === ""
+                                ? 0
+                                : parseInt(e.target.value),
+                          })
+                        }
+                        min={0}
+                        max={240}
+                        placeholder="15"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Status</label>
+                    <select
+                      value={formData.status}
+                      onChange={(e) =>
+                        setFormData({ ...formData, status: e.target.value })
+                      }
+                    >
+                      <option value="available">Available</option>
+                      <option value="unavailable">Unavailable</option>
+                      <option value="sold_out">Sold Out</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
                     <label
-                      key={group.id}
                       style={{
                         display: "flex",
                         alignItems: "center",
                         gap: "8px",
-                        padding: "5px 0",
                         cursor: "pointer",
-                        color: "var(--text-primary)",
                       }}
                     >
                       <input
                         type="checkbox"
-                        checked={formData.modifier_group_ids?.includes(
-                          group.id
-                        )}
-                        onChange={() => toggleModifierGroup(group.id)}
+                        checked={formData.is_chef_recommended}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            is_chef_recommended: e.target.checked,
+                          })
+                        }
                         style={{ width: "auto", margin: 0 }}
                       />
-                      <span>{group.name}</span>
+                      <span>Chef Recommended</span>
                     </label>
-                  ))}
-                </div>
-              </div>
+                  </div>
 
-              {/* Info about photos */}
-              <div
-                style={{
-                  padding: "12px 15px",
-                  background: "rgba(99, 102, 241, 0.1)",
-                  border: "1px solid rgba(99, 102, 241, 0.3)",
-                  borderRadius: "8px",
-                  marginBottom: "1rem",
-                }}
-              >
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: "0.9rem",
-                    color: "var(--text-secondary)",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                  }}
-                >
-                  <span style={{ fontSize: "1.2rem" }}>ℹ️</span>
-                  <span>
-                    Photos can be added after creating the item by clicking the
-                    Edit button.
-                  </span>
-                </p>
-              </div>
-
-              <div className="modal-actions">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => {
-                    setShowCreateModal(false);
-                    resetForm();
-                  }}
-                >
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  Create Item
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Modal */}
-      {showEditModal && selectedItem && (
-        <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>Edit Menu Item</h2>
-            <form onSubmit={handleEdit}>
-              <div className="form-group">
-                <label>Name *</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  required
-                  minLength={2}
-                  maxLength={80}
-                  placeholder="e.g., Grilled Salmon"
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Category *</label>
-                <select
-                  value={formData.category_id}
-                  onChange={(e) =>
-                    setFormData({ ...formData, category_id: e.target.value })
-                  }
-                  required
-                >
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label>Description</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  rows={3}
-                  maxLength={500}
-                  placeholder="Optional description"
-                />
-              </div>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "15px",
-                }}
-              >
-                <div className="form-group">
-                  <label>Price (VND) *</label>
-                  <input
-                    type="number"
-                    value={formData.price || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        price:
-                          e.target.value === ""
-                            ? 0
-                            : parseFloat(e.target.value),
-                      })
-                    }
-                    required
-                    min={1}
-                    step={1}
-                    placeholder="50000"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Prep Time (minutes)</label>
-                  <input
-                    type="number"
-                    value={formData.prep_time_minutes || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        prep_time_minutes:
-                          e.target.value === "" ? 0 : parseInt(e.target.value),
-                      })
-                    }
-                    min={0}
-                    max={240}
-                    placeholder="15"
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Status</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) =>
-                    setFormData({ ...formData, status: e.target.value })
-                  }
-                >
-                  <option value="available">Available</option>
-                  <option value="unavailable">Unavailable</option>
-                  <option value="sold_out">Sold Out</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    cursor: "pointer",
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={formData.is_chef_recommended}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        is_chef_recommended: e.target.checked,
-                      })
-                    }
-                    style={{ width: "auto", margin: 0 }}
-                  />
-                  <span>Chef Recommended</span>
-                </label>
-              </div>
-
-              <div className="form-group">
-                <label>Modifier Groups</label>
-                <div
-                  style={{
-                    maxHeight: "150px",
-                    overflowY: "auto",
-                    border: "1px solid var(--border)",
-                    padding: "10px",
-                    borderRadius: "8px",
-                    background: "var(--bg-main)",
-                  }}
-                >
-                  {modifierGroups.map((group) => (
-                    <label
-                      key={group.id}
+                  <div className="form-group">
+                    <label>Modifier Groups</label>
+                    <div
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        padding: "5px 0",
-                        cursor: "pointer",
-                        color: "var(--text-primary)",
+                        maxHeight: "150px",
+                        overflowY: "auto",
+                        border: "1px solid var(--border)",
+                        padding: "10px",
+                        borderRadius: "8px",
+                        background: "var(--bg-main)",
                       }}
                     >
-                      <input
-                        type="checkbox"
-                        checked={formData.modifier_group_ids?.includes(
-                          group.id
-                        )}
-                        onChange={() => toggleModifierGroup(group.id)}
-                        style={{ width: "auto", margin: 0 }}
-                      />
-                      <span>{group.name}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
+                      {modifierGroups.map((group) => (
+                        <label
+                          key={group.id}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            padding: "5px 0",
+                            cursor: "pointer",
+                            color: "var(--text-primary)",
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={formData.modifier_group_ids?.includes(
+                              group.id
+                            )}
+                            onChange={() => toggleModifierGroup(group.id)}
+                            style={{ width: "auto", margin: 0 }}
+                          />
+                          <span>{group.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
 
-              {/* Image Upload Component - Only in Edit Mode */}
-              <ImageUpload
-                itemId={selectedItem.id}
-                photos={selectedItem.photos || []}
-                onPhotosChange={async () => {
-                  // Reload the specific item details to get updated photos
-                  try {
-                    const updatedItem = await menuItemsApi.getOne(
-                      selectedItem.id
-                    );
-                    setSelectedItem(updatedItem);
-                  } catch (err) {
-                    console.error("Failed to reload item photos:", err);
-                  }
-                }}
-              />
+                  {/* Image Upload Component - Only in Edit Mode */}
+                  <ImageUpload
+                    itemId={selectedItem.id}
+                    photos={selectedItem.photos || []}
+                    onPhotosChange={async () => {
+                      // Reload the specific item details to get updated photos
+                      try {
+                        const updatedItem = await menuItemsApi.getOne(
+                          selectedItem.id
+                        );
+                        setSelectedItem(updatedItem);
+                      } catch (err) {
+                        console.error("Failed to reload item photos:", err);
+                      }
+                    }}
+                  />
 
-              <div className="modal-actions">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => {
-                    setShowEditModal(false);
-                    setSelectedItem(null);
-                    resetForm();
-                  }}
-                >
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  Update Item
-                </button>
+                  <div className="modal-actions">
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => {
+                        setShowEditModal(false);
+                        setSelectedItem(null);
+                        resetForm();
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button type="submit" className="btn btn-primary">
+                      Update Item
+                    </button>
+                  </div>
+                </form>
               </div>
-            </form>
-          </div>
-        </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

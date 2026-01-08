@@ -29,6 +29,13 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   const loadRestaurants = async () => {
+    // Only load if user is authenticated
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const data = await restaurantsApi.getAll();

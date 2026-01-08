@@ -19,11 +19,12 @@ import { UpdateStatusDto } from './dto/update-status.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('tables')
 export class TablesController {
-  constructor(private readonly tablesService: TablesService) { }
+  constructor(private readonly tablesService: TablesService) {}
 
   @Post()
   @Roles('admin', 'super_admin')
@@ -34,12 +35,13 @@ export class TablesController {
 
   @Get()
   findAll(
+    @CurrentUser() user: any,
     @Query('status') status?: string,
     @Query('location') location?: string,
     @Query('sortBy') sortBy?: string,
     @Query('sortOrder') sortOrder?: 'asc' | 'desc',
   ) {
-    return this.tablesService.findAll({
+    return this.tablesService.findAll(user.userId, user.roles, {
       status,
       location,
       sortBy,

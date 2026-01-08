@@ -8,6 +8,7 @@ import Menu from "./pages/Menu";
 import CategoriesManagement from "./pages/CategoriesManagement";
 import ModifiersManagement from "./pages/ModifiersManagement";
 import MenuItemsManagement from "./pages/MenuItemsManagement";
+import UserManagement from "./pages/UserManagement";
 import AdminLayout from "./components/AdminLayout";
 import AdminLogin from "./pages/AdminLogin";
 import Dashboard from "./pages/Dashboard";
@@ -43,6 +44,7 @@ function App() {
                         element={<ModifiersManagement />}
                       />
                       <Route path="/items" element={<MenuItemsManagement />} />
+                      <Route path="/users" element={<UserManagement />} />
                     </Routes>
                   </AdminLayout>
                 </ProtectedRoute>

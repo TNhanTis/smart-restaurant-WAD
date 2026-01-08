@@ -40,6 +40,12 @@ export default function TableManagement() {
 
   // Load tables
   const loadTables = async () => {
+    if (!selectedRestaurant) {
+      setTables([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const data = await tablesApi.getAll({
@@ -48,7 +54,13 @@ export default function TableManagement() {
         sortBy,
         sortOrder,
       });
-      setTables(data);
+
+      // Filter by selectedRestaurant on client-side
+      const filtered = data.filter(
+        (table) => table.restaurant_id === selectedRestaurant.id
+      );
+
+      setTables(filtered);
       setError(null);
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to load tables");
@@ -70,7 +82,7 @@ export default function TableManagement() {
   useEffect(() => {
     loadTables();
     loadLocations();
-  }, [statusFilter, locationFilter, sortBy, sortOrder]);
+  }, [statusFilter, locationFilter, sortBy, sortOrder, selectedRestaurant]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();

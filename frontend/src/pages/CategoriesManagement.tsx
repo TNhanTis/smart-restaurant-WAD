@@ -37,15 +37,30 @@ export default function CategoriesManagement() {
 
   // Load categories
   const loadCategories = async () => {
+    if (!selectedRestaurant) {
+      setCategories([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
-      console.log("🔍 Loading categories...");
+      console.log(
+        "🔍 Loading categories for restaurant:",
+        selectedRestaurant.id
+      );
       const data = await categoriesApi.getAll({
         status: statusFilter || undefined,
         sortBy: "display_order",
       });
-      console.log("✅ Categories loaded:", data);
-      setCategories(data);
+
+      // Filter by selectedRestaurant on client-side
+      const filtered = data.filter(
+        (cat) => cat.restaurant_id === selectedRestaurant.id
+      );
+
+      console.log("✅ Categories loaded:", filtered);
+      setCategories(filtered);
       setError(null);
     } catch (err: any) {
       console.error("❌ Error loading categories:", err);
@@ -58,7 +73,7 @@ export default function CategoriesManagement() {
 
   useEffect(() => {
     loadCategories();
-  }, [statusFilter]);
+  }, [statusFilter, selectedRestaurant]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();

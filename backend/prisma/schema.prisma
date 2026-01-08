@@ -19,9 +19,10 @@ model Restaurant {
   created_at    DateTime @default(now()) @db.Timestamp(6)
   updated_at    DateTime @updatedAt @db.Timestamp(6)
   
-  owner         User            @relation(fields: [owner_id], references: [id], onDelete: Cascade)
-  tables        Table[]
+  owner           User            @relation(fields: [owner_id], references: [id], onDelete: Cascade)
+  tables          Table[]
   menu_categories MenuCategory[]
+  modifier_groups ModifierGroup[]
   
   @@index([owner_id])
   @@index([status])
@@ -120,9 +121,11 @@ model ModifierGroup {
   created_at      DateTime                  @default(now()) @db.Timestamp(6)
   updated_at      DateTime                  @updatedAt @db.Timestamp(6)
   
+  restaurant      Restaurant                @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
   options         ModifierOption[]
   menu_items      MenuItemModifierGroup[]
 
+  @@index([restaurant_id])
   @@map("modifier_groups")
 }
 

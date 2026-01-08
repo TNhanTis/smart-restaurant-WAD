@@ -18,6 +18,7 @@ import { QueryItemsDto } from './dto/query-items.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('api/admin/menu/items')
@@ -42,13 +43,9 @@ export class MenuItemsController {
    * Get all menu items with filtering, sorting, and pagination
    */
   @Get()
-  async findAll(@Query() allQuery: any) {
+  async findAll(@CurrentUser() user: any, @Query() allQuery: any) {
     // Extract and remove restaurant_id from query
     const { restaurant_id, ...queryParams } = allQuery;
-
-    // Default restaurant ID for testing
-    const effectiveRestaurantId =
-      restaurant_id || 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
 
     // Validate the remaining query parameters
     const validationPipe = new ValidationPipe({
@@ -60,7 +57,12 @@ export class MenuItemsController {
       metatype: QueryItemsDto,
     });
 
-    return this.menuItemsService.findAll(effectiveRestaurantId, query);
+    return this.menuItemsService.findAll(
+      user.userId,
+      user.roles,
+      restaurant_id,
+      query,
+    );
   }
 
   /**

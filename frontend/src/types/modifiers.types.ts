@@ -7,6 +7,7 @@ export interface ModifierOption {
 
 export interface ModifierGroup {
   id: string;
+  restaurant_id: string;
   name: string;
   selection_type: "single" | "multiple";
   is_required: boolean;
@@ -19,6 +20,7 @@ export interface ModifierGroup {
 }
 
 export interface CreateModifierGroupData {
+  restaurant_id: string;
   name: string;
   selection_type: "single" | "multiple";
   is_required?: boolean;

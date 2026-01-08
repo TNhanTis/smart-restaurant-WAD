@@ -88,7 +88,13 @@ export class MenuItemsService {
   /**
    * Get all menu items with filtering, sorting, and pagination
    */
-  async findAll(restaurantId: string, query: QueryItemsDto) {
+  async findAll(
+    userId: string,
+    userRoles: string[],
+    restaurantId: string | undefined,
+    query: QueryItemsDto,
+  ) {
+    const isSuperAdmin = userRoles.includes('super_admin');
     const {
       search,
       category_id,
@@ -103,6 +109,37 @@ export class MenuItemsService {
     const where: any = {
       is_deleted: false,
     };
+
+    // Filter by user's restaurants
+    if (!isSuperAdmin) {
+      if (restaurantId) {
+        // Verify user owns this restaurant
+        const restaurant = await this.prisma.restaurant.findFirst({
+          where: {
+            id: restaurantId,
+            owner_id: userId,
+          },
+        });
+        if (restaurant) {
+          where.restaurant_id = restaurantId;
+        } else {
+          // User doesn't own this restaurant, return empty
+          where.restaurant_id = 'invalid';
+        }
+      } else {
+        // No restaurantId specified, get all from user's restaurants
+        const userRestaurants = await this.prisma.restaurant.findMany({
+          where: { owner_id: userId },
+          select: { id: true },
+        });
+        where.restaurant_id = {
+          in: userRestaurants.map((r) => r.id),
+        };
+      }
+    } else if (restaurantId) {
+      // Super admin with specific restaurant
+      where.restaurant_id = restaurantId;
+    }
 
     if (search) {
       where.OR = [

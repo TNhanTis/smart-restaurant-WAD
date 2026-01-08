@@ -52,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("selectedRestaurantId");
     setUser(null);
     authApi.logout().catch(console.error);
   };

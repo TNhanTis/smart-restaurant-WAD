@@ -14,6 +14,8 @@ export const menuItemsApi = {
   async getAll(filters?: MenuItemFilters): Promise<MenuItemsResponse> {
     const params = new URLSearchParams();
 
+    if (filters?.restaurant_id)
+      params.append("restaurant_id", filters.restaurant_id);
     if (filters?.search) params.append("search", filters.search);
     if (filters?.category_id) params.append("category_id", filters.category_id);
     if (filters?.status) params.append("status", filters.status);

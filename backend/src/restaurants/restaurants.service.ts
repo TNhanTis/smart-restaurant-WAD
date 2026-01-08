@@ -40,14 +40,21 @@ export class RestaurantsService {
    * - Admin sees only their owned restaurants
    */
   async findAll(userId: string, userRoles: string[]) {
+    console.log('🔍 [RestaurantsService.findAll] userId:', userId);
+    console.log('🔍 [RestaurantsService.findAll] userRoles:', userRoles);
+    
     const isSuperAdmin = userRoles.includes('super_admin');
+    console.log('🔍 [RestaurantsService.findAll] isSuperAdmin:', isSuperAdmin);
 
     const where: any = {};
     if (!isSuperAdmin) {
       where.owner_id = userId;
+      console.log('🔍 [RestaurantsService.findAll] Filtering by owner_id:', userId);
+    } else {
+      console.log('🔍 [RestaurantsService.findAll] Super admin - returning all restaurants');
     }
 
-    return this.prisma.restaurant.findMany({
+    const restaurants = await this.prisma.restaurant.findMany({
       where,
       include: {
         owner: {
@@ -68,6 +75,11 @@ export class RestaurantsService {
         created_at: 'desc',
       },
     });
+
+    console.log('✅ [RestaurantsService.findAll] Found restaurants:', restaurants.length);
+    console.log('✅ [RestaurantsService.findAll] Restaurant IDs:', restaurants.map(r => ({ id: r.id, name: r.name, owner_id: r.owner_id })));
+
+    return restaurants;
   }
 
   /**

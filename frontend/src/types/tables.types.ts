@@ -1,5 +1,6 @@
 export interface Table {
   id: string;
+  restaurant_id: string;
   table_number: string;
   capacity: number;
   location?: string;

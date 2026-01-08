@@ -29,7 +29,12 @@ axiosInstance.interceptors.response.use(
     if (error.response?.status === 401) {
       // Token hết hạn hoặc không hợp lệ
       localStorage.removeItem("token");
-      window.location.href = "/admin/login";
+      localStorage.removeItem("selectedRestaurantId");
+
+      // Only redirect if not already on login page
+      if (!window.location.pathname.includes("/admin/login")) {
+        window.location.href = "/admin/login";
+      }
     }
     return Promise.reject(error);
   }

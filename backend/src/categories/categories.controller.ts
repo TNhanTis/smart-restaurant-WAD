@@ -16,11 +16,12 @@ import { UpdateCategoryDto } from './dto/update-category.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('api/admin/menu/categories')
 export class CategoriesController {
-  constructor(private readonly categoriesService: CategoriesService) { }
+  constructor(private readonly categoriesService: CategoriesService) {}
 
   @Post()
   @Roles('admin', 'super_admin')
@@ -30,10 +31,16 @@ export class CategoriesController {
 
   @Get()
   async findAll(
+    @CurrentUser() user: any,
+    @Query('restaurant_id') restaurantId?: string,
     @Query('status') status?: string,
     @Query('sortBy') sortBy?: string,
   ) {
-    return this.categoriesService.findAll({ status, sortBy });
+    return this.categoriesService.findAll(user.userId, user.roles, {
+      restaurant_id: restaurantId,
+      status,
+      sortBy,
+    });
   }
   @Put(':id')
   @Roles('admin', 'super_admin')
