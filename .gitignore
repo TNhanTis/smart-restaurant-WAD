@@ -3,7 +3,7 @@ node_modules/
 package-lock.json
 
 # Environment variables (NEVER commit these!)
-.env
+# .env
 .env.local
 .env.production
 
