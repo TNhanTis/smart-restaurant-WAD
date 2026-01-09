@@ -17,6 +17,9 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   public role: PrismaClient['role'];
   public userRole: PrismaClient['userRole'];
   public restaurant: PrismaClient['restaurant'];
+  public order: PrismaClient['order'];
+  public orderItem: PrismaClient['orderItem'];
+  public orderItemModifier: PrismaClient['orderItemModifier'];
 
   private client: PrismaClient;
   private pool: Pool;
@@ -44,6 +47,9 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     this.user = this.client.user;
     this.role = this.client.role;
     this.userRole = this.client.userRole;
+    this.order = this.client.order;
+    this.orderItem = this.client.orderItem;
+    this.orderItemModifier = this.client.orderItemModifier;
   }
 
   async onModuleInit() {
@@ -53,5 +59,10 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   async onModuleDestroy() {
     await this.client.$disconnect();
     await this.pool.end();
+  }
+
+  // Expose $transaction method
+  get $transaction() {
+    return this.client.$transaction.bind(this.client);
   }
 }
