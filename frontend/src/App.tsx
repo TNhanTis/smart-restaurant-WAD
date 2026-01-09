@@ -7,6 +7,8 @@ import ModifiersManagement from "./pages/ModifiersManagement";
 import MenuItemsManagement from "./pages/MenuItemsManagement";
 import CustomerLogin from "./pages/customer/Login";
 import CustomerRegister from "./pages/customer/Register";
+import QrLanding from "./pages/customer/QrLanding";
+import CustomerMenu from "./pages/customer/CustomerMenu";
 import { AuthProvider } from "./contexts/AuthContext";
 import "./App.css";
 
@@ -25,6 +27,8 @@ function App() {
           {/* Customer Routes */}
           <Route path="/customer/login" element={<CustomerLogin />} />
           <Route path="/customer/register" element={<CustomerRegister />} />
+          <Route path="/qr/:token" element={<QrLanding />} />
+          <Route path="/customer/menu" element={<CustomerMenu />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

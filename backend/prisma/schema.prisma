@@ -150,4 +150,4 @@ model user_roles {
   users      User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@id([user_id, role_id])
-}
+                                                                                                                                                                                                                                                                                              }
