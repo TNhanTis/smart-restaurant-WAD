@@ -123,7 +123,7 @@ const CustomerRegister: React.FC = () => {
 
     try {
       const response = await authApi.register({
-        name: formData.name,
+        full_name: formData.name,
         email: formData.email,
         password: formData.password,
         phone: formData.phone || undefined,

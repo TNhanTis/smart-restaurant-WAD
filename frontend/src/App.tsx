@@ -1,59 +1,70 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Navigation from "./components/Navigation";
 import { AuthProvider } from "./contexts/AuthContext";
 import { RestaurantProvider } from "./contexts/RestaurantContext";
-import ProtectedRoute from "./components/ProtectedRoute";
-import TableManagement from "./pages/TableManagement";
-import Menu from "./pages/Menu";
-import CategoriesManagement from "./pages/CategoriesManagement";
-import ModifiersManagement from "./pages/ModifiersManagement";
-import MenuItemsManagement from "./pages/MenuItemsManagement";
-import UserManagement from "./pages/UserManagement";
+
+// Customer pages
+import QrLanding from "./pages/customer/QrLanding";
+import CustomerMenu from "./pages/customer/CustomerMenu";
+import CustomerLogin from "./pages/customer/Login";
+import CustomerRegister from "./pages/customer/Register";
+
+// Admin pages
+import AdminLogin from "./pages/admin/AdminLogin";
+import Dashboard from "./pages/admin/Dashboard";
+import Menu from "./pages/admin/Menu";
+import MenuItemsManagement from "./pages/admin/MenuItemsManagement";
+import CategoriesManagement from "./pages/admin/CategoriesManagement";
+import ModifiersManagement from "./pages/admin/ModifiersManagement";
+import TableManagement from "./pages/admin/TableManagement";
+import UserManagement from "./pages/admin/UserManagement";
+import SystemAdminPage from "./pages/admin/SystemAdminPage";
+
+// Layout
 import AdminLayout from "./components/AdminLayout";
-import AdminLogin from "./pages/AdminLogin";
-import Dashboard from "./pages/Dashboard";
+
 import "./App.css";
 
 function App() {
   return (
-    <AuthProvider>
-      <RestaurantProvider>
-        <BrowserRouter>
+    <BrowserRouter>
+      <AuthProvider>
+        <RestaurantProvider>
           <Routes>
-            <Route path="/admin/login" element={<AdminLogin />} />
+          {/* Public customer routes */}
+          <Route path="/qr/:token" element={<QrLanding />} />
+          <Route path="/customer/menu" element={<CustomerMenu />} />
+          <Route path="/customer/login" element={<CustomerLogin />} />
+          <Route path="/customer/register" element={<CustomerRegister />} />
 
-            <Route
-              path="/*"
-              element={
-                <ProtectedRoute roles={["admin", "super_admin"]}>
-                  <AdminLayout>
-                    <Routes>
-                      <Route
-                        path="/"
-                        element={<Navigate to="/dashboard" replace />}
-                      />
-                      {<Route path="/dashboard" element={<Dashboard />} />}
-                      <Route path="/tables" element={<TableManagement />} />
-                      <Route path="/menu" element={<Menu />} />
-                      <Route
-                        path="/categories"
-                        element={<CategoriesManagement />}
-                      />
-                      <Route
-                        path="/modifiers"
-                        element={<ModifiersManagement />}
-                      />
-                      <Route path="/items" element={<MenuItemsManagement />} />
-                      <Route path="/users" element={<UserManagement />} />
-                    </Routes>
-                  </AdminLayout>
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
-        </BrowserRouter>
-      </RestaurantProvider>
-    </AuthProvider>
+          {/* Admin routes */}
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin/dashboard" element={<AdminLayout><Dashboard /></AdminLayout>} />
+          <Route path="/admin/menu" element={<AdminLayout><Menu /></AdminLayout>} />
+          <Route path="/admin/menu-items" element={<AdminLayout><MenuItemsManagement /></AdminLayout>} />
+          <Route path="/admin/categories" element={<AdminLayout><CategoriesManagement /></AdminLayout>} />
+          <Route path="/admin/modifiers" element={<AdminLayout><ModifiersManagement /></AdminLayout>} />
+          <Route path="/admin/tables" element={<AdminLayout><TableManagement /></AdminLayout>} />
+          <Route path="/admin/users" element={<AdminLayout><UserManagement /></AdminLayout>} />
+          <Route path="/admin/system" element={<AdminLayout><SystemAdminPage /></AdminLayout>} />
+
+          {/* Default redirect - shows both options */}
+          <Route path="/" element={
+            <div style={{ padding: '40px', textAlign: 'center' }}>
+              <h1>Smart Restaurant</h1>
+              <div style={{ marginTop: '30px' }}>
+                <a href="/customer/login" style={{ margin: '10px', padding: '10px 20px', background: '#007bff', color: 'white', textDecoration: 'none', borderRadius: '5px', display: 'inline-block' }}>
+                  Customer Login
+                </a>
+                <a href="/admin/login" style={{ margin: '10px', padding: '10px 20px', background: '#28a745', color: 'white', textDecoration: 'none', borderRadius: '5px', display: 'inline-block' }}>
+                  Admin Login
+                </a>
+              </div>
+            </div>
+          } />
+        </Routes>
+        </RestaurantProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 

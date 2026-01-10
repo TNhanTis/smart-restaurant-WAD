@@ -17,9 +17,6 @@ export default function Navigation() {
       <div className="nav-container">
         <h2 className="nav-logo">🍽️ Smart Restaurant</h2>
         <div className="nav-links">
-          <Link to="/admin/dashboard" className={isActive("/admin/dashboard")}>
-            📊 Dashboard
-          </Link>
           <Link to="/" className={isActive("/")}>
             🪑 Tables
           </Link>
@@ -32,15 +29,15 @@ export default function Navigation() {
           <Link to="/modifiers" className={isActive("/modifiers")}>
             ➕ Modifiers
           </Link>
-          <Link to="/admin/orders" className={isActive("/admin/orders")}>
-            📋 Orders
-          </Link>
           <Link to="/menu" className={isActive("/menu")}>
             📱 Guest Menu
           </Link>
           {isSuperAdmin && (
-            <Link to="/users" className={isActive("/users")}>
-              👥 Users
+            <Link
+              to="/system-admin"
+              className={isActive("/system-admin")}
+            >
+              ⚙️ System Admin
             </Link>
           )}
         </div>

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link, Location } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { authApi } from '../../api/authApi';
 import './CustomerAuth.css';
 
 const CustomerLogin: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
@@ -32,7 +33,7 @@ const CustomerLogin: React.FC = () => {
       login(response.access_token, response.user);
       
       // Redirect to menu or previous page
-      const from = (location.state as any)?.from?.pathname || '/customer/menu';
+      const from = (location.state as { from?: Location })?.from?.pathname || '/customer/menu';
       navigate(from, { replace: true });
     } catch (err: any) {
       setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
