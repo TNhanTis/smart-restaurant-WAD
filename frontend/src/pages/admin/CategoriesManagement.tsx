@@ -84,11 +84,21 @@ export default function CategoriesManagement() {
       return;
     }
 
+    // Validate required fields
+    if (!formData.name.trim()) {
+      toast.error("Category name is required");
+      return;
+    }
+
     try {
-      await categoriesApi.create({
+      const payload = {
         ...formData,
         restaurant_id: selectedRestaurant.id,
-      });
+      };
+      
+      console.log("📤 Creating category with payload:", payload);
+      
+      await categoriesApi.create(payload);
       setShowCreateModal(false);
       setFormData({
         restaurant_id: "",
@@ -100,6 +110,7 @@ export default function CategoriesManagement() {
       toast.success("Category created successfully!");
       loadCategories();
     } catch (err: any) {
+      console.error("❌ Error creating category:", err);
       toast.error(err.response?.data?.message || "Failed to create category");
     }
   };
@@ -283,6 +294,17 @@ export default function CategoriesManagement() {
         >
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>Create New Category</h2>
+            {selectedRestaurant && (
+              <div style={{
+                backgroundColor: "#e3f2fd",
+                padding: "12px",
+                borderRadius: "4px",
+                marginBottom: "16px",
+                borderLeft: "4px solid #2196F3"
+              }}>
+                <strong>Restaurant:</strong> {selectedRestaurant.name}
+              </div>
+            )}
             <form onSubmit={handleCreate}>
               <div className="form-group">
                 <label>Name *</label>

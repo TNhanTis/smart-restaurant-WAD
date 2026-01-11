@@ -93,11 +93,21 @@ export default function TableManagement() {
       return;
     }
 
+    // Validate required fields
+    if (!formData.table_number.trim()) {
+      toast.error("Table number is required");
+      return;
+    }
+
     try {
-      await tablesApi.create({
+      const payload = {
         ...formData,
         restaurant_id: selectedRestaurant.id,
-      });
+      };
+      
+      console.log("📤 Creating table with payload:", payload);
+      
+      await tablesApi.create(payload);
       setShowCreateModal(false);
       setFormData({
         table_number: "",
@@ -109,6 +119,7 @@ export default function TableManagement() {
       toast.success("Table created successfully!");
       loadTables();
     } catch (err: any) {
+      console.error("❌ Error creating table:", err);
       toast.error(err.response?.data?.message || "Failed to create table");
     }
   };
@@ -451,6 +462,17 @@ export default function TableManagement() {
         >
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>Create New Table</h2>
+            {selectedRestaurant && (
+              <div style={{
+                backgroundColor: "#e3f2fd",
+                padding: "12px",
+                borderRadius: "4px",
+                marginBottom: "16px",
+                borderLeft: "4px solid #2196F3"
+              }}>
+                <strong>Restaurant:</strong> {selectedRestaurant.name}
+              </div>
+            )}
             <form onSubmit={handleCreate}>
               <div className="form-group">
                 <label>Table Number *</label>
