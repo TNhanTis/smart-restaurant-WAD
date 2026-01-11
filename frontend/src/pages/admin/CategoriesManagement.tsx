@@ -51,17 +51,13 @@ export default function CategoriesManagement() {
         selectedRestaurant.id
       );
       const data = await categoriesApi.getAll({
+        restaurant_id: selectedRestaurant.id,
         status: statusFilter || undefined,
         sortBy: "display_order",
       });
 
-      // Filter by selectedRestaurant on client-side
-      const filtered = data.filter(
-        (cat) => cat.restaurant_id === selectedRestaurant.id
-      );
-
-      console.log("✅ Categories loaded:", filtered);
-      setCategories(filtered);
+      console.log("✅ Categories loaded:", data);
+      setCategories(data);
       setError(null);
     } catch (err: any) {
       console.error("❌ Error loading categories:", err);

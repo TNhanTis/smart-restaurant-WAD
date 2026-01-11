@@ -9,8 +9,9 @@ import {
 // API Methods
 export const categoriesApi = {
   // Get all categories
-  getAll: async (filters?: { status?: string; sortBy?: string }) => {
+  getAll: async (filters?: { restaurant_id?: string; status?: string; sortBy?: string }) => {
     const params = new URLSearchParams();
+    if (filters?.restaurant_id) params.append("restaurant_id", filters.restaurant_id);
     if (filters?.status) params.append("status", filters.status);
     if (filters?.sortBy) params.append("sortBy", filters.sortBy);
 
