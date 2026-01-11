@@ -8,7 +8,25 @@ import {
   Length,
   Min,
   Max,
+  IsArray,
+  ValidateNested,
+  Type,
 } from 'class-validator';
+
+export class CreateModifierOptionDto {
+  @IsString()
+  @Length(1, 100)
+  name: string;
+
+  @IsOptional()
+  @Min(0)
+  price_adjustment?: number;
+
+  @IsOptional()
+  @IsIn(['active', 'inactive'])
+  status?: string;
+}
+
 export class CreateModifierGroupDto {
   @IsUUID()
   restaurant_id: string;
@@ -37,4 +55,10 @@ export class CreateModifierGroupDto {
   @IsOptional()
   @IsIn(['active', 'inactive'])
   status?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateModifierOptionDto)
+  initialOptions?: CreateModifierOptionDto[];
 }

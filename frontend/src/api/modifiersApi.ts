@@ -16,10 +16,12 @@ export const modifiersApi = {
 
   // Get all groups
   getAllGroups: async (filters?: {
+    restaurant_id?: string;
     status?: string;
     includeOptions?: boolean;
   }) => {
     const params = new URLSearchParams();
+    if (filters?.restaurant_id) params.append("restaurant_id", filters.restaurant_id);
     if (filters?.status) params.append("status", filters.status);
     if (filters?.includeOptions)
       params.append("includeOptions", filters.includeOptions.toString());

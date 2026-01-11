@@ -28,6 +28,7 @@ export interface CreateModifierGroupData {
   max_selections?: number;
   display_order?: number;
   status?: string;
+  initialOptions?: CreateModifierOptionData[];
 }
 
 export interface UpdateModifierGroupData {

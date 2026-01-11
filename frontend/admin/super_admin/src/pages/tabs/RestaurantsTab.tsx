@@ -1,15 +1,15 @@
 import { useState, useEffect } from "react";
-import { restaurantsApi } from "../../../api/restaurantsApi";
-import { usersApi } from "../../../api/usersApi";
+import { restaurantsApi } from "../../api/restaurantsApi";
+import { usersApi } from "../../api/usersApi";
 import type {
   Restaurant,
   CreateRestaurantData,
   UpdateRestaurantData,
-} from "../../../types/restaurant.types";
-import type { User } from "../../../types/user.types";
-import { useToast } from "../../../contexts/ToastContext";
-import { useConfirm } from "../../../components/ConfirmDialog";
-import { useRestaurant } from "../../../contexts/RestaurantContext";
+} from "../../types/restaurant.types";
+import type { User } from "../../types/user.types";
+import { useToast } from "../../contexts/ToastContext";
+import { useConfirm } from "../../components/ConfirmDialog";
+import { useRestaurant } from "../../contexts/RestaurantContext";
 
 export default function RestaurantsTab() {
   const { restaurants, loading, error, refreshRestaurants } = useRestaurant();
@@ -80,7 +80,64 @@ export default function RestaurantsTab() {
     }
 
     try {
-      await restaurantsApi.create(formData);
+      console.log("=== DEBUG CREATE RESTAURANT ===");
+      console.log("formData:", formData);
+      console.log("formData['owner_id']:", formData["owner_id"]);
+      console.log("formData.owner_id:", formData.owner_id);
+
+      // Check nếu có hidden field `ownerId`
+      console.log("formData['ownerId']:", formData["ownerId"]);
+      console.log("'ownerId' in formData:", "ownerId" in formData);
+      console.log("'owner_id' in formData:", "owner_id" in formData);
+      console.log("Object.keys(formData):", Object.keys(formData));
+      console.log(
+        "Object.getOwnPropertyNames(formData):",
+        Object.getOwnPropertyNames(formData)
+      );
+
+      // Construct payload
+      const payload: any = {};
+      payload["name"] = formData.name;
+      payload["address"] = formData.address;
+      payload["phone"] = formData.phone;
+      payload["owner_id"] = formData.owner_id;
+
+      console.log("payload before stringify:", payload);
+      const jsonString = JSON.stringify(payload);
+      console.log("JSON.stringify(payload):", jsonString);
+
+      // Test with fetch
+      const token = localStorage.getItem("token");
+      console.log("Sending fetch with payload:", jsonString);
+      const response = await fetch(
+        "http://localhost:3000/api/admin/restaurants",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: jsonString,
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error("API error:", error);
+        throw error;
+      }
+
+      const result = await response.json();
+      console.log("Success:", result);
+      setShowCreateModal(false);
+      setFormData({
+        name: "",
+        address: "",
+        phone: "",
+        owner_id: "",
+      });
+      toast.success("Restaurant created successfully!");
+      refreshRestaurants();
       setShowCreateModal(false);
       setFormData({
         name: "",
@@ -161,7 +218,15 @@ export default function RestaurantsTab() {
         <div style={{ marginLeft: "auto" }}>
           <button
             className="btn btn-primary"
-            onClick={() => setShowCreateModal(true)}
+            onClick={() => {
+              setFormData({
+                name: "",
+                address: "",
+                phone: "",
+                owner_id: "",
+              });
+              setShowCreateModal(true);
+            }}
           >
             + Add Restaurant
           </button>

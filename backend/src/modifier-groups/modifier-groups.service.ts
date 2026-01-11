@@ -42,7 +42,7 @@ export class ModifierGroupsService {
         );
       }
     }
-    // ━━━ Create Group ━━━
+    // ━━━ Create Group with Options ━━━
     return this.prisma.modifierGroup.create({
       data: {
         restaurant_id: dto.restaurant_id,
@@ -53,6 +53,21 @@ export class ModifierGroupsService {
         max_selections: dto.max_selections ?? 0,
         display_order: dto.display_order ?? 0,
         status: dto.status ?? 'active',
+        // Create nested options if provided
+        ...(dto.initialOptions && dto.initialOptions.length > 0
+          ? {
+              options: {
+                create: dto.initialOptions.map((opt) => ({
+                  name: opt.name,
+                  price_adjustment: opt.price_adjustment ?? 0,
+                  status: opt.status ?? 'active',
+                })),
+              },
+            }
+          : {}),
+      },
+      include: {
+        options: true,
       },
     });
   }

@@ -44,6 +44,7 @@ export default function ModifiersManagement() {
     max_selections: 0,
     display_order: 0,
     status: "active",
+    initialOptions: [],
   });
 
   const [optionFormData, setOptionFormData] =
@@ -63,15 +64,13 @@ export default function ModifiersManagement() {
 
     try {
       setLoading(true);
-      const data = await modifiersApi.getAllGroups({ includeOptions: true });
-
-      // Filter by selectedRestaurant
-      const filtered = data.filter(
-        (group) => group.restaurant_id === selectedRestaurant.id
-      );
+      const data = await modifiersApi.getAllGroups({ 
+        restaurant_id: selectedRestaurant.id,
+        includeOptions: true 
+      });
 
       // Ensure options is always an array
-      const groupsWithOptions = filtered.map((group) => ({
+      const groupsWithOptions = data.map((group) => ({
         ...group,
         options: group.options || [],
       }));
@@ -151,6 +150,7 @@ export default function ModifiersManagement() {
       max_selections: group.max_selections,
       display_order: group.display_order,
       status: group.status,
+      initialOptions: group.options || [],
     });
     setIsEditMode(true);
     setShowGroupModal(true);
@@ -166,6 +166,7 @@ export default function ModifiersManagement() {
       max_selections: 0,
       display_order: 0,
       status: "active",
+      initialOptions: [],
     });
     setIsEditMode(false);
   };
@@ -216,6 +217,35 @@ export default function ModifiersManagement() {
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to delete option");
     }
+  };
+
+  // Inline option handlers (for create/edit group modal)
+  const addInlineOption = () => {
+    const newOption: CreateModifierOptionData = {
+      name: "",
+      price_adjustment: 0,
+      status: "active",
+    };
+    setGroupFormData((prev) => ({
+      ...prev,
+      initialOptions: [...(prev.initialOptions || []), newOption],
+    }));
+  };
+
+  const removeInlineOption = (index: number) => {
+    setGroupFormData((prev) => ({
+      ...prev,
+      initialOptions: (prev.initialOptions || []).filter((_, i) => i !== index),
+    }));
+  };
+
+  const updateInlineOption = (index: number, field: string, value: any) => {
+    setGroupFormData((prev) => ({
+      ...prev,
+      initialOptions: (prev.initialOptions || []).map((opt, i) =>
+        i === index ? { ...opt, [field]: value } : opt
+      ),
+    }));
   };
 
   const openAddOptionModal = (group: ModifierGroup) => {
@@ -557,6 +587,225 @@ export default function ModifiersManagement() {
                   }
                 />
               </div>
+
+              {/* Inline Options */}
+              <div style={{ marginTop: "25px", paddingTop: "20px", borderTop: "1px solid #334155" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
+                  <label style={{ fontSize: "1.1rem", fontWeight: "bold", color: "#e2e8f0" }}>
+                    Options {groupFormData.initialOptions && groupFormData.initialOptions.length > 0 && `(${groupFormData.initialOptions.length})`}
+                  </label>
+                </div>
+
+                {groupFormData.initialOptions && groupFormData.initialOptions.length > 0 ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "15px", marginBottom: "15px" }}>
+                    {groupFormData.initialOptions.map((option, index) => (
+                      <div
+                        key={index}
+                        style={{
+                          padding: "15px",
+                          border: "1px solid #334155",
+                          borderRadius: "8px",
+                          background: "#1e293b",
+                          transition: "all 0.2s ease",
+                          boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                        }}
+                        onMouseOver={(e) => {
+                          e.currentTarget.style.borderColor = "#6366f1";
+                          e.currentTarget.style.boxShadow = "0 4px 8px rgba(99,102,241,0.2)";
+                        }}
+                        onMouseOut={(e) => {
+                          e.currentTarget.style.borderColor = "#334155";
+                          e.currentTarget.style.boxShadow = "0 2px 4px rgba(0,0,0,0.2)";
+                        }}
+                      >
+                        {/* Option Header with number */}
+                        <div style={{ marginBottom: "12px", display: "flex", alignItems: "center", gap: "10px" }}>
+                          <span style={{ 
+                            background: "#6366f1", 
+                            color: "white", 
+                            width: "28px", 
+                            height: "28px", 
+                            borderRadius: "50%",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "12px",
+                            fontWeight: "bold"
+                          }}>
+                            {index + 1}
+                          </span>
+                          <span style={{ color: "#94a3b8", fontSize: "13px" }}>
+                            {option.name || "(empty)"}
+                          </span>
+                        </div>
+
+                        {/* Input Grid */}
+                        <div style={{
+                          display: "grid",
+                          gridTemplateColumns: "2fr 1fr 1fr auto",
+                          gap: "12px",
+                          alignItems: "flex-end",
+                        }}>
+                          {/* Name Input */}
+                          <div>
+                            <label style={{ display: "block", fontSize: "12px", color: "#94a3b8", marginBottom: "6px", fontWeight: "500" }}>
+                              Name *
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="e.g., Small, Medium, Large"
+                              value={option.name}
+                              onChange={(e) => updateInlineOption(index, "name", e.target.value)}
+                              style={{
+                                width: "100%",
+                                padding: "10px 12px",
+                                borderRadius: "6px",
+                                border: "1px solid #334155",
+                                background: "#0f172a",
+                                color: "#e2e8f0",
+                                fontSize: "14px",
+                                boxSizing: "border-box",
+                                transition: "all 0.2s ease",
+                              }}
+                              onFocus={(e) => {
+                                e.currentTarget.style.borderColor = "#6366f1";
+                                e.currentTarget.style.boxShadow = "0 0 0 2px rgba(99,102,241,0.1)";
+                              }}
+                              onBlur={(e) => {
+                                e.currentTarget.style.borderColor = "#334155";
+                                e.currentTarget.style.boxShadow = "none";
+                              }}
+                            />
+                          </div>
+
+                          {/* Price Input */}
+                          <div>
+                            <label style={{ display: "block", fontSize: "12px", color: "#94a3b8", marginBottom: "6px", fontWeight: "500" }}>
+                              Price
+                            </label>
+                            <input
+                              type="number"
+                              placeholder="0"
+                              value={option.price_adjustment}
+                              onChange={(e) => updateInlineOption(index, "price_adjustment", parseFloat(e.target.value) || 0)}
+                              step="1000"
+                              style={{
+                                width: "100%",
+                                padding: "10px 12px",
+                                borderRadius: "6px",
+                                border: "1px solid #334155",
+                                background: "#0f172a",
+                                color: "#e2e8f0",
+                                fontSize: "14px",
+                                boxSizing: "border-box",
+                                transition: "all 0.2s ease",
+                              }}
+                              onFocus={(e) => {
+                                e.currentTarget.style.borderColor = "#6366f1";
+                                e.currentTarget.style.boxShadow = "0 0 0 2px rgba(99,102,241,0.1)";
+                              }}
+                              onBlur={(e) => {
+                                e.currentTarget.style.borderColor = "#334155";
+                                e.currentTarget.style.boxShadow = "none";
+                              }}
+                            />
+                          </div>
+
+                          {/* Status Select */}
+                          <div>
+                            <label style={{ display: "block", fontSize: "12px", color: "#94a3b8", marginBottom: "6px", fontWeight: "500" }}>
+                              Status
+                            </label>
+                            <select
+                              value={option.status || "active"}
+                              onChange={(e) => updateInlineOption(index, "status", e.target.value)}
+                              style={{
+                                width: "100%",
+                                padding: "10px 12px",
+                                borderRadius: "6px",
+                                border: "1px solid #334155",
+                                background: "#0f172a",
+                                color: "#e2e8f0",
+                                fontSize: "14px",
+                                cursor: "pointer",
+                                boxSizing: "border-box",
+                                transition: "all 0.2s ease",
+                              }}
+                              onFocus={(e) => {
+                                e.currentTarget.style.borderColor = "#6366f1";
+                                e.currentTarget.style.boxShadow = "0 0 0 2px rgba(99,102,241,0.1)";
+                              }}
+                              onBlur={(e) => {
+                                e.currentTarget.style.borderColor = "#334155";
+                                e.currentTarget.style.boxShadow = "none";
+                              }}
+                            >
+                              <option value="active">Active</option>
+                              <option value="inactive">Inactive</option>
+                            </select>
+                          </div>
+
+                          {/* Remove Button */}
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-danger"
+                            onClick={() => removeInlineOption(index)}
+                            style={{
+                              padding: "10px 14px",
+                              height: "40px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: "14px",
+                            }}
+                            title="Delete option"
+                          >
+                            ✕
+                          </button>
+                        </div>
+
+                        {/* Price display */}
+                        {option.price_adjustment !== 0 && (
+                          <div style={{ marginTop: "8px", fontSize: "12px", color: "#94a3b8" }}>
+                            Price adjustment: <span style={{ color: option.price_adjustment > 0 ? "#10b981" : "#ef4444", fontWeight: "bold" }}>
+                              {option.price_adjustment > 0 ? "+" : ""}{Number(option.price_adjustment).toLocaleString()} VND
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{
+                    padding: "20px",
+                    textAlign: "center",
+                    background: "#0f172a",
+                    borderRadius: "8px",
+                    border: "1px dashed #334155",
+                    marginBottom: "15px",
+                  }}>
+                    <p style={{ color: "#64748b", fontSize: "14px", margin: 0 }}>
+                      No options yet. Click the button below to add your first option.
+                    </p>
+                  </div>
+                )}
+
+                {/* Add Option Button - Full Width at Bottom */}
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={addInlineOption}
+                  style={{
+                    width: "100%",
+                    padding: "12px 16px",
+                    fontSize: "15px",
+                    fontWeight: "600",
+                  }}
+                >
+                  + Add Option
+                </button>
+              </div>
+
               <div className="modal-actions">
                 <button
                   type="button"

@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
-import { categoriesApi } from '../../api/categoriesApi';
-import type { Category, CreateCategoryData } from "../../types/categories.types";
+import { categoriesApi } from "../../api/categoriesApi";
+import type {
+  Category,
+  CreateCategoryData,
+} from "../../types/categories.types";
 import type { Restaurant } from "../../types/restaurant.types";
-import { useToast } from '../../contexts/ToastContext';
-import { useConfirm } from '../../components/ConfirmDialog';
-import RestaurantSelector from '../../components/RestaurantSelector';
+import { useToast } from "../../contexts/ToastContext";
+import { useConfirm } from "../../components/ConfirmDialog";
+import RestaurantSelector from "../../components/RestaurantSelector";
 import "../../App.css";
 
 export default function CategoriesManagement() {
@@ -91,9 +94,9 @@ export default function CategoriesManagement() {
         ...formData,
         restaurant_id: selectedRestaurant.id,
       };
-      
+
       console.log("📤 Creating category with payload:", payload);
-      
+
       await categoriesApi.create(payload);
       setShowCreateModal(false);
       setFormData({
@@ -291,13 +294,15 @@ export default function CategoriesManagement() {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>Create New Category</h2>
             {selectedRestaurant && (
-              <div style={{
-                backgroundColor: "#e3f2fd",
-                padding: "12px",
-                borderRadius: "4px",
-                marginBottom: "16px",
-                borderLeft: "4px solid #2196F3"
-              }}>
+              <div
+                style={{
+                  backgroundColor: "#e3f2fd",
+                  padding: "12px",
+                  borderRadius: "4px",
+                  marginBottom: "16px",
+                  borderLeft: "4px solid #2196F3",
+                }}
+              >
                 <strong>Restaurant:</strong> {selectedRestaurant.name}
               </div>
             )}
