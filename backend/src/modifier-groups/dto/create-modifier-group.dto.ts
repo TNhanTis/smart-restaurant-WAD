@@ -10,8 +10,8 @@ import {
   Max,
   IsArray,
   ValidateNested,
-  Type,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateModifierOptionDto {
   @IsString()

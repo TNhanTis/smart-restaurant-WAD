@@ -32,8 +32,8 @@ const CustomerLogin: React.FC = () => {
       const response = await authApi.login(formData);
       login(response.access_token, response.user);
       
-      // Redirect to menu or previous page
-      const from = (location.state as { from?: Location })?.from?.pathname || '/customer/menu';
+      // Redirect to restaurant list or previous page
+      const from = (location.state as { from?: Location })?.from?.pathname || '/customer/restaurants';
       navigate(from, { replace: true });
     } catch (err: any) {
       setError(err.response?.data?.message || 'Login failed. Please check your credentials.');

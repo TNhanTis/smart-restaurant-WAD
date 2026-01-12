@@ -22,9 +22,19 @@ export class QrAccessService {
       // 1. Verify JWT signature and decode
       const payload = this.jwtService.verify<QrTokenPayload>(token);
 
-      // 2. Find table by ID from token
+      // 2. Find table by ID from token with restaurant info
       const table = await this.prisma.table.findUnique({
         where: { id: payload.tableId },
+        include: {
+          restaurant: {
+            select: {
+              id: true,
+              name: true,
+              address: true,
+              phone: true,
+            },
+          },
+        },
       });
 
       if (!table) {
@@ -39,7 +49,7 @@ export class QrAccessService {
       // 4. Check if token is still valid (optional: based on qr_token_created_at)
       // For now, we rely on JWT expiration
       
-      // 5. Return table information
+      // 5. Return table and restaurant information
       return {
         success: true,
         table: {
@@ -49,7 +59,13 @@ export class QrAccessService {
           location: table.location,
           status: table.status,
         },
-        message: `Welcome to Table ${table.table_number}`,
+        restaurant: {
+          id: table.restaurant.id,
+          name: table.restaurant.name,
+          address: table.restaurant.address,
+          phone: table.restaurant.phone,
+        },
+        message: `Welcome to ${table.restaurant.name}`,
       };
     } catch (error) {
       if (error.name === 'JsonWebTokenError') {

@@ -5,12 +5,16 @@ import { PrismaService } from '../prisma/prisma.service';
 export class PublicMenuService {
   constructor(private prisma: PrismaService) {}
 
-  async getMenu(categoryId?: string, searchTerm?: string) {
+  async getMenu(categoryId?: string, searchTerm?: string, restaurantId?: string) {
     // Build where clause
     const where: any = {
       status: 'active', // Only show active items
       is_deleted: false,
     };
+
+    if (restaurantId) {
+      where.restaurant_id = restaurantId;
+    }
 
     if (categoryId) {
       where.category_id = categoryId;
@@ -49,8 +53,13 @@ export class PublicMenuService {
     });
 
     // Fetch all active categories
+    const categoriesWhere: any = { status: 'active' };
+    if (restaurantId) {
+      categoriesWhere.restaurant_id = restaurantId;
+    }
+    
     const categories = await this.prisma.menuCategory.findMany({
-      where: { status: 'active' },
+      where: categoriesWhere,
       orderBy: { display_order: 'asc' },
       select: {
         id: true,
@@ -151,9 +160,14 @@ export class PublicMenuService {
     };
   }
 
-  async getCategories() {
+  async getCategories(restaurantId?: string) {
+    const where: any = { status: 'active' };
+    if (restaurantId) {
+      where.restaurant_id = restaurantId;
+    }
+    
     const categories = await this.prisma.menuCategory.findMany({
-      where: { status: 'active' },
+      where,
       orderBy: { display_order: 'asc' },
       select: {
         id: true,
@@ -180,5 +194,23 @@ export class PublicMenuService {
       displayOrder: cat.display_order,
       itemCount: cat._count.menu_items,
     }));
+  }
+
+  async getRestaurants() {
+    const restaurants = await this.prisma.restaurant.findMany({
+      where: {
+        status: 'active',
+      },
+      select: {
+        id: true,
+        name: true,
+        address: true,
+        phone: true,
+        status: true,
+      },
+      orderBy: { name: 'asc' },
+    });
+
+    return restaurants;
   }
 }

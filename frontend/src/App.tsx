@@ -5,8 +5,10 @@ import { RestaurantProvider } from "./contexts/RestaurantContext";
 // Customer pages
 import QrLanding from "./pages/customer/QrLanding";
 import CustomerMenu from "./pages/customer/CustomerMenu";
+import OrderingMenu from "./pages/customer/OrderingMenu";
 import CustomerLogin from "./pages/customer/Login";
 import CustomerRegister from "./pages/customer/Register";
+import RestaurantList from "./pages/customer/RestaurantList";
 
 // Admin pages
 import AdminLogin from "./pages/admin/AdminLogin";
@@ -32,7 +34,9 @@ function App() {
           <Routes>
           {/* Public customer routes */}
           <Route path="/qr/:token" element={<QrLanding />} />
+          <Route path="/customer/restaurants" element={<RestaurantList />} />
           <Route path="/customer/menu" element={<CustomerMenu />} />
+          <Route path="/customer/order" element={<OrderingMenu />} />
           <Route path="/customer/login" element={<CustomerLogin />} />
           <Route path="/customer/register" element={<CustomerRegister />} />
 
@@ -49,15 +53,18 @@ function App() {
 
           {/* Default redirect - shows both options */}
           <Route path="/" element={
-            <div style={{ padding: '40px', textAlign: 'center' }}>
-              <h1>Smart Restaurant</h1>
-              <div style={{ marginTop: '30px' }}>
-                <a href="/customer/login" style={{ margin: '10px', padding: '10px 20px', background: '#007bff', color: 'white', textDecoration: 'none', borderRadius: '5px', display: 'inline-block' }}>
-                  Customer Login
-                </a>
-                <a href="/admin/login" style={{ margin: '10px', padding: '10px 20px', background: '#28a745', color: 'white', textDecoration: 'none', borderRadius: '5px', display: 'inline-block' }}>
-                  Admin Login
-                </a>
+            <div style={{ padding: '40px', textAlign: 'center', minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+              <div style={{ background: 'white', padding: '40px', borderRadius: '20px', boxShadow: '0 10px 40px rgba(0,0,0,0.2)', maxWidth: '400px' }}>
+                <h1 style={{ fontSize: '32px', marginBottom: '10px', color: '#2c3e50' }}>🍽️ Smart Restaurant</h1>
+                <p style={{ color: '#7f8c8d', marginBottom: '30px' }}>Scan. Order. Enjoy.</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                  <a href="/customer/login" style={{ padding: '15px 30px', background: '#e74c3c', color: 'white', textDecoration: 'none', borderRadius: '12px', fontWeight: '600', transition: 'all 0.3s', display: 'block' }}>
+                    Customer Login
+                  </a>
+                  <a href="/admin/login" style={{ padding: '15px 30px', background: '#27ae60', color: 'white', textDecoration: 'none', borderRadius: '12px', fontWeight: '600', transition: 'all 0.3s', display: 'block' }}>
+                    Admin Login
+                  </a>
+                </div>
               </div>
             </div>
           } />

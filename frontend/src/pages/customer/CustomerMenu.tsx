@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { getPublicMenu, getMenuCategories } from '../../api/publicApi';
 import './CustomerMenu.css';
 
@@ -26,201 +26,158 @@ interface MenuItem {
 
 export default function CustomerMenu() {
   const navigate = useNavigate();
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const restaurantId = searchParams.get('restaurant');
+  
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [tableInfo, setTableInfo] = useState<any>(null);
+  const [restaurantName, setRestaurantName] = useState<string>('Restaurant Menu');
 
   useEffect(() => {
-    // Get table info from localStorage
-    const storedTableInfo = localStorage.getItem('table_info');
-    if (storedTableInfo) {
-      setTableInfo(JSON.parse(storedTableInfo));
+    if (location.state && (location.state as any).restaurantName) {
+      setRestaurantName((location.state as any).restaurantName);
     }
+
+    if (!restaurantId) {
+      navigate('/customer/restaurants');
+      return;
+    }
+
+    const loadMenu = async () => {
+      try {
+        const [categoriesData, menuData] = await Promise.all([
+          getMenuCategories(restaurantId),
+          getPublicMenu(undefined, undefined, restaurantId),
+        ]);
+        setCategories(categoriesData || []);
+        setMenuItems(menuData?.items || []);
+      } catch (error) {
+        console.error('Failed to load menu:', error);
+      }
+    };
 
     loadMenu();
-  }, []);
-
-  const loadMenu = async () => {
-    try {
-      setLoading(true);
-      const [categoriesData, menuData] = await Promise.all([
-        getMenuCategories(),
-        getPublicMenu(),
-      ]);
-
-      setCategories(categoriesData);
-      setMenuItems(menuData.items);
-    } catch (error) {
-      console.error('Failed to load menu:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSearch = async (term: string) => {
-    setSearchTerm(term);
-    try {
-      const menuData = await getPublicMenu(selectedCategory, term);
-      setMenuItems(menuData.items);
-    } catch (error) {
-      console.error('Search failed:', error);
-    }
-  };
+  }, [restaurantId, navigate, location.state]);
 
   const handleCategoryChange = async (categoryId: string) => {
+    if (!restaurantId) return;
     setSelectedCategory(categoryId);
     try {
-      const menuData = await getPublicMenu(categoryId, searchTerm);
-      setMenuItems(menuData.items);
+      const menuData = await getPublicMenu(categoryId || undefined, searchTerm || undefined, restaurantId);
+      setMenuItems(menuData?.items || []);
     } catch (error) {
       console.error('Filter failed:', error);
     }
   };
 
-  const handleItemClick = (itemId: string) => {
-    navigate(`/customer/menu/item/${itemId}`);
+  const handleSearch = async (term: string) => {
+    if (!restaurantId) return;
+    setSearchTerm(term);
+    try {
+      const menuData = await getPublicMenu(selectedCategory || undefined, term || undefined, restaurantId);
+      setMenuItems(menuData?.items || []);
+    } catch (error) {
+      console.error('Search failed:', error);
+    }
   };
-
-  if (loading) {
-    return (
-      <div className="customer-menu">
-        <div className="menu-loading">
-          <div className="spinner"></div>
-          <p>Loading menu...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="customer-menu">
       {/* Header */}
       <div className="menu-header">
-        <span className="menu-icon">&#9776;</span>
-        <span className="restaurant-name">Smart Restaurant</span>
-        {tableInfo && (
-          <span className="table-badge">Table {tableInfo.tableNumber}</span>
-        )}
-      </div>
-
-      {/* Search Bar */}
-      <div className="search-section">
-        <input
-          type="text"
-          className="search-input"
-          placeholder="🔍 Search menu items..."
-          value={searchTerm}
-          onChange={(e) => handleSearch(e.target.value)}
-        />
-      </div>
-
-      {/* Category Tabs */}
-      <div className="category-tabs">
-        <button
-          className={`category-tab ${selectedCategory === '' ? 'active' : ''}`}
-          onClick={() => handleCategoryChange('')}
-        >
-          All
-        </button>
-        {categories.map((category) => (
-          <button
-            key={category.id}
-            className={`category-tab ${selectedCategory === category.id ? 'active' : ''}`}
-            onClick={() => handleCategoryChange(category.id)}
+        <div className="header-left">
+          <button 
+            className="header-back" 
+            onClick={() => navigate('/customer/restaurants')}
           >
-            {category.name}
+            ←
           </button>
-        ))}
+        </div>
+        <div className="header-center">
+          <span className="restaurant-name-header">{restaurantName}</span>
+        </div>
+        <div className="header-right"></div>
       </div>
 
-      {/* Menu Items List */}
-      <div className="menu-content">
+      {/* Search Section */}
+      <div className="search-section">
+        <div className="search-bar">
+          <span className="search-icon">🔍</span>
+          <input
+            type="text"
+            placeholder="Search menu items..."
+            value={searchTerm}
+            onChange={(e) => handleSearch(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* Categories Filter */}
+      {categories.length > 0 && (
+        <div className="categories-filter">
+          <button
+            className={`category-chip ${selectedCategory === '' ? 'active' : ''}`}
+            onClick={() => handleCategoryChange('')}
+          >
+            All
+          </button>
+          {categories.map((category) => (
+            <button
+              key={category.id}
+              className={`category-chip ${selectedCategory === category.id ? 'active' : ''}`}
+              onClick={() => handleCategoryChange(category.id)}
+            >
+              {category.name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Menu Items Grid */}
+      <div className="menu-items-grid">
         {menuItems.length === 0 ? (
-          <div className="empty-state">
-            <p>No items found</p>
-            {searchTerm && (
-              <button 
-                className="btn-clear-search"
-                onClick={() => handleSearch('')}
-              >
-                Clear Search
-              </button>
-            )}
+          <div className="no-items">
+            <div style={{ fontSize: '48px', marginBottom: '20px' }}>🍽️</div>
+            <p>No menu items available</p>
           </div>
         ) : (
-          <div className="menu-items-list">
-            {menuItems.map((item) => (
-              <div
-                key={item.id}
-                className="menu-item-card"
-                onClick={() => handleItemClick(item.id)}
-              >
-                <div className="item-image">
-                  {item.image ? (
-                    <img src={item.image} alt={item.name} />
-                  ) : (
-                    <div className="item-placeholder">🍽️</div>
-                  )}
-                </div>
-                <div className="item-info">
-                  <div className="item-details">
-                    <h3 className="item-name">{item.name}</h3>
-                    <div className="item-rating">
-                      ⭐⭐⭐⭐⭐ (0 reviews)
-                    </div>
-                    <span className={`item-status ${item.isAvailable ? 'available' : 'sold-out'}`}>
-                      ● {item.isAvailable ? 'Available' : 'Sold Out'}
-                    </span>
+          menuItems.map((item) => (
+            <div key={item.id} className="menu-item-card">
+              <div className="item-image-wrapper">
+                {item.image ? (
+                  <img src={item.image} alt={item.name} className="item-image" />
+                ) : (
+                  <div className="item-image" style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    fontSize: '48px',
+                    background: '#f5f5f5'
+                  }}>
+                    🍽️
                   </div>
-                  <div className="item-bottom">
-                    <span className="item-price">${Number(item.price).toFixed(2)}</span>
-                    {item.isAvailable && (
-                      <button 
-                        className="add-btn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleItemClick(item.id);
-                        }}
-                      >
-                        + Add
-                      </button>
-                    )}
-                  </div>
+                )}
+              </div>
+              <div className="item-details">
+                <h3 className="item-name">{item.name}</h3>
+                {item.description && (
+                  <p className="item-description">{item.description}</p>
+                )}
+                <div className="item-footer">
+                  <span className="item-price">
+                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Number(item.price))}
+                  </span>
+                  <span className={`item-status ${item.isAvailable ? 'available' : 'unavailable'}`}>
+                    {item.isAvailable ? '✓' : '✗'}
+                  </span>
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))
         )}
-      </div>
-
-      {/* Cart Button (floating) */}
-      <button className="cart-fab">
-        🛒
-        <span className="cart-count">0</span>
-      </button>
-
-      {/* Bottom Navigation */}
-      <div className="bottom-nav">
-        <div className="nav-item active">
-          <span className="nav-icon">🏠</span>
-          <span>Menu</span>
-        </div>
-        <div className="nav-item">
-          <span className="nav-icon">🛒</span>
-          <span className="nav-badge">0</span>
-          <span>Cart</span>
-        </div>
-        <div className="nav-item">
-          <span className="nav-icon">📋</span>
-          <span>Orders</span>
-        </div>
-        <div className="nav-item">
-          <span className="nav-icon">👤</span>
-          <span>Profile</span>
-        </div>
       </div>
     </div>
   );

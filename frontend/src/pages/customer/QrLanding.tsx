@@ -11,9 +11,17 @@ interface TableInfo {
   status: string;
 }
 
+interface RestaurantInfo {
+  id: string;
+  name: string;
+  address: string;
+  phone: string;
+}
+
 interface QrResponse {
   success: boolean;
   table: TableInfo;
+  restaurant: RestaurantInfo;
   message: string;
 }
 
@@ -23,6 +31,7 @@ export default function QrLanding() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tableInfo, setTableInfo] = useState<TableInfo | null>(null);
+  const [restaurantInfo, setRestaurantInfo] = useState<RestaurantInfo | null>(null);
 
   useEffect(() => {
     const verifyToken = async () => {
@@ -35,11 +44,13 @@ export default function QrLanding() {
       try {
         const response: QrResponse = await verifyQrToken(token);
         
-        if (response.success && response.table) {
+        if (response.success && response.table && response.restaurant) {
           setTableInfo(response.table);
-          // Store table info and token for later use
+          setRestaurantInfo(response.restaurant);
+          // Store table info, restaurant info and token for later use
           localStorage.setItem('table_token', token);
           localStorage.setItem('table_info', JSON.stringify(response.table));
+          localStorage.setItem('restaurant_info', JSON.stringify(response.restaurant));
         } else {
           setError('Invalid QR code');
         }
@@ -61,7 +72,7 @@ export default function QrLanding() {
   }, [token]);
 
   const handleViewMenu = () => {
-    navigate('/customer/menu');
+    navigate('/customer/order');
   };
 
   if (loading) {
@@ -96,8 +107,9 @@ export default function QrLanding() {
   return (
     <div className="qr-landing">
       <div className="qr-success">
-        <div className="success-icon">✓</div>
+        <div className="success-icon">🎉</div>
         <h1>Welcome!</h1>
+        <p className="welcome-message">{restaurantInfo?.name}</p>
         <div className="table-info-card">
           <div className="table-number">
             <span className="label">Table</span>
@@ -119,11 +131,11 @@ export default function QrLanding() {
           className="btn-view-menu"
           onClick={handleViewMenu}
         >
-          View Menu
+          🍽️ View Menu and Order
         </button>
 
         <p className="qr-footer-text">
-          Scan the QR code on your table to order
+          Ready to explore our delicious menu?
         </p>
       </div>
     </div>

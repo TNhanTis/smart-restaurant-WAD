@@ -5,12 +5,18 @@ import { PublicMenuService } from './public-menu.service';
 export class PublicMenuController {
   constructor(private publicMenuService: PublicMenuService) {}
 
+  @Get('restaurants')
+  async getRestaurants() {
+    return this.publicMenuService.getRestaurants();
+  }
+
   @Get()
   async getMenu(
     @Query('category') categoryId?: string,
     @Query('search') searchTerm?: string,
+    @Query('restaurant') restaurantId?: string,
   ) {
-    return this.publicMenuService.getMenu(categoryId, searchTerm);
+    return this.publicMenuService.getMenu(categoryId, searchTerm, restaurantId);
   }
 
   @Get('items/:id')
@@ -19,7 +25,7 @@ export class PublicMenuController {
   }
 
   @Get('categories')
-  async getCategories() {
-    return this.publicMenuService.getCategories();
+  async getCategories(@Query('restaurant') restaurantId?: string) {
+    return this.publicMenuService.getCategories(restaurantId);
   }
 }
