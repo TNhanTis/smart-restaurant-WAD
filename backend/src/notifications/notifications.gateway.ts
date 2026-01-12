@@ -77,4 +77,24 @@ export class NotificationsGateway {
     );
     this.connectedClients.delete(client.id);
   }
+
+  emitToUser(userId: string, event: string, data: any) {
+    this.server.to(`user:${userId}`).emit(event, data);
+  }
+
+  // Emit notification to specific role (waiter, kitchen, admin)
+  emitToRole(role: string, event: string, data: any) {
+    this.server.to(`role:${role}`).emit(event, data);
+  }
+
+  // Emit to all clients
+  emitToAll(event: string, data: any) {
+    this.server.emit(event, data);
+  }
+
+  // Subscribe to test connection
+  @SubscribeMessage('ping')
+  handlePing(@ConnectedSocket() client: Socket): string {
+    return 'pong';
+  }
 }
