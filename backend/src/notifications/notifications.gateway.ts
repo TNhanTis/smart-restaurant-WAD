@@ -194,4 +194,18 @@ export class NotificationsGateway
   this.logger.log(`Notified waiter: Order ${order.order_number} ready`);
 }
 
+// Notify customer when order is served
+async notifyOrderServed(order: any) {
+  if (order.customer_id) {
+    this.emitToUser(order.customer_id, 'order_status_update', {
+      order_id: order.id,
+      status: 'served',
+      message: 'Your order has been served. Enjoy your meal!',
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  this.logger.log(`Notified customer: Order ${order.order_number} served`);
+}
+
 }
