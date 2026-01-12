@@ -16,6 +16,7 @@ import { UsersModule } from './users/users.module';
 import { RestaurantsModule } from './restaurants/restaurants.module';
 import { OrdersModule } from './orders/orders.module';
 import { WaiterModule } from './waiter/waiter.module';
+import { KitchenModule } from './kitchen/kitchen.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { WaiterModule } from './waiter/waiter.module';
     UsersModule,
     OrdersModule,
     WaiterModule,
+    KitchenModule,
   ],
   controllers: [AppController],
   providers: [AppService],
