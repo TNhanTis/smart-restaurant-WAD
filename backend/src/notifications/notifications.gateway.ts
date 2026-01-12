@@ -129,4 +129,38 @@ export class NotificationsGateway
 
     this.logger.log(`Notified waiters: New order ${order.order_number}`);
   }
+  // Notify kitchen when order is accepted
+
+  async notifyOrderAccepted(order: any) {
+    const notification = {
+      type: 'order_accepted',
+      title: 'Order Accepted',
+      message: `Order #${order.order_number} accepted - Start preparing`,
+      data: {
+        order_id: order.id,
+        order_number: order.order_number,
+        table_number: order.table.table_number,
+        items: order.order_items.map((item: any) => ({
+          name: item.menu_item.name,
+          quantity: item.quantity,
+          modifiers: item.modifiers || [],
+        })),
+      },
+      timestamp: new Date().toISOString(),
+    };
+
+    // Emit to kitchen staff
+    this.emitToRole('kitchen', 'order_accepted', notification);
+
+    // Notify customer
+    if (order.customer_id) {
+      this.emitToUser(order.customer_id, 'order_status_update', {
+        order_id: order.id,
+        status: 'accepted',
+        message: 'Your order has been accepted',
+      });
+    }
+
+    this.logger.log(`Notified kitchen: Order ${order.order_number} accepted`);
+  }
 }
