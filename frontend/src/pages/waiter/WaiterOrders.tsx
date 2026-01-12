@@ -6,8 +6,12 @@ import {
   getRestaurantOrders,
   acceptOrder,
   rejectOrder,
+  serveOrder,
   WaiterOrder,
 } from "../../api/waiterApi";
+import OrderDetailModal, {
+  OrderDetail,
+} from "../../components/OrderDetailModal";
 
 type TabType = "pending" | "accepted" | "ready";
 
@@ -19,6 +23,7 @@ export default function WaiterOrders() {
   const [readyOrders, setReadyOrders] = useState<WaiterOrder[]>([]);
   const [loading, setLoading] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<WaiterOrder | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
 
@@ -90,6 +95,42 @@ export default function WaiterOrders() {
     }
   };
 
+  const handleViewDetails = (order: WaiterOrder) => {
+    setSelectedOrder(order);
+    setShowDetailModal(true);
+  };
+
+  const handleServeOrder = async () => {
+    if (!selectedOrder) return;
+    await serveOrder(selectedOrder.id, restaurantId);
+    await loadOrders();
+  };
+
+  const convertToOrderDetail = (order: WaiterOrder): OrderDetail => {
+    return {
+      id: order.id,
+      order_number: order.order_number,
+      table_id: order.table_id,
+      table_number: order.table_number,
+      customer_id: order.customer_id,
+      customer_name: order.customer_name,
+      status: order.status,
+      total_price: order.total_price,
+      special_instructions: order.special_instructions,
+      items: order.items.map((item) => ({
+        id: item.id,
+        menu_item_id: item.menu_item_id,
+        name: item.name,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        notes: item.notes,
+        modifiers: item.modifiers,
+      })),
+      created_at: order.created_at,
+      updated_at: order.updated_at,
+    };
+  };
+
   const getTimeAgo = (timestamp: string): string => {
     const now = new Date();
     const orderTime = new Date(timestamp);
@@ -117,7 +158,12 @@ export default function WaiterOrders() {
     const timeAgo = getTimeAgo(order.created_at);
 
     return (
-      <div key={order.id} className="order-card">
+      <div
+        key={order.id}
+        className="order-card"
+        onClick={() => handleViewDetails(order)}
+        style={{ cursor: "pointer" }}
+      >
         <div className="order-header">
           <div className="order-table-badge">
             {order.table_number || `Table ${order.table_id.slice(-2)}`}
@@ -160,7 +206,7 @@ export default function WaiterOrders() {
         </div>
 
         {activeTab === "pending" && (
-          <div className="order-actions">
+          <div className="order-actions" onClick={(e) => e.stopPropagation()}>
             <button
               className="btn-reject"
               onClick={() => handleRejectClick(order)}
@@ -270,6 +316,29 @@ export default function WaiterOrders() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Order Detail Modal */}
+      {showDetailModal && selectedOrder && (
+        <OrderDetailModal
+          order={convertToOrderDetail(selectedOrder)}
+          role="waiter"
+          onClose={() => {
+            setShowDetailModal(false);
+            setSelectedOrder(null);
+          }}
+          onAccept={async () => {
+            await handleAcceptOrder(selectedOrder);
+          }}
+          onReject={async (reason: string) => {
+            await rejectOrder(selectedOrder.id, {
+              restaurant_id: restaurantId,
+              rejection_reason: reason,
+            });
+            await loadOrders();
+          }}
+          onServe={handleServeOrder}
+        />
       )}
     </div>
   );

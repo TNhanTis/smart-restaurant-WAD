@@ -7,6 +7,9 @@ import {
   markReady,
   KitchenOrder,
 } from "../../api/kitchenApi";
+import OrderDetailModal, {
+  OrderDetail,
+} from "../../components/OrderDetailModal";
 
 type OrderColumn = "received" | "preparing" | "ready";
 
@@ -18,6 +21,8 @@ export default function KitchenDisplay() {
   const [loading, setLoading] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<KitchenOrder | null>(null);
 
   // TODO: Replace with actual restaurant ID from auth context
   const restaurantId = "temp-restaurant-id";
@@ -86,6 +91,41 @@ export default function KitchenDisplay() {
     }
   };
 
+  const handleViewDetails = (order: KitchenOrder) => {
+    setSelectedOrder(order);
+    setShowDetailModal(true);
+  };
+
+  const convertToOrderDetail = (order: KitchenOrder): OrderDetail => {
+    return {
+      id: order.id,
+      order_number: order.order_number,
+      table_id: order.table_id,
+      table_number: order.table.table_number,
+      status: order.status,
+      total_price: 0, // Kitchen doesn't track price
+      special_instructions: order.special_instructions,
+      items: order.order_items.map((item) => ({
+        id: item.id,
+        menu_item_id: item.menu_item_id,
+        name: item.menu_item.name,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        notes: item.notes,
+        modifiers: item.modifiers?.map((m) => ({
+          id: m.id,
+          name: m.modifier_option.name,
+          price: m.modifier_option.price_adjustment,
+        })),
+      })),
+      created_at: order.created_at,
+      updated_at: order.created_at,
+      accepted_at: order.accepted_at,
+      preparing_started_at: order.preparing_started_at,
+      ready_at: order.ready_at,
+    };
+  };
+
   const formatTime = (date: Date): string => {
     return date.toLocaleTimeString("en-US", {
       hour: "2-digit",
@@ -134,7 +174,12 @@ export default function KitchenDisplay() {
     const isWarning = order.urgency === "warning";
 
     return (
-      <div key={order.id} className={`order-card ${getUrgencyClass(order)}`}>
+      <div
+        key={order.id}
+        className={`order-card ${getUrgencyClass(order)}`}
+        onClick={() => handleViewDetails(order)}
+        style={{ cursor: "pointer" }}
+      >
         <div className="order-card-header">
           <h3 className="order-number">{order.order_number}</h3>
           <div className="table-badge">{order.table.table_number}</div>
@@ -190,7 +235,10 @@ export default function KitchenDisplay() {
         {column === "received" && (
           <button
             className="action-btn start-btn"
-            onClick={() => handleStartPreparing(order.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleStartPreparing(order.id);
+            }}
           >
             Start Preparing
           </button>
@@ -199,7 +247,10 @@ export default function KitchenDisplay() {
         {column === "preparing" && (
           <button
             className="action-btn ready-btn"
-            onClick={() => handleMarkReady(order.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleMarkReady(order.id);
+            }}
           >
             Mark Ready
           </button>
@@ -307,6 +358,24 @@ export default function KitchenDisplay() {
           </div>
         </div>
       </div>
+
+      {/* Order Detail Modal */}
+      {showDetailModal && selectedOrder && (
+        <OrderDetailModal
+          order={convertToOrderDetail(selectedOrder)}
+          role="kitchen"
+          onClose={() => {
+            setShowDetailModal(false);
+            setSelectedOrder(null);
+          }}
+          onStartPreparing={async () => {
+            await handleStartPreparing(selectedOrder.id);
+          }}
+          onMarkReady={async () => {
+            await handleMarkReady(selectedOrder.id);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { ordersApi, Order } from "../api/ordersApi";
-import OrderDetailsModal from "../components/OrderDetailsModal";
+import OrderDetailModal, { OrderDetail } from "../components/OrderDetailModal";
 import OrderStatusBadge from "../components/OrderStatusBadge";
 import "../App.css";
 
@@ -83,6 +83,36 @@ export default function OrderManagement() {
     } catch (err) {
       console.error("Failed to complete order:", err);
     }
+  };
+
+  const convertToOrderDetail = (order: Order): OrderDetail => {
+    return {
+      id: order.id,
+      order_number: order.order_number || `ORD-${order.id.slice(-6)}`,
+      table_id: order.table_id,
+      table_number: order.table?.table_number,
+      customer_id: order.customer_id,
+      customer_name: order.customer?.full_name,
+      status: order.status,
+      total_price: order.total_price,
+      special_instructions: order.special_instructions,
+      items:
+        order.items?.map((item) => ({
+          id: item.id,
+          menu_item_id: item.menu_item_id,
+          name: item.menu_item?.name || "Unknown Item",
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          notes: item.notes,
+          modifiers: item.modifiers?.map((m) => ({
+            id: m.id,
+            name: m.name || m.modifier_option?.name || "Unknown Modifier",
+            price: m.price_adjustment || 0,
+          })),
+        })) || [],
+      created_at: order.created_at,
+      updated_at: order.updated_at,
+    };
   };
 
   const getStatusCount = (status: OrderStatus) => {
@@ -377,13 +407,13 @@ export default function OrderManagement() {
 
       {/* Order Details Modal */}
       {showDetailsModal && selectedOrder && (
-        <OrderDetailsModal
-          order={selectedOrder}
+        <OrderDetailModal
+          order={convertToOrderDetail(selectedOrder)}
+          role="admin"
           onClose={() => {
             setShowDetailsModal(false);
             setSelectedOrder(null);
           }}
-          onStatusUpdate={loadOrders}
         />
       )}
     </div>
