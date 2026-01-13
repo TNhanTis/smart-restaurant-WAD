@@ -156,4 +156,25 @@ export class WaiterController {
       tableId,
     );
   }
+
+  /**
+   * GET /api/waiter/performance/:waiterId
+   * Get waiter performance analytics
+   * Query params:
+   *  - restaurant_id: UUID (required) - The restaurant for performance tracking
+   */
+  @Get('performance/:waiterId')
+  async getWaiterPerformance(
+    @Param('waiterId') waiterId: string,
+    @Query('restaurant_id') restaurantId: string,
+  ) {
+    if (!restaurantId) {
+      return {
+        success: false,
+        error: 'restaurant_id is required',
+      };
+    }
+
+    return this.waiterService.getWaiterPerformance(waiterId, restaurantId);
+  }
 }

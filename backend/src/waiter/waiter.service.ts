@@ -140,12 +140,13 @@ export class WaiterService {
       );
     }
 
-    // Update order status to accepted
+    // Update order status to accepted and assign to waiter
     const updatedOrder = await this.prisma.order.update({
       where: { id: orderId },
       data: {
         status: 'accepted',
         accepted_at: new Date(),
+        waiter_id: waiterId,
       },
       include: {
         table: {
@@ -397,6 +398,130 @@ export class WaiterService {
         served_at: order.served_at,
       })),
       total: orders.length,
+    };
+  }
+
+  /**
+   * Get waiter performance analytics
+   * Track orders accepted/rejected, average service time
+   * Multi-restaurant support: filters by restaurant_id
+   */
+  async getWaiterPerformance(waiterId: string, restaurantId: string) {
+    // Get all orders handled by this waiter in the restaurant
+    const acceptedOrders = await this.prisma.order.findMany({
+      where: {
+        restaurant_id: restaurantId,
+        waiter_id: waiterId,
+        status: {
+          in: ['accepted', 'preparing', 'ready', 'served', 'completed'],
+        },
+      },
+      select: {
+        id: true,
+        order_number: true,
+        status: true,
+        total: true,
+        created_at: true,
+        accepted_at: true,
+        served_at: true,
+        completed_at: true,
+      },
+      orderBy: {
+        created_at: 'desc',
+      },
+    });
+
+    // Get rejected orders count (orders where rejection reason mentions this waiter)
+    // Since we don't explicitly track who rejected, we'll count all rejected orders in the restaurant
+    // This is a limitation without full auth - in production, track rejected_by_waiter_id
+    const rejectedOrders = await this.prisma.order.count({
+      where: {
+        restaurant_id: restaurantId,
+        status: 'rejected',
+      },
+    });
+
+    // Calculate statistics
+    const totalAccepted = acceptedOrders.length;
+    const totalServed = acceptedOrders.filter(
+      (o) => o.status === 'served' || o.status === 'completed',
+    ).length;
+    const totalCompleted = acceptedOrders.filter(
+      (o) => o.status === 'completed',
+    ).length;
+
+    // Calculate average service time (from order created to served)
+    const servedOrders = acceptedOrders.filter((o) => o.served_at !== null);
+    let averageServiceTimeMinutes = 0;
+
+    if (servedOrders.length > 0) {
+      const totalServiceTime = servedOrders.reduce((sum, order) => {
+        const created = new Date(order.created_at).getTime();
+        const served = new Date(order.served_at!).getTime();
+        const diffMinutes = (served - created) / (1000 * 60);
+        return sum + diffMinutes;
+      }, 0);
+
+      averageServiceTimeMinutes = Math.round(
+        totalServiceTime / servedOrders.length,
+      );
+    }
+
+    // Calculate total revenue from completed orders
+    const totalRevenue = acceptedOrders
+      .filter((o) => o.status === 'completed')
+      .reduce((sum, order) => sum + Number(order.total), 0);
+
+    // Get today's performance
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const todayOrders = acceptedOrders.filter(
+      (o) => new Date(o.created_at) >= today,
+    );
+
+    // Recent orders (last 10)
+    const recentOrders = acceptedOrders.slice(0, 10).map((order) => ({
+      id: order.id,
+      order_number: order.order_number,
+      status: order.status,
+      total: order.total,
+      created_at: order.created_at,
+      accepted_at: order.accepted_at,
+      served_at: order.served_at,
+    }));
+
+    return {
+      success: true,
+      data: {
+        waiter_id: waiterId,
+        restaurant_id: restaurantId,
+        statistics: {
+          total_orders_accepted: totalAccepted,
+          total_orders_served: totalServed,
+          total_orders_completed: totalCompleted,
+          total_orders_rejected: rejectedOrders, // Note: This is restaurant-wide, not waiter-specific
+          average_service_time_minutes: averageServiceTimeMinutes,
+          total_revenue: totalRevenue,
+          acceptance_rate:
+            totalAccepted > 0
+              ? (
+                  (totalAccepted / (totalAccepted + rejectedOrders)) *
+                  100
+                ).toFixed(2)
+              : '0.00',
+        },
+        today: {
+          orders_accepted: todayOrders.length,
+          orders_served: todayOrders.filter(
+            (o) => o.status === 'served' || o.status === 'completed',
+          ).length,
+          revenue: todayOrders
+            .filter((o) => o.status === 'completed')
+            .reduce((sum, order) => sum + Number(order.total), 0),
+        },
+        recent_orders: recentOrders,
+      },
     };
   }
 }
