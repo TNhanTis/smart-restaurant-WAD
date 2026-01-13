@@ -40,6 +40,9 @@ export interface KitchenOrder {
   time_elapsed?: number;
   estimated_prep_time?: number;
   urgency?: "normal" | "warning" | "critical";
+  priority_score?: number;
+  delay_minutes?: number;
+  is_delayed?: boolean;
 }
 
 export interface KitchenOrdersResponse {
@@ -105,4 +108,35 @@ export const getKitchenStats = async (
     params: { restaurant_id: restaurantId },
   });
   return response.data;
+};
+
+// Batch start preparing multiple orders
+export const batchStartPreparing = async (
+  orderIds: string[],
+  restaurantId: string
+): Promise<any> => {
+  const response = await axiosInstance.post("/kitchen/orders/batch-prepare", {
+    order_ids: orderIds,
+    restaurant_id: restaurantId,
+  });
+  return response.data;
+};
+
+// Get delayed orders (auto-alert feature)
+export const getDelayedOrders = async (
+  restaurantId: string,
+  delayThresholdMinutes?: number,
+  tableId?: string
+): Promise<KitchenOrder[]> => {
+  const params: any = { restaurant_id: restaurantId };
+  if (delayThresholdMinutes !== undefined) {
+    params.delay_threshold_minutes = delayThresholdMinutes;
+  }
+  if (tableId) params.table_id = tableId;
+
+  const response = await axiosInstance.get<KitchenOrdersResponse>(
+    "/kitchen/delayed-orders",
+    { params }
+  );
+  return response.data.data || [];
 };

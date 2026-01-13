@@ -78,6 +78,28 @@
   color: #ef4444;
 }
 
+.stat-item.delayed {
+  background: rgba(220, 38, 38, 0.25);
+  color: #dc2626;
+  animation: pulse-alert 2s ease-in-out infinite;
+}
+
+.stat-item.alert {
+  animation: pulse-alert 2s ease-in-out infinite;
+}
+
+@keyframes pulse-alert {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+}
+
 .stat-number {
   font-size: 32px;
   font-weight: 700;
@@ -98,6 +120,28 @@
   justify-content: flex-end;
   align-items: center;
   gap: 12px;
+}
+
+.batch-prepare-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  transition: all 0.2s;
+  box-shadow: 0 4px 8px rgba(245, 158, 11, 0.3);
+}
+
+.batch-prepare-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(245, 158, 11, 0.4);
+}
+
+.batch-prepare-btn:active {
+  transform: translateY(0);
 }
 
 .current-time {
@@ -244,6 +288,7 @@
   padding: 16px;
   border-left: 5px solid #64748b;
   transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
 }
 
 .order-card:hover {
@@ -251,9 +296,58 @@
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
 }
 
+.order-card.selected {
+  border-left-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+  box-shadow: 0 0 0 2px #f59e0b;
+}
+
+.order-card.delayed-order {
+  border-left-color: #dc2626;
+  background: rgba(220, 38, 38, 0.15);
+}
+
 .order-card.warning {
   border-left-color: #f59e0b;
   background: #422006;
+}
+
+.order-select-checkbox {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+}
+
+.order-select-checkbox input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #f59e0b;
+}
+
+.priority-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  animation: pulse-badge 2s ease-in-out infinite;
+}
+
+@keyframes pulse-badge {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
 
 .order-card.critical {

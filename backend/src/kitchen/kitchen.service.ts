@@ -7,6 +7,8 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { TablesService } from '../tables/tables.service';
 import { KitchenOrdersFilterDto } from './dto/kitchen-orders-filter.dto';
+import { BatchPrepareDto } from './dto/batch-prepare.dto';
+import { DelayedOrdersFilterDto } from './dto/delayed-orders-filter.dto';
 
 @Injectable()
 export class KitchenService {
@@ -90,14 +92,29 @@ export class KitchenService {
           0,
         );
 
-        // Determine urgency level
+        // Calculate priority score (higher = more urgent)
+        // Priority factors: time elapsed, estimated prep time, order items count
+        const baseScore = timeElapsed;
+        const itemComplexity = order.order_items.length;
+        const priorityScore = baseScore + itemComplexity * 2;
+
+        // Determine urgency level with configurable thresholds
         let urgency: 'normal' | 'warning' | 'critical' = 'normal';
+        let delayMinutes = 0;
         if (estimatedPrepTime > 0) {
+          delayMinutes = timeElapsed - estimatedPrepTime;
           const percentElapsed = (timeElapsed / estimatedPrepTime) * 100;
           if (percentElapsed > 100) {
             urgency = 'critical'; // Exceeded expected time
           } else if (percentElapsed > 75) {
             urgency = 'warning'; // Approaching deadline
+          }
+        } else {
+          // No estimated prep time - use absolute time thresholds
+          if (timeElapsed > 30) {
+            urgency = 'critical';
+          } else if (timeElapsed > 20) {
+            urgency = 'warning';
           }
         }
 
@@ -122,6 +139,9 @@ export class KitchenService {
           time_elapsed_minutes: timeElapsed,
           estimated_prep_time_minutes: estimatedPrepTime,
           urgency: urgency,
+          priority_score: priorityScore,
+          delay_minutes: delayMinutes,
+          is_delayed: delayMinutes > 0,
           items: order.order_items.map((item) => ({
             id: item.id,
             name: item.menu_item.name,
@@ -303,6 +323,253 @@ export class KitchenService {
         ready_at: updatedOrder.ready_at,
         actual_prep_time_minutes: actualPrepTime,
       },
+    };
+  }
+
+  /**
+   * Batch start preparing multiple orders
+   * Allows kitchen to start preparing multiple orders at once (e.g., same table or similar items)
+   */
+  async batchStartPreparing(
+    orderIds: string[],
+    restaurantId: string,
+    kitchenStaffId: string,
+  ) {
+    // Find all orders and verify they belong to the restaurant
+    const orders = await this.prisma.order.findMany({
+      where: {
+        id: { in: orderIds },
+        restaurant_id: restaurantId,
+        status: 'accepted', // Only accept orders in 'accepted' status
+      },
+      include: {
+        table: {
+          select: {
+            table_number: true,
+          },
+        },
+        order_items: {
+          include: {
+            menu_item: {
+              select: {
+                name: true,
+                prep_time_minutes: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (orders.length === 0) {
+      throw new NotFoundException(
+        'No valid orders found for batch preparation',
+      );
+    }
+
+    // Verify all orders belong to the restaurant
+    const invalidOrders = orders.filter(
+      (order) => order.restaurant_id !== restaurantId,
+    );
+    if (invalidOrders.length > 0) {
+      throw new ForbiddenException(
+        'Some orders do not belong to your restaurant',
+      );
+    }
+
+    // Update all orders to preparing status in a transaction
+    const now = new Date();
+    const updateResults = await this.prisma.$transaction(
+      orders.map((order) =>
+        this.prisma.order.update({
+          where: { id: order.id },
+          data: {
+            status: 'preparing',
+            preparing_at: now,
+          },
+        }),
+      ),
+    );
+
+    // Auto-update table status for all orders
+    await Promise.all(
+      orders.map((order) =>
+        this.tablesService.autoUpdateTableStatusByOrder(order.id),
+      ),
+    );
+
+    // Calculate total estimated prep time
+    const totalEstimatedPrepTime = orders.reduce((total, order) => {
+      const orderPrepTime = order.order_items.reduce(
+        (sum, item) =>
+          sum + (item.menu_item.prep_time_minutes || 0) * item.quantity,
+        0,
+      );
+      return total + orderPrepTime;
+    }, 0);
+
+    // TODO: Emit Socket.IO event to waiters (batch_orders_preparing)
+    // TODO: Emit Socket.IO event to customers (order_preparing)
+
+    return {
+      success: true,
+      message: `Started preparing ${orders.length} orders`,
+      data: {
+        orders_started: orders.length,
+        orders_skipped: orderIds.length - orders.length,
+        total_estimated_prep_time_minutes: totalEstimatedPrepTime,
+        estimated_ready_at: new Date(
+          now.getTime() + totalEstimatedPrepTime * 60000,
+        ),
+        orders: updateResults.map((order, index) => ({
+          id: order.id,
+          order_number: order.order_number,
+          table_number: orders[index].table.table_number,
+          status: order.status,
+          preparing_at: order.preparing_at,
+        })),
+      },
+    };
+  }
+
+  /**
+   * Get delayed orders that exceed their estimated prep time
+   * Auto-alert feature for kitchen to prioritize
+   */
+  async getDelayedOrders(
+    restaurantId: string,
+    filters?: DelayedOrdersFilterDto,
+  ) {
+    const delayThreshold = filters?.delay_threshold_minutes || 0; // Default: any delay
+
+    const whereClause: any = {
+      restaurant_id: restaurantId,
+      status: {
+        in: ['accepted', 'preparing'], // Only active orders
+      },
+    };
+
+    // Filter by table if specified
+    if (filters?.table_id) {
+      whereClause.table_id = filters.table_id;
+    }
+
+    const orders = await this.prisma.order.findMany({
+      where: whereClause,
+      include: {
+        table: {
+          select: {
+            id: true,
+            table_number: true,
+            location: true,
+          },
+        },
+        order_items: {
+          include: {
+            menu_item: {
+              select: {
+                id: true,
+                name: true,
+                prep_time_minutes: true,
+              },
+            },
+            modifiers: {
+              include: {
+                modifier_option: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // Filter orders that are delayed
+    const delayedOrders = orders
+      .map((order) => {
+        const acceptedAt = order.accepted_at || order.created_at;
+        const timeElapsed = Math.floor(
+          (Date.now() - acceptedAt.getTime()) / 1000 / 60,
+        );
+
+        const estimatedPrepTime = order.order_items.reduce(
+          (total, item) =>
+            total + (item.menu_item.prep_time_minutes || 0) * item.quantity,
+          0,
+        );
+
+        const delayMinutes = timeElapsed - estimatedPrepTime;
+
+        // Calculate priority score for sorting
+        const itemComplexity = order.order_items.length;
+        const priorityScore = timeElapsed + itemComplexity * 2;
+
+        return {
+          order,
+          timeElapsed,
+          estimatedPrepTime,
+          delayMinutes,
+          priorityScore,
+        };
+      })
+      .filter((item) => item.delayMinutes > delayThreshold)
+      .sort((a, b) => b.priorityScore - a.priorityScore); // Sort by priority (highest first)
+
+    return {
+      success: true,
+      data: delayedOrders.map(
+        ({
+          order,
+          timeElapsed,
+          estimatedPrepTime,
+          delayMinutes,
+          priorityScore,
+        }) => ({
+          id: order.id,
+          order_number: order.order_number,
+          table: {
+            id: order.table.id,
+            number: order.table.table_number,
+            location: order.table.location,
+          },
+          status: order.status,
+          total: order.total,
+          items_count: order.order_items.reduce(
+            (sum, item) => sum + item.quantity,
+            0,
+          ),
+          created_at: order.created_at,
+          accepted_at: order.accepted_at,
+          preparing_at: order.preparing_at,
+          time_elapsed_minutes: timeElapsed,
+          estimated_prep_time_minutes: estimatedPrepTime,
+          delay_minutes: delayMinutes,
+          priority_score: priorityScore,
+          urgency: 'critical' as const,
+          items: order.order_items.map((item) => ({
+            id: item.id,
+            name: item.menu_item.name,
+            quantity: item.quantity,
+            prep_time_minutes: item.menu_item.prep_time_minutes,
+            modifiers: item.modifiers.map((mod) => ({
+              name: mod.modifier_option.name,
+            })),
+            special_requests: item.special_requests,
+          })),
+          special_requests: order.special_requests,
+        }),
+      ),
+      total: delayedOrders.length,
+      average_delay_minutes:
+        delayedOrders.length > 0
+          ? Math.round(
+              delayedOrders.reduce((sum, item) => sum + item.delayMinutes, 0) /
+                delayedOrders.length,
+            )
+          : 0,
     };
   }
 

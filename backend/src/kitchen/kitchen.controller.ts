@@ -4,11 +4,14 @@ import {
   Post,
   Param,
   Query,
+  Body,
   UseGuards,
   Request,
 } from '@nestjs/common';
 import { KitchenService } from './kitchen.service';
 import { KitchenOrdersFilterDto } from './dto/kitchen-orders-filter.dto';
+import { BatchPrepareDto } from './dto/batch-prepare.dto';
+import { DelayedOrdersFilterDto } from './dto/delayed-orders-filter.dto';
 
 /**
  * Kitchen Controller
@@ -101,6 +104,62 @@ export class KitchenController {
     const kitchenStaffId = 'temp-kitchen-staff-id'; // Placeholder until auth is implemented
 
     return this.kitchenService.markReady(orderId, restaurantId, kitchenStaffId);
+  }
+
+  /**
+   * POST /api/kitchen/orders/batch-prepare
+   * Kitchen starts preparing multiple orders at once
+   * Useful for orders from same table or with similar items
+   * Body:
+   *  - order_ids: string[] (required) - Array of order IDs to prepare
+   *  - restaurant_id: string (required) - Restaurant validation
+   */
+  @Post('orders/batch-prepare')
+  async batchStartPreparing(
+    @Body() batchPrepareDto: BatchPrepareDto,
+    // @Request() req?, // TODO: Get kitchen staff ID from JWT token
+  ) {
+    // TODO: Get kitchenStaffId from req.user.id
+    const kitchenStaffId = 'temp-kitchen-staff-id'; // Placeholder until auth is implemented
+
+    return this.kitchenService.batchStartPreparing(
+      batchPrepareDto.order_ids,
+      batchPrepareDto.restaurant_id,
+      kitchenStaffId,
+    );
+  }
+
+  /**
+   * GET /api/kitchen/delayed-orders
+   * Get orders that are delayed (exceeded estimated prep time)
+   * Auto-alert feature to help kitchen prioritize
+   * Query params:
+   *  - restaurant_id: UUID (required) - The restaurant the kitchen belongs to
+   *  - table_id: UUID (optional) - Filter by specific table
+   *  - delay_threshold_minutes: number (optional) - Only show orders delayed by more than this (default: 0)
+   */
+  @Get('delayed-orders')
+  async getDelayedOrders(
+    @Query('restaurant_id') restaurantId: string,
+    @Query('table_id') tableId?: string,
+    @Query('delay_threshold_minutes') delayThreshold?: string,
+  ) {
+    if (!restaurantId) {
+      return {
+        success: false,
+        error: 'restaurant_id is required',
+      };
+    }
+
+    const filters: DelayedOrdersFilterDto = {};
+    if (tableId) {
+      filters.table_id = tableId;
+    }
+    if (delayThreshold) {
+      filters.delay_threshold_minutes = parseInt(delayThreshold, 10);
+    }
+
+    return this.kitchenService.getDelayedOrders(restaurantId, filters);
   }
 
   /**

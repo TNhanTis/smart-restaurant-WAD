@@ -6,6 +6,8 @@ import {
   startPreparing,
   markReady,
   KitchenOrder,
+  batchStartPreparing,
+  getDelayedOrders,
 } from "../../api/kitchenApi";
 import OrderDetailModal, {
   OrderDetail,
@@ -18,6 +20,11 @@ export default function KitchenDisplay() {
   const [receivedOrders, setReceivedOrders] = useState<KitchenOrder[]>([]);
   const [preparingOrders, setPreparingOrders] = useState<KitchenOrder[]>([]);
   const [readyOrders, setReadyOrders] = useState<KitchenOrder[]>([]);
+  const [delayedOrders, setDelayedOrders] = useState<KitchenOrder[]>([]);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(
+    new Set()
+  );
+  const [showDelayedAlert, setShowDelayedAlert] = useState(false);
   const [loading, setLoading] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -29,10 +36,12 @@ export default function KitchenDisplay() {
 
   useEffect(() => {
     loadOrders();
+    loadDelayedOrders();
 
     // Auto-refresh every 5 seconds
     const refreshInterval = setInterval(() => {
       loadOrders();
+      loadDelayedOrders();
     }, 5000);
 
     // Update clock every second
@@ -56,10 +65,17 @@ export default function KitchenDisplay() {
       setLoading(true);
       const orders = await getKitchenOrders(restaurantId);
 
+      // Sort orders by priority score (highest priority first)
+      const sortedOrders = orders.sort((a, b) => {
+        const scoreA = a.priority_score || 0;
+        const scoreB = b.priority_score || 0;
+        return scoreB - scoreA;
+      });
+
       // Separate orders by status
-      const received = orders.filter((o) => o.status === "accepted");
-      const preparing = orders.filter((o) => o.status === "preparing");
-      const ready = orders.filter((o) => o.status === "ready");
+      const received = sortedOrders.filter((o) => o.status === "accepted");
+      const preparing = sortedOrders.filter((o) => o.status === "preparing");
+      const ready = sortedOrders.filter((o) => o.status === "ready");
 
       setReceivedOrders(received);
       setPreparingOrders(preparing);
@@ -68,6 +84,20 @@ export default function KitchenDisplay() {
       console.error("Error loading kitchen orders:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadDelayedOrders = async () => {
+    try {
+      const delayed = await getDelayedOrders(restaurantId, 0); // Get all delayed orders
+      setDelayedOrders(delayed);
+
+      // Show alert if there are new delayed orders
+      if (delayed.length > 0 && soundEnabled) {
+        setShowDelayedAlert(true);
+      }
+    } catch (error) {
+      console.error("Error loading delayed orders:", error);
     }
   };
 
@@ -89,6 +119,34 @@ export default function KitchenDisplay() {
       console.error("Error marking order ready:", error);
       alert("Failed to mark order as ready. Please try again.");
     }
+  };
+
+  const handleBatchPrepare = async () => {
+    if (selectedOrderIds.size === 0) {
+      alert("Please select at least one order to batch prepare");
+      return;
+    }
+
+    try {
+      const orderIdsArray = Array.from(selectedOrderIds);
+      await batchStartPreparing(orderIdsArray, restaurantId);
+      setSelectedOrderIds(new Set());
+      await loadOrders();
+      alert(`Successfully started preparing ${orderIdsArray.length} orders`);
+    } catch (error) {
+      console.error("Error batch preparing orders:", error);
+      alert("Failed to batch prepare orders. Please try again.");
+    }
+  };
+
+  const toggleOrderSelection = (orderId: string) => {
+    const newSelection = new Set(selectedOrderIds);
+    if (newSelection.has(orderId)) {
+      newSelection.delete(orderId);
+    } else {
+      newSelection.add(orderId);
+    }
+    setSelectedOrderIds(newSelection);
   };
 
   const handleViewDetails = (order: KitchenOrder) => {
@@ -172,17 +230,41 @@ export default function KitchenDisplay() {
   const renderOrderCard = (order: KitchenOrder, column: OrderColumn) => {
     const isOverdue = order.urgency === "critical";
     const isWarning = order.urgency === "warning";
+    const isSelected = selectedOrderIds.has(order.id);
+    const isDelayed = order.is_delayed || false;
 
     return (
       <div
         key={order.id}
-        className={`order-card ${getUrgencyClass(order)}`}
+        className={`order-card ${getUrgencyClass(order)} ${
+          isSelected ? "selected" : ""
+        } ${isDelayed ? "delayed-order" : ""}`}
         onClick={() => handleViewDetails(order)}
         style={{ cursor: "pointer" }}
       >
+        {column === "received" && (
+          <div
+            className="order-select-checkbox"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleOrderSelection(order.id);
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={() => {}}
+              style={{ cursor: "pointer" }}
+            />
+          </div>
+        )}
+
         <div className="order-card-header">
           <h3 className="order-number">{order.order_number}</h3>
           <div className="table-badge">{order.table.table_number}</div>
+          {order.priority_score && order.priority_score > 30 && (
+            <div className="priority-badge">🔴 HIGH PRIORITY</div>
+          )}
         </div>
 
         <div className="order-status-bar">
@@ -194,6 +276,9 @@ export default function KitchenDisplay() {
           {column === "preparing" && isOverdue && (
             <div className="status-indicator overdue">
               ⚠ OVERDUE - Target {order.estimated_prep_time} min
+              {order.delay_minutes && order.delay_minutes > 0 && (
+                <span> (Delayed by {order.delay_minutes} min)</span>
+              )}
             </div>
           )}
           {column === "ready" && (
@@ -296,14 +381,29 @@ export default function KitchenDisplay() {
               <div className="stat-number">{stats.ready}</div>
               <div className="stat-label">READY</div>
             </div>
-            <div className="stat-item overdue">
+            <div
+              className={`stat-item overdue ${
+                stats.overdue > 0 ? "alert" : ""
+              }`}
+            >
               <div className="stat-number">{stats.overdue}</div>
               <div className="stat-label">OVERDUE</div>
             </div>
+            {delayedOrders.length > 0 && (
+              <div className="stat-item delayed alert">
+                <div className="stat-number">{delayedOrders.length}</div>
+                <div className="stat-label">🚨 DELAYED</div>
+              </div>
+            )}
           </div>
         </div>
 
         <div className="header-right">
+          {selectedOrderIds.size > 0 && (
+            <button className="batch-prepare-btn" onClick={handleBatchPrepare}>
+              🔥 Batch Prepare ({selectedOrderIds.size})
+            </button>
+          )}
           <div className="current-time">{formatTime(currentTime)}</div>
           <button
             className={`sound-toggle ${soundEnabled ? "active" : ""}`}
