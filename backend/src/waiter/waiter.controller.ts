@@ -177,4 +177,22 @@ export class WaiterController {
 
     return this.waiterService.getWaiterPerformance(waiterId, restaurantId);
   }
+
+  /**
+   * GET /api/waiter/leaderboard
+   * Get waiter leaderboard for restaurant
+   * Query params:
+   *  - restaurant_id: UUID (required) - The restaurant for leaderboard
+   */
+  @Get('leaderboard')
+  async getLeaderboard(@Query('restaurant_id') restaurantId: string) {
+    if (!restaurantId) {
+      return {
+        success: false,
+        error: 'restaurant_id is required',
+      };
+    }
+
+    return this.waiterService.getLeaderboard(restaurantId);
+  }
 }

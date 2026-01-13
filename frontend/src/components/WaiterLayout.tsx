@@ -41,6 +41,15 @@ export default function WaiterLayout({ children }: WaiterLayoutProps) {
             <span className="nav-icon">🪑</span>
             Tables
           </Link>
+          <Link
+            to="/waiter/dashboard"
+            className={`nav-link ${
+              isActive("/waiter/dashboard") ? "active" : ""
+            }`}
+          >
+            <span className="nav-icon">📊</span>
+            Performance
+          </Link>
         </nav>
 
         <div className="sidebar-footer">

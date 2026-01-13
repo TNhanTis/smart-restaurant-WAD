@@ -100,3 +100,55 @@ export const getRestaurantOrders = async (
   const response = await axiosInstance.get("/waiter/orders", { params });
   return response.data;
 };
+
+export interface WaiterPerformance {
+  waiter_id: string;
+  waiter_name: string;
+  today_stats: {
+    orders_accepted: number;
+    orders_rejected: number;
+    orders_served: number;
+    average_service_time_minutes: number;
+  };
+  week_stats: {
+    total_orders: number;
+    acceptance_rate: number;
+    rejection_rate: number;
+    average_daily_orders: number;
+  };
+  all_time_stats: {
+    total_orders_served: number;
+    total_orders_accepted: number;
+    total_orders_rejected: number;
+  };
+}
+
+export interface LeaderboardEntry {
+  waiter_id: string;
+  waiter_name: string;
+  orders_served: number;
+  acceptance_rate: number;
+  average_service_time: number;
+  rank: number;
+}
+
+// Get waiter performance stats
+export const getWaiterPerformance = async (
+  waiterId: string,
+  restaurantId: string
+): Promise<WaiterPerformance> => {
+  const response = await axiosInstance.get(`/waiter/performance/${waiterId}`, {
+    params: { restaurant_id: restaurantId },
+  });
+  return response.data;
+};
+
+// Get leaderboard (all waiters performance)
+export const getWaiterLeaderboard = async (
+  restaurantId: string
+): Promise<LeaderboardEntry[]> => {
+  const response = await axiosInstance.get("/waiter/leaderboard", {
+    params: { restaurant_id: restaurantId },
+  });
+  return response.data;
+};

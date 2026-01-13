@@ -25,6 +25,7 @@ import OrderManagement from "./pages/OrderManagement";
 // Waiter pages
 import WaiterOrders from "./pages/waiter/WaiterOrders";
 import WaiterTables from "./pages/waiter/WaiterTables";
+import WaiterDashboard from "./pages/waiter/WaiterDashboard";
 
 // Kitchen pages
 import KitchenDisplay from "./pages/kitchen/KitchenDisplay";
@@ -139,6 +140,14 @@ function App() {
               element={
                 <WaiterLayout>
                   <WaiterTables />
+                </WaiterLayout>
+              }
+            />
+            <Route
+              path="/waiter/dashboard"
+              element={
+                <WaiterLayout>
+                  <WaiterDashboard />
                 </WaiterLayout>
               }
             />

@@ -524,4 +524,141 @@ export class WaiterService {
       },
     };
   }
+
+  /**
+   * Get performance leaderboard for all waiters in a restaurant
+   */
+  async getLeaderboard(restaurantId: string, period: string = 'all') {
+    // Calculate date filter based on period
+    let dateFilter: Date | undefined;
+    if (period === 'today') {
+      dateFilter = new Date();
+      dateFilter.setHours(0, 0, 0, 0);
+    } else if (period === 'week') {
+      dateFilter = new Date();
+      dateFilter.setDate(dateFilter.getDate() - 7);
+    }
+
+    // Get all orders for the restaurant with waiter_id
+    const whereClause: any = {
+      restaurant_id: restaurantId,
+      waiter_id: { not: null },
+    };
+
+    if (dateFilter) {
+      whereClause.created_at = { gte: dateFilter };
+    }
+
+    const orders = await this.prisma.order.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        waiter_id: true,
+        status: true,
+        total: true,
+        created_at: true,
+        accepted_at: true,
+        served_at: true,
+      },
+    });
+
+    // Group by waiter_id and calculate stats
+    const waiterStatsMap = new Map<string, any>();
+
+    for (const order of orders) {
+      const waiterId = order.waiter_id!;
+
+      if (!waiterStatsMap.has(waiterId)) {
+        waiterStatsMap.set(waiterId, {
+          waiter_id: waiterId,
+          total_orders: 0,
+          accepted_orders: 0,
+          served_orders: 0,
+          completed_orders: 0,
+          rejected_orders: 0,
+          total_revenue: 0,
+          total_service_time: 0,
+          served_count: 0,
+        });
+      }
+
+      const stats = waiterStatsMap.get(waiterId);
+      stats.total_orders++;
+
+      if (order.status === 'rejected') {
+        stats.rejected_orders++;
+      } else if (
+        ['accepted', 'preparing', 'ready', 'served', 'completed'].includes(
+          order.status,
+        )
+      ) {
+        stats.accepted_orders++;
+
+        if (order.status === 'served' || order.status === 'completed') {
+          stats.served_orders++;
+        }
+
+        if (order.status === 'completed') {
+          stats.completed_orders++;
+          stats.total_revenue += Number(order.total);
+        }
+
+        // Calculate service time
+        if (order.served_at && order.created_at) {
+          const serviceTime =
+            (new Date(order.served_at).getTime() -
+              new Date(order.created_at).getTime()) /
+            (1000 * 60);
+          stats.total_service_time += serviceTime;
+          stats.served_count++;
+        }
+      }
+    }
+
+    // Calculate final metrics and create leaderboard
+    const leaderboard = Array.from(waiterStatsMap.values()).map((stats) => {
+      const acceptanceRate =
+        stats.total_orders > 0
+          ? (stats.accepted_orders / stats.total_orders) * 100
+          : 0;
+
+      const averageServiceTime =
+        stats.served_count > 0
+          ? stats.total_service_time / stats.served_count
+          : 0;
+
+      return {
+        waiter_id: stats.waiter_id,
+        total_orders: stats.accepted_orders,
+        orders_served: stats.served_orders,
+        orders_completed: stats.completed_orders,
+        acceptance_rate: Number(acceptanceRate.toFixed(2)),
+        average_service_time: Number(averageServiceTime.toFixed(2)),
+        total_revenue: stats.total_revenue,
+      };
+    });
+
+    // Sort by total orders (accepted) descending, then by acceptance rate
+    leaderboard.sort((a, b) => {
+      if (b.total_orders !== a.total_orders) {
+        return b.total_orders - a.total_orders;
+      }
+      return b.acceptance_rate - a.acceptance_rate;
+    });
+
+    // Add rank
+    const rankedLeaderboard = leaderboard.map((entry, index) => ({
+      rank: index + 1,
+      ...entry,
+    }));
+
+    return {
+      success: true,
+      data: {
+        restaurant_id: restaurantId,
+        period,
+        leaderboard: rankedLeaderboard,
+      },
+    };
+  }
 }
