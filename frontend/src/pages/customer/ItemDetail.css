@@ -1,0 +1,250 @@
+/* Smart Restaurant - Item Detail Page (Mockup Style) */
+
+:root {
+  --primary: #e74c3c;
+  --primary-dark: #c0392b;
+  --secondary: #2c3e50;
+  --white: #ffffff;
+  --gray: #95a5a6;
+  --light: #ecf0f1;
+  --border-radius: 12px;
+  --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Mobile Container */
+.mobile-container {
+  max-width: 390px;
+  margin: 20px auto;
+  background: var(--white);
+  border-radius: 30px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  min-height: 844px;
+  position: relative;
+}
+
+/* Header */
+.header {
+  background: var(--primary);
+  color: var(--white);
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-back {
+  background: none;
+  border: none;
+  color: var(--white);
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.header-title {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.header-table {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+}
+
+/* Hero Image */
+.item-hero {
+  height: 200px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--white);
+  font-size: 60px;
+}
+
+/* Item Content */
+.item-content {
+  padding: 20px;
+  padding-bottom: 180px;
+  /* Space for add-to-cart-bar (70px) + bottom-navigation (70px) + extra spacing (40px) */
+}
+
+.item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 15px;
+}
+
+.item-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.item-price {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.item-description {
+  color: #5a6c7d;
+  margin-bottom: 20px;
+  line-height: 1.6;
+  font-size: 15px;
+}
+
+/* Modifiers */
+.modifier-section {
+  margin-bottom: 25px;
+}
+
+.modifier-title {
+  font-weight: 600;
+  margin-bottom: 15px;
+  font-size: 16px;
+  color: #2c3e50;
+}
+
+.modifier-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #e8ecef;
+}
+
+.modifier-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  flex: 1;
+  color: #2c3e50;
+  font-size: 15px;
+}
+
+.modifier-label input[type="radio"],
+.modifier-label input[type="checkbox"] {
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+}
+
+.modifier-price {
+  color: #5a6c7d;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.special-instructions {
+  width: 100%;
+  padding: 12px 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: var(--border-radius);
+  font-size: 15px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  resize: vertical;
+  min-height: 70px;
+  background: white;
+  color: #2c3e50;
+}
+
+.special-instructions::placeholder {
+  color: #95a5a6;
+}
+
+.special-instructions:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: #fafafa;
+}
+
+/* Add to Cart Bar */
+.add-to-cart-bar {
+  position: fixed;
+  bottom: 70px;
+  /* Space for bottom navigation */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 390px;
+  background: var(--white);
+  padding: 15px 20px;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  z-index: 900;
+  /* Below bottom navigation (1000) but above content */
+}
+
+@media (min-width: 769px) {
+  .add-to-cart-bar {
+    max-width: 1200px;
+    bottom: 80px;
+  }
+}
+
+.quantity-control {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: var(--light);
+  border-radius: 25px;
+  padding: 5px;
+}
+
+.qty-btn {
+  background: var(--white);
+  border: none;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qty-value {
+  min-width: 30px;
+  text-align: center;
+  font-weight: 700;
+  color: #2c3e50;
+  font-size: 18px;
+}
+
+.add-to-cart-btn {
+  flex: 1;
+  background: var(--primary);
+  color: var(--white);
+  border: none;
+  padding: 15px;
+  border-radius: var(--border-radius);
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.add-to-cart-btn:hover {
+  background: var(--primary-dark);
+}
+
+/* Loading and Error States */
+.loading,
+.error {
+  text-align: center;
+  padding: 40px 20px;
+  font-size: 18px;
+}
+
+.error {
+  color: var(--primary);
+}
