@@ -681,4 +681,182 @@ export class OrdersService {
       tableNumber: order.table.table_number,
     };
   }
+
+  /**
+   * Get order history with filters (completed orders only)
+   * Supports filtering by date range, customer, table, and restaurant
+   */
+  async getOrderHistory(filters: {
+    restaurant_id?: string;
+    customer_id?: string;
+    table_id?: string;
+    start_date?: Date;
+    end_date?: Date;
+  }) {
+    const where: any = {
+      status: OrderStatus.COMPLETED,
+    };
+
+    // Multi-restaurant support
+    if (filters.restaurant_id) {
+      where.restaurant_id = filters.restaurant_id;
+    }
+
+    // Filter by customer
+    if (filters.customer_id) {
+      where.customer_id = filters.customer_id;
+    }
+
+    // Filter by table
+    if (filters.table_id) {
+      where.table_id = filters.table_id;
+    }
+
+    // Filter by date range
+    if (filters.start_date || filters.end_date) {
+      where.created_at = {};
+      if (filters.start_date) {
+        where.created_at.gte = filters.start_date;
+      }
+      if (filters.end_date) {
+        // Set end date to end of day
+        const endDate = new Date(filters.end_date);
+        endDate.setHours(23, 59, 59, 999);
+        where.created_at.lte = endDate;
+      }
+    }
+
+    const [orders, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        include: {
+          table: {
+            select: {
+              id: true,
+              table_number: true,
+              capacity: true,
+              restaurant_id: true,
+            },
+          },
+          customer: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          order_items: {
+            include: {
+              menu_item: {
+                select: {
+                  id: true,
+                  name: true,
+                  price: true,
+                },
+              },
+              order_item_modifiers: {
+                include: {
+                  modifier_option: {
+                    select: {
+                      id: true,
+                      name: true,
+                      price_adjustment: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        orderBy: {
+          created_at: 'desc',
+        },
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+
+    return {
+      data: orders,
+      total,
+      filters: {
+        restaurant_id: filters.restaurant_id,
+        customer_id: filters.customer_id,
+        table_id: filters.table_id,
+        start_date: filters.start_date,
+        end_date: filters.end_date,
+      },
+    };
+  }
+
+  /**
+   * Export order history to CSV format
+   */
+  async exportHistoryToCSV(filters: {
+    restaurant_id?: string;
+    customer_id?: string;
+    table_id?: string;
+    start_date?: Date;
+    end_date?: Date;
+  }): Promise<string> {
+    const { data: orders } = await this.getOrderHistory(filters);
+
+    // CSV Headers
+    const headers = [
+      'Order Number',
+      'Date',
+      'Time',
+      'Restaurant ID',
+      'Table Number',
+      'Customer Name',
+      'Customer Email',
+      'Items Count',
+      'Total Amount',
+      'Status',
+      'Created At',
+      'Completed At',
+    ];
+
+    // CSV Rows
+    const rows = orders.map((order) => {
+      const createdDate = new Date(order.created_at);
+      const itemsCount = order.order_items.reduce(
+        (sum, item) => sum + item.quantity,
+        0,
+      );
+
+      return [
+        order.order_number,
+        createdDate.toLocaleDateString(),
+        createdDate.toLocaleTimeString(),
+        order.restaurant_id,
+        order.table.table_number,
+        order.customer?.name || 'N/A',
+        order.customer?.email || 'N/A',
+        itemsCount,
+        order.total.toFixed(2),
+        order.status,
+        createdDate.toISOString(),
+        order.updated_at ? new Date(order.updated_at).toISOString() : 'N/A',
+      ];
+    });
+
+    // Combine headers and rows
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((row) =>
+        row
+          .map((cell) => {
+            // Escape cells containing commas or quotes
+            const cellStr = String(cell);
+            if (cellStr.includes(',') || cellStr.includes('"')) {
+              return `"${cellStr.replace(/"/g, '""')}"`;
+            }
+            return cellStr;
+          })
+          .join(','),
+      ),
+    ].join('\n');
+
+    return csvContent;
+  }
 }
