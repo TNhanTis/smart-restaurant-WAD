@@ -158,19 +158,21 @@ model Role {
 }
 
 model User {
-  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email         String          @unique @db.VarChar(255)
-  password_hash String          @db.VarChar(255)
-  full_name     String?         @db.VarChar(100)
-  phone         String?         @db.VarChar(20)
-  status        String          @default("active") @db.VarChar(20)
-  is_deleted    Boolean         @default(false)
-  created_at    DateTime        @default(now()) @db.Timestamp(6)
-  updated_at    DateTime        @updatedAt @db.Timestamp(6)
-  last_login_at DateTime?       @db.Timestamp(6)
-  notifications notifications[]
-  restaurants   Restaurant[]
-  user_roles    UserRole[]
+  id                                   String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                                String          @unique @db.VarChar(255)
+  password_hash                        String          @db.VarChar(255)
+  full_name                            String?         @db.VarChar(100)
+  phone                                String?         @db.VarChar(20)
+  status                               String          @default("active") @db.VarChar(20)
+  is_deleted                           Boolean         @default(false)
+  created_at                           DateTime        @default(now()) @db.Timestamp(6)
+  updated_at                           DateTime        @updatedAt @db.Timestamp(6)
+  last_login_at                        DateTime?       @db.Timestamp(6)
+  notifications                        notifications[]
+  payments_payments_received_byTousers payments[]      @relation("payments_received_byTousers")
+  payments_payments_refunded_byTousers payments[]      @relation("payments_refunded_byTousers")
+  restaurants                          Restaurant[]
+  user_roles                           UserRole[]
 
   @@index([email])
   @@index([status])
@@ -208,6 +210,7 @@ model Order {
   completed_at     DateTime?   @db.Timestamp(6)
   order_items      OrderItem[]
   table            Table       @relation(fields: [table_id], references: [id])
+  payments         payments[]
 
   @@index([restaurant_id])
   @@index([table_id])
@@ -303,6 +306,54 @@ model notifications {
   @@index([created_at])
   @@index([is_read])
   @@index([user_id])
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model payment_methods {
+  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code          String     @unique @db.VarChar(20)
+  name          String     @db.VarChar(50)
+  description   String?
+  logo_url      String?    @db.VarChar(255)
+  is_active     Boolean?   @default(true)
+  config        Json?
+  display_order Int?       @default(0)
+  created_at    DateTime?  @default(now()) @db.Timestamp(6)
+  updated_at    DateTime?  @default(now()) @db.Timestamp(6)
+  payments      payments[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model payments {
+  id                                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  order_id                          String          @db.Uuid
+  payment_method_id                 String          @db.Uuid
+  amount                            Decimal         @db.Decimal(10, 2)
+  status                            String?         @default("pending") @db.VarChar(20)
+  gateway_request_id                String?         @db.VarChar(100)
+  gateway_trans_id                  String?         @db.VarChar(100)
+  gateway_response                  Json?
+  received_by                       String?         @db.Uuid
+  cash_amount                       Decimal?        @db.Decimal(10, 2)
+  change_amount                     Decimal?        @db.Decimal(10, 2)
+  notes                             String?
+  completed_at                      DateTime?       @db.Timestamp(6)
+  failed_reason                     String?
+  refund_reason                     String?
+  refunded_at                       DateTime?       @db.Timestamp(6)
+  refunded_by                       String?         @db.Uuid
+  created_at                        DateTime?       @default(now()) @db.Timestamp(6)
+  updated_at                        DateTime?       @default(now()) @db.Timestamp(6)
+  orders                            Order           @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  payment_methods                   payment_methods @relation(fields: [payment_method_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_payments_received_byTousers User?           @relation("payments_received_byTousers", fields: [received_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_payments_refunded_byTousers User?           @relation("payments_refunded_byTousers", fields: [refunded_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([created_at], map: "idx_payments_created")
+  @@index([gateway_request_id], map: "idx_payments_gateway_request")
+  @@index([payment_method_id], map: "idx_payments_method")
+  @@index([order_id], map: "idx_payments_order")
+  @@index([status], map: "idx_payments_status")
 }
 
 enum OrderStatus {
