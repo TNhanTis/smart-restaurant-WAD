@@ -14,17 +14,28 @@ type OrderStatusFilter =
   | "served"
   | "completed";
 
+type ViewMode = "active" | "history";
+
 export default function OrderManagement() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // View mode
+  const [viewMode, setViewMode] = useState<ViewMode>("active");
+
   // Filters
   const [statusFilter, setStatusFilter] = useState<OrderStatusFilter>("all");
   const [dateFilter, setDateFilter] = useState<
     "today" | "yesterday" | "week" | "month" | "all"
   >("today");
+
+  // Advanced filters for history
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [tableSearch, setTableSearch] = useState("");
 
   // Modal
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -70,16 +81,41 @@ export default function OrderManagement() {
       setLoading(true);
       setError(null);
 
-      const dateRange = getDateRange();
-      const params: any = {
-        ...dateRange,
-      };
-
-      if (statusFilter !== "all") {
-        params.status = statusFilter;
+      const restaurantId = localStorage.getItem("restaurant_id");
+      if (!restaurantId) {
+        setError("Restaurant ID not found");
+        return;
       }
 
-      const response = await ordersApi.getAll(params);
+      let response;
+
+      if (viewMode === "history") {
+        // Use history endpoint for completed orders
+        const filters: any = {
+          restaurant_id: restaurantId,
+        };
+
+        if (startDate) filters.start_date = startDate;
+        if (endDate) filters.end_date = endDate;
+        if (customerSearch) filters.customer_id = customerSearch;
+        if (tableSearch) filters.table_id = tableSearch;
+        if (statusFilter !== "all") filters.status = statusFilter;
+
+        response = await ordersApi.getHistory(filters);
+      } else {
+        // Active orders (today by default)
+        const dateRange = getDateRange();
+        const params: any = {
+          restaurant_id: restaurantId,
+          ...dateRange,
+        };
+
+        if (statusFilter !== "all") {
+          params.status = statusFilter;
+        }
+
+        response = await ordersApi.getAll(params);
+      }
 
       // Handle both array and object response formats
       if (Array.isArray(response)) {
@@ -98,7 +134,16 @@ export default function OrderManagement() {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, dateFilter, getDateRange]);
+  }, [
+    statusFilter,
+    dateFilter,
+    viewMode,
+    startDate,
+    endDate,
+    customerSearch,
+    tableSearch,
+    getDateRange,
+  ]);
 
   useEffect(() => {
     loadOrders();
@@ -247,6 +292,60 @@ export default function OrderManagement() {
     loadOrders();
   };
 
+  const handleExportCSV = async () => {
+    try {
+      const restaurantId = localStorage.getItem("restaurant_id");
+      if (!restaurantId) {
+        alert("Restaurant ID not found");
+        return;
+      }
+
+      const filters: any = {
+        restaurant_id: restaurantId,
+        export: "csv",
+      };
+
+      if (viewMode === "history") {
+        if (startDate) filters.start_date = startDate;
+        if (endDate) filters.end_date = endDate;
+        if (customerSearch) filters.customer_id = customerSearch;
+        if (tableSearch) filters.table_id = tableSearch;
+        if (statusFilter !== "all") filters.status = statusFilter;
+      } else {
+        const dateRange = getDateRange();
+        Object.assign(filters, dateRange);
+        if (statusFilter !== "all") filters.status = statusFilter;
+      }
+
+      const csvData = await ordersApi.getHistory(filters);
+
+      // Create download link
+      const blob = new Blob([csvData], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `orders-${viewMode}-${
+        new Date().toISOString().split("T")[0]
+      }.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error("Failed to export CSV:", err);
+      alert(err.response?.data?.message || "Failed to export CSV");
+    }
+  };
+
+  const handleClearFilters = () => {
+    setStartDate("");
+    setEndDate("");
+    setCustomerSearch("");
+    setTableSearch("");
+    setStatusFilter("all");
+    setDateFilter("today");
+  };
+
   // Get action buttons based on order status
   const getActionButtons = (order: Order) => {
     const status = order.status.toLowerCase();
@@ -379,6 +478,9 @@ export default function OrderManagement() {
           </p>
         </div>
         <div style={{ display: "flex", gap: "10px" }}>
+          <button className="btn-secondary" onClick={handleExportCSV}>
+            📥 Export CSV
+          </button>
           <button className="btn-secondary" onClick={handleRefresh}>
             🔄 Refresh
           </button>
@@ -391,79 +493,168 @@ export default function OrderManagement() {
         </div>
       </div>
 
-      {/* Status Tabs */}
-      <div className="status-tabs">
+      {/* View Mode Tabs */}
+      <div className="status-tabs" style={{ marginBottom: "10px" }}>
         <button
-          className={`status-tab ${statusFilter === "all" ? "active" : ""}`}
-          onClick={() => setStatusFilter("all")}
+          className={`status-tab ${viewMode === "active" ? "active" : ""}`}
+          onClick={() => {
+            setViewMode("active");
+            setStatusFilter("all");
+            setDateFilter("today");
+          }}
         >
-          All Orders
-          <span className="tab-count">{totalOrders}</span>
+          📋 Active Orders
+          <span className="tab-count">
+            {viewMode === "active" ? totalOrders : ""}
+          </span>
         </button>
         <button
-          className={`status-tab ${statusFilter === "pending" ? "active" : ""}`}
-          onClick={() => setStatusFilter("pending")}
+          className={`status-tab ${viewMode === "history" ? "active" : ""}`}
+          onClick={() => {
+            setViewMode("history");
+            setStatusFilter("all");
+            setDateFilter("all");
+          }}
         >
-          Pending
-          <span className="tab-count warning">{getStatusCount("pending")}</span>
-        </button>
-        <button
-          className={`status-tab ${
-            statusFilter === "accepted" ? "active" : ""
-          }`}
-          onClick={() => setStatusFilter("accepted")}
-        >
-          Accepted
-          <span className="tab-count">{getStatusCount("accepted")}</span>
-        </button>
-        <button
-          className={`status-tab ${
-            statusFilter === "preparing" ? "active" : ""
-          }`}
-          onClick={() => setStatusFilter("preparing")}
-        >
-          Preparing
-          <span className="tab-count">{getStatusCount("preparing")}</span>
-        </button>
-        <button
-          className={`status-tab ${statusFilter === "ready" ? "active" : ""}`}
-          onClick={() => setStatusFilter("ready")}
-        >
-          Ready
-          <span className="tab-count success">{getStatusCount("ready")}</span>
-        </button>
-        <button
-          className={`status-tab ${statusFilter === "served" ? "active" : ""}`}
-          onClick={() => setStatusFilter("served")}
-        >
-          Served
-          <span className="tab-count">{getStatusCount("served")}</span>
-        </button>
-        <button
-          className={`status-tab ${
-            statusFilter === "completed" ? "active" : ""
-          }`}
-          onClick={() => setStatusFilter("completed")}
-        >
-          Completed
-          <span className="tab-count">{getStatusCount("completed")}</span>
+          📚 Order History
         </button>
       </div>
 
+      {/* Status Tabs */}
+      {viewMode === "active" && (
+        <div className="status-tabs">
+          <button
+            className={`status-tab ${statusFilter === "all" ? "active" : ""}`}
+            onClick={() => setStatusFilter("all")}
+          >
+            All Orders
+            <span className="tab-count">{totalOrders}</span>
+          </button>
+          <button
+            className={`status-tab ${
+              statusFilter === "pending" ? "active" : ""
+            }`}
+            onClick={() => setStatusFilter("pending")}
+          >
+            Pending
+            <span className="tab-count warning">
+              {getStatusCount("pending")}
+            </span>
+          </button>
+          <button
+            className={`status-tab ${
+              statusFilter === "accepted" ? "active" : ""
+            }`}
+            onClick={() => setStatusFilter("accepted")}
+          >
+            Accepted
+            <span className="tab-count">{getStatusCount("accepted")}</span>
+          </button>
+          <button
+            className={`status-tab ${
+              statusFilter === "preparing" ? "active" : ""
+            }`}
+            onClick={() => setStatusFilter("preparing")}
+          >
+            Preparing
+            <span className="tab-count">{getStatusCount("preparing")}</span>
+          </button>
+          <button
+            className={`status-tab ${statusFilter === "ready" ? "active" : ""}`}
+            onClick={() => setStatusFilter("ready")}
+          >
+            Ready
+            <span className="tab-count success">{getStatusCount("ready")}</span>
+          </button>
+          <button
+            className={`status-tab ${
+              statusFilter === "served" ? "active" : ""
+            }`}
+            onClick={() => setStatusFilter("served")}
+          >
+            Served
+            <span className="tab-count">{getStatusCount("served")}</span>
+          </button>
+        </div>
+      )}
+
       {/* Filters */}
-      <div className="filters-bar">
-        <select
-          className="filter-select"
-          value={dateFilter}
-          onChange={(e) => setDateFilter(e.target.value as any)}
-        >
-          <option value="today">Today</option>
-          <option value="yesterday">Yesterday</option>
-          <option value="week">This Week</option>
-          <option value="month">This Month</option>
-          <option value="all">All Time</option>
-        </select>
-      </div>
+      {viewMode === "active" ? (
+        <div className="filters-bar">
+          <select
+            className="filter-select"
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value as any)}
+          >
+            <option value="today">Today</option>
+            <option value="yesterday">Yesterday</option>
+            <option value="week">This Week</option>
+            <option value="month">This Month</option>
+            <option value="all">All Time</option>
+          </select>
+        </div>
+      ) : (
+        <div className="filters-bar" style={{ flexWrap: "wrap", gap: "10px" }}>
+          <div style={{ display: "flex", gap: "10px", flex: "1" }}>
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "5px" }}
+            >
+              <label style={{ fontSize: "12px", color: "#6b7280" }}>
+                Start Date
+              </label>
+              <input
+                type="date"
+                className="filter-select"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                style={{ width: "auto" }}
+              />
+            </div>
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "5px" }}
+            >
+              <label style={{ fontSize: "12px", color: "#6b7280" }}>
+                End Date
+              </label>
+              <input
+                type="date"
+                className="filter-select"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                style={{ width: "auto" }}
+              />
+            </div>
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "5px" }}
+            >
+              <label style={{ fontSize: "12px", color: "#6b7280" }}>
+                Status
+              </label>
+              <select
+                className="filter-select"
+                value={statusFilter}
+                onChange={(e) =>
+                  setStatusFilter(e.target.value as OrderStatusFilter)
+                }
+                style={{ width: "auto" }}
+              >
+                <option value="all">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="accepted">Accepted</option>
+                <option value="preparing">Preparing</option>
+                <option value="ready">Ready</option>
+                <option value="served">Served</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: "10px", alignItems: "flex-end" }}>
+            <button className="btn-secondary" onClick={handleClearFilters}>
+              Clear Filters
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Orders Table */}
       <div className="table-card">

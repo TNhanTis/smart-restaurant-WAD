@@ -197,4 +197,26 @@ export const ordersApi = {
       throw error;
     }
   },
+
+  // Get order history with advanced filters and CSV export
+  async getHistory(params?: {
+    restaurant_id?: string;
+    start_date?: string;
+    end_date?: string;
+    customer_id?: string;
+    table_id?: string;
+    status?: string;
+    export?: "csv";
+  }): Promise<any> {
+    try {
+      const response = await api.get("/api/orders/history", {
+        params,
+        responseType: params?.export === "csv" ? "text" : "json",
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching order history:", error);
+      throw error;
+    }
+  },
 };
