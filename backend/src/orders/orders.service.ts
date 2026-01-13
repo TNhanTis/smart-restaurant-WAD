@@ -526,4 +526,159 @@ export class OrdersService {
       order: updatedOrder,
     };
   }
+
+  /**
+   * Complete an order
+   * POST /api/orders/:id/complete
+   * - Verify payment status (if payment system exists)
+   * - Mark order as completed
+   * - Release table status to available
+   * - Archive the order
+   */
+  async completeOrder(orderId: string) {
+    // Get order with full details
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        table: {
+          select: {
+            id: true,
+            table_number: true,
+            status: true,
+            restaurant_id: true,
+          },
+        },
+        order_items: {
+          include: {
+            menu_item: {
+              select: {
+                id: true,
+                name: true,
+                price: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Order with ID ${orderId} not found`);
+    }
+
+    // Verify order is in correct state to be completed
+    if (order.status === OrderStatus.COMPLETED) {
+      throw new BadRequestException('Order is already completed');
+    }
+
+    if (
+      order.status !== OrderStatus.SERVED &&
+      order.status !== OrderStatus.READY
+    ) {
+      throw new BadRequestException(
+        `Order must be in "served" or "ready" status to be completed. Current status: ${order.status}`,
+      );
+    }
+
+    // TODO: Verify payment status when payment system is implemented
+    // const payment = await this.prisma.payment.findFirst({
+    //   where: { order_id: orderId },
+    // });
+    // if (!payment || payment.status !== 'completed') {
+    //   throw new BadRequestException('Payment must be completed before order completion');
+    // }
+
+    const now = new Date();
+
+    // Use transaction to ensure atomicity
+    const result = await this.prisma.$transaction(async (tx: any) => {
+      // 1. Update order status to completed
+      const completedOrder = await tx.order.update({
+        where: { id: orderId },
+        data: {
+          status: OrderStatus.COMPLETED,
+          completed_at: now,
+          updated_at: now,
+        },
+        include: {
+          table: {
+            select: {
+              id: true,
+              table_number: true,
+              location: true,
+            },
+          },
+          order_items: {
+            include: {
+              menu_item: {
+                select: {
+                  id: true,
+                  name: true,
+                  price: true,
+                },
+              },
+              modifiers: {
+                include: {
+                  modifier_option: {
+                    select: {
+                      id: true,
+                      name: true,
+                      price_adjustment: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      // 2. Check if there are any other active orders for this table
+      const activeOrdersCount = await tx.order.count({
+        where: {
+          table_id: order.table.id,
+          status: {
+            notIn: [
+              OrderStatus.COMPLETED,
+              OrderStatus.CANCELLED,
+              OrderStatus.REJECTED,
+            ],
+          },
+        },
+      });
+
+      // 3. Release table status to available if no other active orders
+      if (activeOrdersCount === 0) {
+        await tx.table.update({
+          where: { id: order.table.id },
+          data: {
+            status: 'active', // Return table to active/available status
+            updated_at: now,
+          },
+        });
+      }
+
+      return {
+        completedOrder,
+        tableReleased: activeOrdersCount === 0,
+      };
+    });
+
+    // TODO: Emit Socket.IO event for order completion
+    // this.notificationGateway.emitOrderCompleted({
+    //   orderId: order.id,
+    //   orderNumber: order.order_number,
+    //   tableId: order.table.id,
+    //   tableNumber: order.table.table_number,
+    //   restaurantId: order.table.restaurant_id,
+    // });
+
+    return {
+      message: 'Order completed successfully',
+      order: result.completedOrder,
+      tableReleased: result.tableReleased,
+      tableId: order.table.id,
+      tableNumber: order.table.table_number,
+    };
+  }
 }

@@ -180,4 +180,21 @@ export const ordersApi = {
       throw error;
     }
   },
+
+  // Complete an order (verify payment, release table, archive)
+  async complete(id: string): Promise<{
+    message: string;
+    order: Order;
+    tableReleased: boolean;
+    tableId: string;
+    tableNumber: string;
+  }> {
+    try {
+      const response = await api.post(`/api/orders/${id}/complete`);
+      return response.data;
+    } catch (error) {
+      console.error("Error completing order:", error);
+      throw error;
+    }
+  },
 };

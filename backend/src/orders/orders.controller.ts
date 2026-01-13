@@ -100,4 +100,13 @@ export class OrdersController {
   ) {
     return this.ordersService.updateStatus(id, updateDto);
   }
+
+  /**
+   * POST /api/orders/:id/complete
+   * Complete an order (verify payment, release table, archive)
+   */
+  @Post(':id/complete')
+  async completeOrder(@Param('id') id: string) {
+    return this.ordersService.completeOrder(id);
+  }
 }

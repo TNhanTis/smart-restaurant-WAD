@@ -164,11 +164,21 @@ export default function OrderManagement() {
 
   const handleCompleteOrder = async (orderId: string) => {
     try {
-      await ordersApi.updateStatus(orderId, "completed");
+      const result = await ordersApi.complete(orderId);
+
+      // Show success message with table info
+      const message = result.tableReleased
+        ? `Order completed! Table ${result.tableNumber} has been released and is now available.`
+        : `Order completed! Table ${result.tableNumber} still has other active orders.`;
+
+      alert(message);
       loadOrders();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to complete order:", err);
-      alert("Failed to complete order. Please try again.");
+      const errorMsg =
+        err.response?.data?.message ||
+        "Failed to complete order. Please try again.";
+      alert(errorMsg);
     }
   };
 
