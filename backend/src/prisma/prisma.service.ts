@@ -23,6 +23,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   public notification: PrismaClient['notifications'];
   public payment: PrismaClient['payments'];
   public paymentMethod: PrismaClient['payment_methods'];
+  public billRequest: PrismaClient['bill_requests'];
 
   private client: PrismaClient;
   private pool: Pool;
@@ -56,6 +57,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     this.notification = this.client.notifications;
     this.payment = this.client.payments;
     this.paymentMethod = this.client.payment_methods;
+    this.billRequest = this.client.bill_requests;
   }
 
   async onModuleInit() {
