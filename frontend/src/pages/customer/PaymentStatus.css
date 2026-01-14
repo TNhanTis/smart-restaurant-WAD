@@ -1,0 +1,292 @@
+/* Payment Status Page Styles */
+
+.payment-status-container {
+    min-height: 100vh;
+    background: #f8f9fa;
+    display: flex;
+    flex-direction: column;
+}
+
+.payment-status-header {
+    background: #fff;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.payment-status-back-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #2c3e50;
+}
+
+.payment-status-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+.payment-status-content {
+    flex: 1;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 30px 20px;
+    width: 100%;
+}
+
+/* Status Card */
+.status-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 40px 30px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    margin-bottom: 20px;
+}
+
+.status-icon {
+    font-size: 80px;
+    margin-bottom: 20px;
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.status-icon.pending {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+.status-title {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: #2c3e50;
+}
+
+.status-message {
+    font-size: 16px;
+    color: #34495e;
+    margin-bottom: 20px;
+    line-height: 1.6;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    margin-top: 10px;
+}
+
+.status-badge.pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-badge.accepted {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-badge.completed {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+/* Bill Details */
+.bill-details-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+}
+
+.bill-details-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: #2c3e50;
+}
+
+.bill-detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid #ecf0f1;
+}
+
+.bill-detail-row:last-child {
+    border-bottom: none;
+}
+
+.bill-detail-label {
+    color: #34495e;
+    font-size: 15px;
+}
+
+.bill-detail-value {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 15px;
+}
+
+.bill-detail-row.total {
+    padding-top: 15px;
+    margin-top: 10px;
+    border-top: 2px solid #2c3e50;
+    font-size: 18px;
+}
+
+.bill-detail-row.total .bill-detail-value {
+    color: #e74c3c;
+    font-size: 20px;
+}
+
+/* QR Code Section */
+.qr-section {
+    background: #fff;
+    border-radius: 12px;
+    padding: 30px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+}
+
+.qr-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: #2c3e50;
+}
+
+.qr-code-placeholder {
+    width: 200px;
+    height: 200px;
+    margin: 0 auto 15px;
+    background: #fff;
+    border: 3px solid #ecf0f1;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 80px;
+}
+
+.qr-instruction {
+    color: #34495e;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.action-btn {
+    flex: 1;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.action-btn.primary {
+    background: #e74c3c;
+    color: #fff;
+}
+
+.action-btn.primary:hover {
+    background: #c0392b;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+}
+
+.action-btn.secondary {
+    background: #ecf0f1;
+    color: #2c3e50;
+}
+
+.action-btn.secondary:hover {
+    background: #bdc3c7;
+}
+
+/* Loading Animation */
+.loading-dots {
+    display: inline-flex;
+    gap: 5px;
+    margin-left: 5px;
+}
+
+.loading-dots span {
+    width: 8px;
+    height: 8px;
+    background: #34495e;
+    border-radius: 50%;
+    animation: bounce 1.4s infinite ease-in-out both;
+}
+
+.loading-dots span:nth-child(1) {
+    animation-delay: -0.32s;
+}
+
+.loading-dots span:nth-child(2) {
+    animation-delay: -0.16s;
+}
+
+@keyframes bounce {
+
+    0%,
+    80%,
+    100% {
+        transform: scale(0);
+    }
+
+    40% {
+        transform: scale(1);
+    }
+}
+
+/* Responsive */
+@media (min-width: 768px) {
+    .payment-status-content {
+        padding: 40px 20px;
+    }
+
+    .status-card {
+        padding: 50px 40px;
+    }
+}
