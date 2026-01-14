@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import publicApi from '../../api/publicApi';
+import RelatedItems from '../../components/RelatedItems';
+import { ReviewsList } from '../../components/ReviewsList';
+import { ReviewModal } from '../../components/ReviewModal';
 import './ItemDetailView.css';
 
 interface ModifierOption {
@@ -44,6 +47,8 @@ function ItemDetailView() {
   const [item, setItem] = useState<MenuItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [reviewsKey, setReviewsKey] = useState(0);
 
   useEffect(() => {
     if (id) {
@@ -170,6 +175,48 @@ function ItemDetailView() {
             ))}
           </div>
         )}
+
+
+        {/* Reviews Section */}
+        {id && (
+          <div style={{ marginTop: '30px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', padding: '0 20px' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#2c3e50' }}>Customer Reviews</h3>
+              <button
+                onClick={() => setIsReviewModalOpen(true)}
+                style={{
+                  padding: '8px 16px',
+                  background: '#e74c3c',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                ✍️ Write Review
+              </button>
+            </div>
+            <ReviewsList key={reviewsKey} menuItemId={id} />
+          </div>
+        )}
+
+        {/* Review Modal */}
+        {item && (
+          <ReviewModal
+            menuItemId={id!}
+            menuItemName={item.name}
+            isOpen={isReviewModalOpen}
+            onClose={() => setIsReviewModalOpen(false)}
+            onSuccess={() => {
+              setReviewsKey(prev => prev + 1);
+            }}
+          />
+        )}
+
+        {/* Related Items */}
+        {id && <RelatedItems itemId={id} context="view" />}
 
         {/* Call to Action */}
         <div className="cta-section">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ordersApi } from '../../api/ordersApi';
 import './ProfileGuest.css';
 
@@ -18,6 +18,7 @@ interface UserInfo {
 
 function Profile() {
     const navigate = useNavigate();
+    const location = useLocation();
     const [loading, setLoading] = useState(true);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
@@ -98,7 +99,8 @@ function Profile() {
         if (confirm('Are you sure you want to logout?')) {
             localStorage.removeItem('auth_token');
             localStorage.removeItem('auth_user');
-            navigate('/customer/login');
+            // Reload page to continue as guest - preserves cart and session
+            window.location.reload();
         }
     };
 
@@ -213,10 +215,10 @@ function Profile() {
                                 </li>
                             </ul>
                             <div className="benefits-actions">
-                                <button className="btn-signup" onClick={() => navigate('/customer/register')}>
+                                <button className="btn-signup" onClick={() => navigate('/customer/register', { state: { from: location } })}>
                                     Sign Up
                                 </button>
-                                <button className="btn-login" onClick={() => navigate('/customer/login')}>
+                                <button className="btn-login" onClick={() => navigate('/customer/login', { state: { from: location } })}>
                                     Login
                                 </button>
                             </div>

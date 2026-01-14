@@ -143,6 +143,52 @@
   box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
 }
 
+/* Sort Section */
+.sort-section {
+  padding: 15px 20px;
+  background: white;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sort-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a1a1a;
+  white-space: nowrap;
+}
+
+.sort-select {
+  flex: 1;
+  padding: 10px 15px;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+  background: white;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.sort-select:hover {
+  border-color: var(--primary);
+}
+
+.sort-select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+}
+
+.sort-select option {
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+
 /* Menu Items Grid */
 .menu-items-grid {
   padding: 20px;
@@ -179,8 +225,11 @@
   width: 100%;
   padding-top: 75%;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
+  /* Allow badge to show */
   background: var(--background);
+  border-radius: 12px 12px 0 0;
+  /* Match card border radius */
 }
 
 .item-image {
@@ -190,6 +239,37 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border-radius: 12px 12px 0 0;
+  /* Clip image corners */
+}
+
+/* Chef Recommendation Badge */
+.chef-recommend-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 2;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.chef-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.chef-text {
+  line-height: 1;
 }
 
 .item-details {
@@ -231,6 +311,24 @@
   font-weight: 700;
   color: var(--primary);
 }
+
+.item-status {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.item-status.available {
+  background: #d4edda;
+  color: #155724;
+}
+
+.item-status.unavailable {
+  background: #f8d7da;
+  color: #721c24;
+}
+
 
 .btn-add-to-cart {
   background: var(--primary);

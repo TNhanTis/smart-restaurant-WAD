@@ -4,6 +4,9 @@ import publicApi from '../../api/publicApi';
 import cartApi from '../../api/cartApi';
 import Toast, { ToastType } from '../../components/Toast';
 import { useCart } from '../../contexts/CartContext';
+import RelatedItems from '../../components/RelatedItems';
+import { ReviewsList } from '../../components/ReviewsList';
+import { ReviewModal } from '../../components/ReviewModal';
 import './ItemDetail.css';
 
 interface ModifierOption {
@@ -48,6 +51,8 @@ function ItemDetail() {
   const [quantity, setQuantity] = useState(1);
   const [specialRequests, setSpecialRequests] = useState('');
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [reviewsKey, setReviewsKey] = useState(0);
 
   useEffect(() => {
     if (id) {
@@ -245,6 +250,19 @@ function ItemDetail() {
           <div className="item-price">{Math.round(parseFloat(item.price)).toLocaleString('vi-VN')}₫</div>
         </div>
 
+        {/* Meta Info - Preparation Time & Availability */}
+        <div className="item-meta">
+          {item.preparationTime && (
+            <span className="meta-item">
+              <span className="meta-icon">⏱️</span>
+              ~{item.preparationTime} min
+            </span>
+          )}
+          <span className={`availability-badge ${item.isAvailable ? 'available' : 'unavailable'}`}>
+            {item.isAvailable ? '✓ Available' : '✗ Unavailable'}
+          </span>
+        </div>
+
         {item.description && (
           <p className="item-description">{item.description}</p>
         )}
@@ -293,6 +311,49 @@ function ItemDetail() {
           />
         </div>
       </div>
+
+
+      {/* Reviews Section */}
+      {id && (
+        <div style={{ marginTop: '30px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', padding: '0 20px' }}>
+            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#2c3e50' }}>Customer Reviews</h3>
+            <button
+              onClick={() => setIsReviewModalOpen(true)}
+              style={{
+                padding: '8px 16px',
+                background: '#e74c3c',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              ✍️ Write Review
+            </button>
+          </div>
+          <ReviewsList key={reviewsKey} menuItemId={id} />
+        </div>
+      )}
+
+      {/* Review Modal */}
+      {item && (
+        <ReviewModal
+          menuItemId={id!}
+          menuItemName={item.name}
+          isOpen={isReviewModalOpen}
+          onClose={() => setIsReviewModalOpen(false)}
+          onSuccess={() => {
+            setReviewsKey(prev => prev + 1);
+            setToast({ message: 'Review submitted successfully!', type: 'success' });
+          }}
+        />
+      )}
+
+      {/* Related Items */}
+      {id && <RelatedItems itemId={id} context="order" />}
 
       {/* Add to Cart Bar */}
       <div className="add-to-cart-bar">

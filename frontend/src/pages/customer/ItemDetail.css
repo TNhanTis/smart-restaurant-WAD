@@ -97,6 +97,47 @@
   font-size: 15px;
 }
 
+/* Meta Info - Preparation Time & Availability */
+.item-meta {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--light);
+  margin-bottom: 20px;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--gray);
+  font-size: 14px;
+}
+
+.meta-icon {
+  font-size: 18px;
+}
+
+.availability-badge {
+  padding: 4px 12px;
+  border-radius: 15px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-left: auto;
+}
+
+.availability-badge.available {
+  background: #d4edda;
+  color: #27ae60;
+}
+
+.availability-badge.unavailable {
+  background: #f8d7da;
+  color: var(--primary);
+}
+
+
 /* Modifiers */
 .modifier-section {
   margin-bottom: 25px;

@@ -121,7 +121,7 @@ function OrderStatus() {
           </button>
           <div className="session-meta">
             <span>📄 {orders.length} Orders</span>
-            <span>🍽️ {orders.reduce((sum, o) => sum + (o.items?.length || 0), 0)} Items</span>
+            <span>🍽️ {orders.reduce((sum, o) => sum + ((o as any).order_items?.length || 0), 0)} Items</span>
           </div>
         </div>
 

@@ -14,6 +14,7 @@ interface MenuItem {
     name: string;
   } | null;
   isAvailable: boolean;
+  isChefRecommended?: boolean;
 }
 
 interface Category {
@@ -53,6 +54,7 @@ export default function OrderingMenu() {
   const [restaurantInfo, setRestaurantInfo] = useState<RestaurantInfo | null>(null);
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [menuLoaded, setMenuLoaded] = useState(false);
+  const [sortBy, setSortBy] = useState<string>(''); // '', 'popularity', 'chef'
 
   useEffect(() => {
     // Get table and restaurant info from localStorage
@@ -116,11 +118,13 @@ export default function OrderingMenu() {
 
       const [categoriesData, menuData] = await Promise.all([
         getMenuCategories(restaurantId),
-        getPublicMenu(selectedCategory, searchTerm, restaurantId),
+        getPublicMenu(selectedCategory, searchTerm, restaurantId, sortBy),
       ]);
 
       setCategories(categoriesData);
       setMenuItems(menuData.items);
+      console.log('Menu items loaded:', menuData.items);
+      console.log('Chef recommended items:', menuData.items.filter((item: any) => item.isChefRecommended));
     } catch (error) {
       console.error('Failed to load menu:', error);
     } finally {
@@ -132,7 +136,7 @@ export default function OrderingMenu() {
     if (!restaurantInfo) return;
     setSearchTerm(term);
     try {
-      const menuData = await getPublicMenu(selectedCategory, term, restaurantInfo.id);
+      const menuData = await getPublicMenu(selectedCategory, term, restaurantInfo.id, sortBy);
       setMenuItems(menuData.items);
     } catch (error) {
       console.error('Search failed:', error);
@@ -143,10 +147,21 @@ export default function OrderingMenu() {
     if (!restaurantInfo) return;
     setSelectedCategory(categoryId);
     try {
-      const menuData = await getPublicMenu(categoryId, searchTerm, restaurantInfo.id);
+      const menuData = await getPublicMenu(categoryId, searchTerm, restaurantInfo.id, sortBy);
       setMenuItems(menuData.items);
     } catch (error) {
       console.error('Filter failed:', error);
+    }
+  };
+
+  const handleSortChange = async (newSortBy: string) => {
+    if (!restaurantInfo) return;
+    setSortBy(newSortBy);
+    try {
+      const menuData = await getPublicMenu(selectedCategory, searchTerm, restaurantInfo.id, newSortBy);
+      setMenuItems(menuData.items);
+    } catch (error) {
+      console.error('Sort failed:', error);
     }
   };
 
@@ -246,6 +261,21 @@ export default function OrderingMenu() {
             ))}
           </div>
 
+          {/* Sort Dropdown */}
+          <div className="sort-section">
+            <label htmlFor="sort-select" className="sort-label">Sort by:</label>
+            <select
+              id="sort-select"
+              className="sort-select"
+              value={sortBy}
+              onChange={(e) => handleSortChange(e.target.value)}
+            >
+              <option value="">Default</option>
+              <option value="popularity">Most Popular</option>
+              <option value="chef">Chef's Recommendations</option>
+            </select>
+          </div>
+
           {/* Menu Items Grid */}
           <div className="menu-items-grid">
             {menuItems.length === 0 ? (
@@ -260,11 +290,28 @@ export default function OrderingMenu() {
                   onClick={() => navigate(`/customer/order/item/${item.id}`)}
                   style={{ cursor: 'pointer' }}
                 >
-                  {item.image && (
-                    <div className="item-image-wrapper">
+                  <div className="item-image-wrapper">
+                    {item.image ? (
                       <img src={item.image} alt={item.name} className="item-image" />
-                    </div>
-                  )}
+                    ) : (
+                      <div className="item-image" style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '48px',
+                        background: '#f5f5f5'
+                      }}>
+                        🍽️
+                      </div>
+                    )}
+                    {/* Show badge for chef recommended items */}
+                    {item.isChefRecommended && (
+                      <div className="chef-recommend-badge">
+                        <span className="chef-icon">👨‍🍳</span>
+                        <span className="chef-text">Chef's Pick</span>
+                      </div>
+                    )}
+                  </div>
                   <div className="item-details">
                     <h3 className="item-name">{item.name}</h3>
                     {item.description && (
@@ -277,16 +324,9 @@ export default function OrderingMenu() {
                           currency: 'VND',
                         }).format(item.price)}
                       </span>
-                      <button
-                        className="btn-add-to-cart"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/customer/order/item/${item.id}`);
-                        }}
-                        disabled={!item.isAvailable}
-                      >
-                        {item.isAvailable ? '+ Add' : 'Unavailable'}
-                      </button>
+                      <span className={`item-status ${item.isAvailable ? 'available' : 'unavailable'}`}>
+                        {item.isAvailable ? '✓' : '✗'}
+                      </span>
                     </div>
                   </div>
                 </div>

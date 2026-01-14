@@ -3,9 +3,9 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class PublicMenuService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
-  async getMenu(categoryId?: string, searchTerm?: string, restaurantId?: string) {
+  async getMenu(categoryId?: string, searchTerm?: string, restaurantId?: string, sortBy?: string) {
     // Build where clause
     const where: any = {
       status: 'active', // Only show active items
@@ -27,6 +27,12 @@ export class PublicMenuService {
       ];
     }
 
+    // Determine orderBy based on sortBy parameter
+    let orderBy: any = [
+      { category: { display_order: 'asc' } },
+      { name: 'asc' },
+    ];
+
     // Fetch menu items with categories and photos
     const items = await this.prisma.menuItem.findMany({
       where,
@@ -45,19 +51,35 @@ export class PublicMenuService {
             url: true,
           },
         },
+        // Include order items for popularity calculation
+        order_items: sortBy === 'popularity' ? {
+          select: {
+            id: true,
+          },
+        } : false,
       },
-      orderBy: [
-        { category: { display_order: 'asc' } },
+      orderBy: sortBy === 'chef' ? [
+        { is_chef_recommended: 'desc' },
         { name: 'asc' },
-      ],
+      ] : orderBy,
     });
+
+    // Sort by popularity if requested
+    let sortedItems = items;
+    if (sortBy === 'popularity') {
+      sortedItems = items.sort((a, b) => {
+        const aCount = (a as any).order_items?.length || 0;
+        const bCount = (b as any).order_items?.length || 0;
+        return bCount - aCount; // Descending order (most popular first)
+      });
+    }
 
     // Fetch all active categories
     const categoriesWhere: any = { status: 'active' };
     if (restaurantId) {
       categoriesWhere.restaurant_id = restaurantId;
     }
-    
+
     const categories = await this.prisma.menuCategory.findMany({
       where: categoriesWhere,
       orderBy: { display_order: 'asc' },
@@ -72,7 +94,7 @@ export class PublicMenuService {
     // Format response
     return {
       categories,
-      items: items.map(item => ({
+      items: sortedItems.map(item => ({
         id: item.id,
         name: item.name,
         description: item.description,
@@ -83,8 +105,10 @@ export class PublicMenuService {
           name: item.category.name,
         } : null,
         isAvailable: item.status === 'active',
+        isChefRecommended: item.is_chef_recommended,
+        orderCount: sortBy === 'popularity' ? ((item as any).order_items?.length || 0) : undefined,
       })),
-      totalItems: items.length,
+      totalItems: sortedItems.length,
     };
   }
 
@@ -165,7 +189,7 @@ export class PublicMenuService {
     if (restaurantId) {
       where.restaurant_id = restaurantId;
     }
-    
+
     const categories = await this.prisma.menuCategory.findMany({
       where,
       orderBy: { display_order: 'asc' },
@@ -177,7 +201,7 @@ export class PublicMenuService {
         _count: {
           select: {
             menu_items: {
-              where: { 
+              where: {
                 status: 'active',
                 is_deleted: false,
               },
@@ -212,5 +236,56 @@ export class PublicMenuService {
     });
 
     return restaurants;
+  }
+
+  async getRelatedItems(itemId: string) {
+    // First, get the current item to know its category
+    const currentItem = await this.prisma.menuItem.findUnique({
+      where: { id: itemId },
+      select: {
+        category_id: true,
+        restaurant_id: true,
+      },
+    });
+
+    if (!currentItem) {
+      throw new NotFoundException(`Menu item with ID ${itemId} not found`);
+    }
+
+    // Get 6 random items from the same category, excluding current item
+    const relatedItems = await this.prisma.menuItem.findMany({
+      where: {
+        category_id: currentItem.category_id,
+        restaurant_id: currentItem.restaurant_id,
+        status: 'active',
+        is_deleted: false,
+        id: { not: itemId }, // Exclude current item
+      },
+      include: {
+        photos: {
+          where: { is_primary: true },
+          take: 1,
+          select: {
+            url: true,
+          },
+        },
+      },
+      take: 6,
+      orderBy: {
+        // Random-ish ordering by created_at with some variety
+        created_at: 'desc',
+      },
+    });
+
+    // Format response
+    return relatedItems.map(item => ({
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      price: item.price,
+      image: item.photos[0]?.url || null,
+      isAvailable: item.status === 'active',
+      isChefRecommended: item.is_chef_recommended,
+    }));
   }
 }

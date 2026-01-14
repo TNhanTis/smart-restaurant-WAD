@@ -18,6 +18,7 @@ import { CustomersModule } from './customers/customers.module';
 import { CartModule } from './cart/cart.module';
 import { OrdersModule } from './orders/orders.module';
 import { BillRequestsModule } from './bill-requests/bill-requests.module';
+import { ReviewsModule } from './reviews/reviews.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { BillRequestsModule } from './bill-requests/bill-requests.module';
     CartModule,
     OrdersModule,
     BillRequestsModule,
+    ReviewsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
