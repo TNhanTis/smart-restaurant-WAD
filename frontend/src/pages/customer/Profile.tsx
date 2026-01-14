@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  getCustomerProfile,
-  updateCustomerProfile,
-  changeCustomerPassword,
-} from '../../api/customersApi';
-import './Profile.css';
+import { getCustomerProfile } from '../../api/customersApi';
+import { ordersApi } from '../../api/ordersApi';
+import './ProfileGuest.css'; // Use same CSS as ProfileGuest
 
 interface CustomerProfile {
   id: string;
@@ -15,34 +12,37 @@ interface CustomerProfile {
   created_at: string;
 }
 
+interface TableInfo {
+  id: string;
+  tableNumber: string;
+  restaurantId: string;
+}
+
+interface SessionStats {
+  ordersCount: number;
+  sessionTotal: number;
+  sessionStart: Date | null;
+}
+
 const Profile: React.FC = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<CustomerProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [activeTab, setActiveTab] = useState<'profile' | 'password'>('profile');
-
-  // Profile form
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [profileLoading, setProfileLoading] = useState(false);
-
-  // Password form
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [tableInfo, setTableInfo] = useState<TableInfo | null>(null);
+  const [sessionStats, setSessionStats] = useState<SessionStats>({
+    ordersCount: 0,
+    sessionTotal: 0,
+    sessionStart: null,
+  });
 
   useEffect(() => {
     loadProfile();
+    loadTableInfo();
   }, []);
 
   const loadProfile = async () => {
     try {
       setLoading(true);
-      setError('');
 
       const authUser = localStorage.getItem('auth_user');
       if (!authUser) {
@@ -52,339 +52,172 @@ const Profile: React.FC = () => {
 
       const user = JSON.parse(authUser);
       const profileData = await getCustomerProfile(user.id);
-
       setProfile(profileData);
-      setFullName(profileData.full_name);
-      setEmail(profileData.email);
-      setPhone(profileData.phone || '');
     } catch (err: any) {
       console.error('Error loading profile:', err);
-      setError(err.response?.data?.message || 'Failed to load profile');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!profile) return;
-
+  const loadTableInfo = () => {
     try {
-      setProfileLoading(true);
-      setError('');
-      setSuccess('');
-
-      const updateData: any = {};
-      if (fullName !== profile.full_name) updateData.full_name = fullName;
-      if (email !== profile.email) updateData.email = email;
-      if (phone !== profile.phone) updateData.phone = phone;
-
-      if (Object.keys(updateData).length === 0) {
-        setError('No changes to save');
-        return;
+      const storedTableInfo = localStorage.getItem('table_info');
+      if (storedTableInfo) {
+        const table = JSON.parse(storedTableInfo);
+        setTableInfo(table);
+        loadSessionStats(table.id);
       }
-
-      const response = await updateCustomerProfile(profile.id, updateData);
-      
-      // Update localStorage
-      const authUser = JSON.parse(localStorage.getItem('auth_user') || '{}');
-      authUser.full_name = response.data.full_name;
-      authUser.email = response.data.email;
-      localStorage.setItem('auth_user', JSON.stringify(authUser));
-
-      setProfile(response.data);
-      setSuccess(response.message);
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccess(''), 3000);
-    } catch (err: any) {
-      console.error('Error updating profile:', err);
-      setError(err.response?.data?.message || 'Failed to update profile');
-    } finally {
-      setProfileLoading(false);
+    } catch (error) {
+      console.error('Error loading table info:', error);
     }
   };
 
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!profile) return;
-
-    // Validation
-    if (newPassword.length < 6) {
-      setError('New password must be at least 6 characters');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
+  const loadSessionStats = async (tableId: string) => {
     try {
-      setPasswordLoading(true);
-      setError('');
-      setSuccess('');
+      const response = await ordersApi.getByTable(tableId);
+      const orders = (response as any).data || response;
 
-      const response = await changeCustomerPassword(profile.id, {
-        current_password: currentPassword,
-        new_password: newPassword,
+      // Filter active orders (not completed/cancelled)
+      const activeOrders = orders.filter((order: any) =>
+        !['completed', 'cancelled', 'rejected'].includes(order.status)
+      );
+
+      const total = activeOrders.reduce((sum: number, order: any) =>
+        sum + parseFloat(order.total || '0'), 0
+      );
+
+      const oldestOrder = activeOrders.length > 0
+        ? new Date(Math.min(...activeOrders.map((o: any) => new Date(o.created_at).getTime())))
+        : null;
+
+      setSessionStats({
+        ordersCount: activeOrders.length,
+        sessionTotal: total,
+        sessionStart: oldestOrder,
       });
-
-      setSuccess(response.message);
-      
-      // Clear form
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccess(''), 3000);
-    } catch (err: any) {
-      console.error('Error changing password:', err);
-      setError(err.response?.data?.message || 'Failed to change password');
-    } finally {
-      setPasswordLoading(false);
+    } catch (error) {
+      console.error('Error loading session stats:', error);
     }
+  };
+
+  const getSessionDuration = () => {
+    if (!sessionStats.sessionStart) return '0 min';
+
+    const now = new Date();
+    const diff = now.getTime() - sessionStats.sessionStart.getTime();
+    const minutes = Math.floor(diff / 60000);
+
+    if (minutes < 60) return `${minutes} min`;
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours}h ${mins}m`;
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('auth_user');
-    navigate('/customer/login');
+    if (confirm('Are you sure you want to logout?')) {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_user');
+      window.location.reload();
+    }
   };
 
   if (loading) {
     return (
-      <div className="profile-container">
-        <div className="loading-state">
-          <div className="loading-spinner"></div>
-          <p>Loading profile...</p>
-        </div>
+      <div className="mobile-container">
+        <div className="loading">Loading...</div>
       </div>
     );
   }
 
-  const user = JSON.parse(localStorage.getItem('auth_user') || '{}');
-
   return (
-    <div className="profile-container">
+    <div className="mobile-container">
       {/* Header */}
-      <div className="profile-header">
-        <button className="back-btn" onClick={() => navigate('/customer/restaurants')}>
-          <span>←</span>
-        </button>
-        <div className="header-content">
-          <h1 className="header-title">Profile</h1>
-          <p className="header-subtitle">Manage your account</p>
-        </div>
-        <button className="logout-header-btn" onClick={handleLogout}>
-          <span>🚪</span>
-        </button>
+      <div className="header">
+        <span className="header-title">Profile</span>
+        <span className="header-table">
+          {tableInfo ? `Table ${tableInfo.tableNumber}` : ''}
+        </span>
       </div>
-
-      {/* Profile Avatar Section */}
-      <div className="profile-avatar-section">
-        <div className="profile-avatar-large">
-          {profile?.full_name?.charAt(0).toUpperCase() || 'U'}
-        </div>
-        <h2 className="profile-name">{profile?.full_name}</h2>
-        <p className="profile-email">{profile?.email}</p>
-        <p className="profile-member-since">
-          Member since {new Date(profile?.created_at || '').toLocaleDateString('en-US', { 
-            month: 'long', 
-            year: 'numeric' 
-          })}
-        </p>
-      </div>
-
-      {/* Tabs */}
-      <div className="profile-tabs">
-        <button
-          className={`tab-btn ${activeTab === 'profile' ? 'active' : ''}`}
-          onClick={() => setActiveTab('profile')}
-        >
-          <span className="tab-icon">👤</span>
-          Profile Info
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'password' ? 'active' : ''}`}
-          onClick={() => setActiveTab('password')}
-        >
-          <span className="tab-icon">🔒</span>
-          Password
-        </button>
-      </div>
-
-      {/* Alert Messages */}
-      {error && (
-        <div className="alert alert-error">
-          <span className="alert-icon">⚠️</span>
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="alert alert-success">
-          <span className="alert-icon">✅</span>
-          {success}
-        </div>
-      )}
 
       {/* Content */}
-      <div className="profile-content">
-        {activeTab === 'profile' ? (
-          <form className="profile-form" onSubmit={handleUpdateProfile}>
-            <div className="form-group">
-              <label className="form-label">
-                <span className="label-icon">👤</span>
-                Full Name
-              </label>
-              <input
-                type="text"
-                className="form-input"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required
-                minLength={2}
-              />
-            </div>
+      <div className="content" style={{ paddingBottom: '100px' }}>
+        {/* Profile Card */}
+        <div className="profile-card">
+          <div
+            className="profile-avatar"
+            style={{
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+              fontSize: '32px',
+              fontWeight: '700'
+            }}
+          >
+            {profile ? getInitials(profile.full_name) : 'U'}
+          </div>
+          <h2 className="profile-name">{profile?.full_name}</h2>
+          <p className="profile-email">{profile?.email}</p>
+          {profile?.phone && <p className="profile-phone">📱 {profile.phone}</p>}
+        </div>
 
-            <div className="form-group">
-              <label className="form-label">
-                <span className="label-icon">📧</span>
-                Email
-              </label>
-              <input
-                type="email"
-                className="form-input"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+        {/* Session Stats */}
+        {tableInfo && (
+          <div className="stats-card">
+            <h3 className="card-title">Current Session</h3>
+            <div className="stats-row">
+              <div className="stat-compact">
+                <span className="stat-icon">🕐</span>
+                <span className="stat-text">{getSessionDuration()}</span>
+              </div>
+              <div className="stat-compact">
+                <span className="stat-icon">📋</span>
+                <span className="stat-text">{sessionStats.ordersCount} orders</span>
+              </div>
+              <div className="stat-compact">
+                <span className="stat-icon">💰</span>
+                <span className="stat-text">
+                  {Math.round(Number(sessionStats.sessionTotal)).toLocaleString('vi-VN')}₫
+                </span>
+              </div>
             </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                <span className="label-icon">📞</span>
-                Phone Number (Optional)
-              </label>
-              <input
-                type="tel"
-                className="form-input"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+1 234 567 8900"
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="submit-btn"
-              disabled={profileLoading}
-            >
-              {profileLoading ? (
-                <>
-                  <div className="btn-spinner"></div>
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <span className="btn-icon">💾</span>
-                  Save Changes
-                </>
-              )}
-            </button>
-          </form>
-        ) : (
-          <form className="profile-form" onSubmit={handleChangePassword}>
-            <div className="form-group">
-              <label className="form-label">
-                <span className="label-icon">🔐</span>
-                Current Password
-              </label>
-              <input
-                type="password"
-                className="form-input"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                <span className="label-icon">🔑</span>
-                New Password
-              </label>
-              <input
-                type="password"
-                className="form-input"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-                minLength={6}
-                placeholder="At least 6 characters"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                <span className="label-icon">✓</span>
-                Confirm New Password
-              </label>
-              <input
-                type="password"
-                className="form-input"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                minLength={6}
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="submit-btn"
-              disabled={passwordLoading}
-            >
-              {passwordLoading ? (
-                <>
-                  <div className="btn-spinner"></div>
-                  Changing...
-                </>
-              ) : (
-                <>
-                  <span className="btn-icon">🔒</span>
-                  Change Password
-                </>
-              )}
-            </button>
-          </form>
+          </div>
         )}
 
-        {/* Quick Actions */}
-        <div className="quick-actions">
+        {/* Account Section */}
+        <div className="account-card">
+          <h3 className="card-title">Account</h3>
+
           <button
-            className="action-btn"
-            onClick={() => navigate('/customer/order-history')}
+            className="account-btn"
+            onClick={() => navigate('/customer/dashboard-profile')}
           >
-            <span className="action-icon">📦</span>
-            <div className="action-text">
-              <h4>Order History</h4>
-              <p>View past orders</p>
-            </div>
-            <span className="action-arrow">→</span>
+            <span className="account-icon">✏️</span>
+            <span className="account-text">Edit Profile</span>
+            <span className="account-arrow">→</span>
           </button>
 
-          <button className="action-btn action-btn-logout" onClick={handleLogout}>
-            <span className="action-icon">🚪</span>
-            <div className="action-text">
-              <h4>Logout</h4>
-              <p>Sign out of your account</p>
-            </div>
-            <span className="action-arrow">→</span>
+          <button
+            className="account-btn"
+            onClick={() => navigate('/customer/order-history')}
+          >
+            <span className="account-icon">📦</span>
+            <span className="account-text">Order History</span>
+            <span className="account-arrow">→</span>
+          </button>
+
+          <button className="account-btn logout" onClick={handleLogout}>
+            <span className="account-icon">🚪</span>
+            <span className="account-text">Logout</span>
+            <span className="account-arrow">→</span>
           </button>
         </div>
       </div>
