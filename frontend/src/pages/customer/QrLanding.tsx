@@ -43,14 +43,24 @@ export default function QrLanding() {
 
       try {
         const response: QrResponse = await verifyQrToken(token);
-        
+
         if (response.success && response.table && response.restaurant) {
+          console.log('🔍 [QrLanding] New QR scanned:', {
+            restaurantId: response.restaurant.id,
+            restaurantName: response.restaurant.name,
+            tableId: response.table.id,
+            tableNumber: response.table.tableNumber
+          });
+
           setTableInfo(response.table);
           setRestaurantInfo(response.restaurant);
+
           // Store table info, restaurant info and token for later use
           localStorage.setItem('table_token', token);
           localStorage.setItem('table_info', JSON.stringify(response.table));
           localStorage.setItem('restaurant_info', JSON.stringify(response.restaurant));
+
+          console.log('✅ [QrLanding] localStorage updated');
         } else {
           setError('Invalid QR code');
         }
@@ -93,7 +103,7 @@ export default function QrLanding() {
           <div className="error-icon">⚠️</div>
           <h2>QR Code Error</h2>
           <p>{error || 'Something went wrong'}</p>
-          <button 
+          <button
             className="btn-retry"
             onClick={() => window.location.reload()}
           >
@@ -126,8 +136,8 @@ export default function QrLanding() {
             <span>Capacity: {tableInfo.capacity} guests</span>
           </div>
         </div>
-        
-        <button 
+
+        <button
           className="btn-view-menu"
           onClick={handleViewMenu}
         >

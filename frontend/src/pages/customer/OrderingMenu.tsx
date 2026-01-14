@@ -58,7 +58,7 @@ export default function OrderingMenu() {
     // Get table and restaurant info from localStorage
     const storedTableInfo = localStorage.getItem('table_info');
     const storedRestaurantInfo = localStorage.getItem('restaurant_info');
-    
+
     if (!storedTableInfo || !storedRestaurantInfo) {
       // Redirect back to QR landing if no info found
       navigate('/');
@@ -67,7 +67,7 @@ export default function OrderingMenu() {
 
     const tableData = JSON.parse(storedTableInfo);
     const restaurantData = JSON.parse(storedRestaurantInfo);
-    
+
     setTableInfo(tableData);
     setRestaurantInfo(restaurantData);
 
@@ -80,7 +80,7 @@ export default function OrderingMenu() {
     // Check for re-order items
     const reorderItems = localStorage.getItem('reorder_items');
     const reorderRestaurantId = localStorage.getItem('reorder_restaurant_id');
-    
+
     if (reorderItems && reorderRestaurantId === restaurantData.id) {
       try {
         const items = JSON.parse(reorderItems);
@@ -93,10 +93,10 @@ export default function OrderingMenu() {
           modifiers: item.modifiers || [],
           subtotal: parseFloat(item.price) * item.quantity,
         }));
-        
+
         setCart(cartItems);
         setShowCart(true); // Auto-open cart to show re-ordered items
-        
+
         // Clear re-order data after loading
         localStorage.removeItem('reorder_items');
         localStorage.removeItem('reorder_restaurant_id');
@@ -113,7 +113,7 @@ export default function OrderingMenu() {
       if (menuItems.length === 0) {
         setLoading(true);
       }
-      
+
       const [categoriesData, menuData] = await Promise.all([
         getMenuCategories(restaurantId),
         getPublicMenu(selectedCategory, searchTerm, restaurantId),
@@ -218,7 +218,6 @@ export default function OrderingMenu() {
           {/* Search Bar */}
           <div className="search-section">
             <div className="search-bar">
-              <span className="search-icon">🔍</span>
               <input
                 type="text"
                 placeholder="Search dishes..."
@@ -255,8 +254,8 @@ export default function OrderingMenu() {
               </div>
             ) : (
               menuItems.map((item) => (
-                <div 
-                  key={item.id} 
+                <div
+                  key={item.id}
                   className="menu-item-card"
                   onClick={() => navigate(`/customer/order/item/${item.id}`)}
                   style={{ cursor: 'pointer' }}
@@ -278,7 +277,7 @@ export default function OrderingMenu() {
                           currency: 'VND',
                         }).format(item.price)}
                       </span>
-                      <button 
+                      <button
                         className="btn-add-to-cart"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -299,7 +298,7 @@ export default function OrderingMenu() {
         <>
           {/* Cart Page */}
           <div className="ordering-header">
-            <button 
+            <button
               className="header-back"
               onClick={() => setShowCart(false)}
             >
@@ -319,7 +318,7 @@ export default function OrderingMenu() {
                 <span className="empty-cart-icon">🛒</span>
                 <h3>Your cart is empty</h3>
                 <p>Add some delicious items to get started!</p>
-                <button 
+                <button
                   className="btn-continue-browsing"
                   onClick={() => setShowCart(false)}
                 >
@@ -357,7 +356,7 @@ export default function OrderingMenu() {
                           <span>{item.quantity}</span>
                           <button onClick={() => updateQuantity(item.id, item.quantity + 1)}>+</button>
                         </div>
-                        <button 
+                        <button
                           className="remove-btn"
                           onClick={() => removeFromCart(item.id)}
                           title="Remove item"
@@ -431,7 +430,7 @@ export default function OrderingMenu() {
                       currency: 'VND',
                     }).format(getCartTotal() * 1.1)}
                   </button>
-                  <button 
+                  <button
                     className="btn-continue-browsing"
                     onClick={() => setShowCart(false)}
                   >
@@ -444,7 +443,7 @@ export default function OrderingMenu() {
 
           {/* Bottom Navigation */}
           <div className="bottom-nav">
-            <button 
+            <button
               className="nav-item"
               onClick={() => setShowCart(false)}
             >

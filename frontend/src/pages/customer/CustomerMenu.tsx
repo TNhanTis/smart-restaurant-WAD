@@ -145,7 +145,12 @@ export default function CustomerMenu() {
           </div>
         ) : (
           menuItems.map((item) => (
-            <div key={item.id} className="menu-item-card">
+            <div 
+              key={item.id} 
+              className="menu-item-card"
+              onClick={() => navigate(`/customer/menu/item/${item.id}`)}
+              style={{ cursor: 'pointer' }}
+            >
               <div className="item-image-wrapper">
                 {item.image ? (
                   <img src={item.image} alt={item.name} className="item-image" />
