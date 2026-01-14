@@ -141,4 +141,92 @@ export class PaymentsService {
       payment_url: gatewayResponse.payment_url,
     };
   }
+  async handleMoMoCallback(data: {
+    orderId: string;
+    requestId: string;
+    amount: number;
+    orderInfo: string;
+    orderType: string;
+    transId: string;
+    resultCode: number;
+    message: string;
+    payType: string;
+    responseTime: number;
+    extraData: string;
+    signature: string;
+  }) {
+    // 1. Verify signature
+    const isValid = this.momoService.verifySignature(data);
+    if (!isValid) {
+      throw new BadRequestException('Invalid MoMo signature');
+    }
+
+    // 2. Tìm payment (orderId chính là payment_id)
+    const payment = await this.prisma.payment.findUnique({
+      where: { id: data.orderId },
+      include: { bill_requests: true },
+    });
+
+    if (!payment) {
+      throw new NotFoundException('Payment not found');
+    }
+
+    // 3. Update payment status 
+    const status = data.resultCode === 0 ? 'completed' : 'failed';
+
+    await this.prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        status,
+        gateway_trans_id: data.transId.toString(),
+        completed_at: status === 'completed' ? new Date() : null,
+        failed_reason: status === 'failed' ? data.message : null,
+      },
+    });
+
+    // 4. Nếu thành công, complete bill
+    if (status === 'completed' && payment.bill_request_id) {
+      await this.completeBillPayment(payment.bill_request_id);
+    }
+
+    return { status, payment_id: payment.id };
+  }
+
+  /**
+   * Helper: Complete bill payment - update orders và bill_request
+   */
+  private async completeBillPayment(bill_request_id: string) {
+    const billRequest = await this.prisma.billRequest.findUnique({
+      where: { id: bill_request_id },
+    });
+
+    if (!billRequest) {
+      throw new NotFoundException('Bill request not found');
+    }
+
+    // Lấy order IDs từ merged_order_ids hoặc bill_request
+    const orderIds = billRequest.order_ids as string[];
+
+    // Update tất cả orders sang 'completed'
+    await this.prisma.order.updateMany({
+      where: {
+        id: { in: orderIds },
+      },
+      data: {
+        status: 'completed',
+      },
+    });
+
+    // Update bill_request sang 'completed'
+    await this.prisma.billRequest.update({
+      where: { id: bill_request_id },
+      data: {
+        status: 'completed',
+      },
+    });
+
+    // TODO Phase 4: Emit socket event 'bill-paid'
+
+    return { success: true };
+  }
 }
