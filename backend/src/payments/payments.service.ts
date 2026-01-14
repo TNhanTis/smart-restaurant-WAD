@@ -284,4 +284,50 @@ export class PaymentsService {
 
     return { success: true };
   }
+
+  async handleVNPayIPN(query: any) {
+    // 1. Verify signature
+    const isValid = this.vnpayService.verifySignature(query);
+    if (!isValid) {
+      return { RspCode: '97', Message: 'Invalid signature' };
+    }
+
+    // 2. Lấy payment_id từ vnp_TxnRef
+    const payment_id = query.vnp_TxnRef;
+    const payment = await this.prisma.payment.findUnique({
+      where: { id: payment_id },
+      include: { bill_requests: true },
+    });
+
+    if (!payment) {
+      return { RspCode: '01', Message: 'Order not found' };
+    }
+
+    // 3. Kiểm tra amount (convert Decimal to number)
+    const vnp_Amount = parseInt(query.vnp_Amount) / 100;
+    if (vnp_Amount !== payment.amount.toNumber()) {
+      return { RspCode: '04', Message: 'Invalid amount' };
+    }
+
+    // 4. Update payment status (dùng đúng column names)
+    const responseCode = query.vnp_ResponseCode;
+    const status = responseCode === '00' ? 'completed' : 'failed';
+
+    await this.prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        status,
+        gateway_trans_id: query.vnp_TransactionNo,
+        completed_at: status === 'completed' ? new Date() : null,
+        failed_reason: status === 'failed' ? query.vnp_Message : null,
+      },
+    });
+
+    // 5. Nếu thành công, complete bill
+    if (status === 'completed' && payment.bill_request_id) {
+      await this.completeBillPayment(payment.bill_request_id);
+    }
+
+    return { RspCode: '00', Message: 'Confirm Success' };
+  }
 }
