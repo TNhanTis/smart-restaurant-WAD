@@ -18,6 +18,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { OrdersModule } from './orders/orders.module';
 import { ReportsModule } from './reports/reports.module';
 import { PaymentsModule } from './payments/payments.module';
+import { BillRequestsModule } from './bill-requests/bill-requests.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { PaymentsModule } from './payments/payments.module';
     OrdersModule,
     ReportsModule,
     PaymentsModule,
+    BillRequestsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
