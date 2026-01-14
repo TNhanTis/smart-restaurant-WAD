@@ -13,6 +13,8 @@ import RestaurantList from "./pages/customer/RestaurantList";
 import OrderHistory from "./pages/customer/OrderHistory";
 import Profile from "./pages/customer/Profile";
 import ProfileGuest from "./pages/customer/ProfileGuest";
+import ProfileWrapper from "./pages/customer/ProfileWrapper";
+import DashboardProfile from "./pages/customer/DashboardProfile";
 import ItemDetail from "./pages/customer/ItemDetail";
 import ItemDetailView from "./pages/customer/ItemDetailView";
 import ShoppingCart from "./pages/customer/ShoppingCart";
@@ -65,7 +67,8 @@ function App() {
               <Route path="/customer/login" element={<CustomerLogin />} />
               <Route path="/customer/register" element={<CustomerRegister />} />
               <Route path="/customer/order-history" element={<OrderHistory />} />
-              <Route path="/customer/profile" element={<CustomerLayout><ProfileGuest /></CustomerLayout>} />
+              <Route path="/customer/profile" element={<CustomerLayout><ProfileWrapper /></CustomerLayout>} />
+              <Route path="/customer/dashboard-profile" element={<CustomerLayout><DashboardProfile /></CustomerLayout>} />
 
               {/* Admin routes */}
               <Route path="/admin/login" element={<AdminLogin />} />
