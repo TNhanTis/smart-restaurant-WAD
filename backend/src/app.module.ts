@@ -14,9 +14,14 @@ import { MenuItemsModule } from './menu-items/menu-items.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { RestaurantsModule } from './restaurants/restaurants.module';
-import { OrdersModule } from './orders/orders.module';
 import { WaiterModule } from './waiter/waiter.module';
 import { KitchenModule } from './kitchen/kitchen.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { OrdersModule } from './orders/orders.module';
+import { ReportsModule } from './reports/reports.module';
+import { PaymentsModule } from './payments/payments.module';
+import { BillRequestsModule } from './bill-requests/bill-requests.module';
+import { SuperAdminModule } from './super-admin/super-admin.module';
 
 @Module({
   imports: [
@@ -35,9 +40,14 @@ import { KitchenModule } from './kitchen/kitchen.module';
     MenuItemsModule,
     AuthModule,
     UsersModule,
-    OrdersModule,
     WaiterModule,
     KitchenModule,
+    NotificationsModule,
+    OrdersModule,
+    ReportsModule,
+    PaymentsModule,
+    BillRequestsModule,
+    SuperAdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

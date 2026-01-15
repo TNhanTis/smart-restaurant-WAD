@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { modifiersApi } from '../../api/modifiersApi';
+import { modifiersApi } from "../../api/modifiersApi";
 import type {
   ModifierGroup,
   ModifierOption,
@@ -7,9 +7,9 @@ import type {
   CreateModifierOptionData,
 } from "../../types/modifiers.types";
 import type { Restaurant } from "../../types/restaurant.types";
-import { useToast } from '../../contexts/ToastContext';
-import { useConfirm } from '../../components/ConfirmDialog';
-import RestaurantSelector from '../../components/RestaurantSelector';
+import { useToast } from "../../contexts/ToastContext";
+import { useConfirm } from "../../components/ConfirmDialog";
+import RestaurantSelector from "../../components/RestaurantSelector";
 import "../../App.css";
 
 export default function ModifiersManagement() {
@@ -64,9 +64,9 @@ export default function ModifiersManagement() {
 
     try {
       setLoading(true);
-      const data = await modifiersApi.getAllGroups({ 
+      const data = await modifiersApi.getAllGroups({
         restaurant_id: selectedRestaurant.id,
-        includeOptions: true 
+        includeOptions: true,
       });
 
       // Ensure options is always an array
@@ -589,15 +589,45 @@ export default function ModifiersManagement() {
               </div>
 
               {/* Inline Options */}
-              <div style={{ marginTop: "25px", paddingTop: "20px", borderTop: "1px solid #334155" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
-                  <label style={{ fontSize: "1.1rem", fontWeight: "bold", color: "#e2e8f0" }}>
-                    Options {groupFormData.initialOptions && groupFormData.initialOptions.length > 0 && `(${groupFormData.initialOptions.length})`}
+              <div
+                style={{
+                  marginTop: "25px",
+                  paddingTop: "20px",
+                  borderTop: "1px solid #334155",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "15px",
+                  }}
+                >
+                  <label
+                    style={{
+                      fontSize: "1.1rem",
+                      fontWeight: "bold",
+                      color: "#e2e8f0",
+                    }}
+                  >
+                    Options{" "}
+                    {groupFormData.initialOptions &&
+                      groupFormData.initialOptions.length > 0 &&
+                      `(${groupFormData.initialOptions.length})`}
                   </label>
                 </div>
 
-                {groupFormData.initialOptions && groupFormData.initialOptions.length > 0 ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "15px", marginBottom: "15px" }}>
+                {groupFormData.initialOptions &&
+                groupFormData.initialOptions.length > 0 ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "15px",
+                      marginBottom: "15px",
+                    }}
+                  >
                     {groupFormData.initialOptions.map((option, index) => (
                       <div
                         key={index}
@@ -611,27 +641,38 @@ export default function ModifiersManagement() {
                         }}
                         onMouseOver={(e) => {
                           e.currentTarget.style.borderColor = "#6366f1";
-                          e.currentTarget.style.boxShadow = "0 4px 8px rgba(99,102,241,0.2)";
+                          e.currentTarget.style.boxShadow =
+                            "0 4px 8px rgba(99,102,241,0.2)";
                         }}
                         onMouseOut={(e) => {
                           e.currentTarget.style.borderColor = "#334155";
-                          e.currentTarget.style.boxShadow = "0 2px 4px rgba(0,0,0,0.2)";
+                          e.currentTarget.style.boxShadow =
+                            "0 2px 4px rgba(0,0,0,0.2)";
                         }}
                       >
                         {/* Option Header with number */}
-                        <div style={{ marginBottom: "12px", display: "flex", alignItems: "center", gap: "10px" }}>
-                          <span style={{ 
-                            background: "#6366f1", 
-                            color: "white", 
-                            width: "28px", 
-                            height: "28px", 
-                            borderRadius: "50%",
+                        <div
+                          style={{
+                            marginBottom: "12px",
                             display: "flex",
                             alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "12px",
-                            fontWeight: "bold"
-                          }}>
+                            gap: "10px",
+                          }}
+                        >
+                          <span
+                            style={{
+                              background: "#6366f1",
+                              color: "white",
+                              width: "28px",
+                              height: "28px",
+                              borderRadius: "50%",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: "12px",
+                              fontWeight: "bold",
+                            }}
+                          >
                             {index + 1}
                           </span>
                           <span style={{ color: "#94a3b8", fontSize: "13px" }}>
@@ -640,22 +681,38 @@ export default function ModifiersManagement() {
                         </div>
 
                         {/* Input Grid */}
-                        <div style={{
-                          display: "grid",
-                          gridTemplateColumns: "2fr 1fr 1fr auto",
-                          gap: "12px",
-                          alignItems: "flex-end",
-                        }}>
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "2fr 1fr 1fr auto",
+                            gap: "12px",
+                            alignItems: "flex-end",
+                          }}
+                        >
                           {/* Name Input */}
                           <div>
-                            <label style={{ display: "block", fontSize: "12px", color: "#94a3b8", marginBottom: "6px", fontWeight: "500" }}>
+                            <label
+                              style={{
+                                display: "block",
+                                fontSize: "12px",
+                                color: "#94a3b8",
+                                marginBottom: "6px",
+                                fontWeight: "500",
+                              }}
+                            >
                               Name *
                             </label>
                             <input
                               type="text"
                               placeholder="e.g., Small, Medium, Large"
                               value={option.name}
-                              onChange={(e) => updateInlineOption(index, "name", e.target.value)}
+                              onChange={(e) =>
+                                updateInlineOption(
+                                  index,
+                                  "name",
+                                  e.target.value
+                                )
+                              }
                               style={{
                                 width: "100%",
                                 padding: "10px 12px",
@@ -669,7 +726,8 @@ export default function ModifiersManagement() {
                               }}
                               onFocus={(e) => {
                                 e.currentTarget.style.borderColor = "#6366f1";
-                                e.currentTarget.style.boxShadow = "0 0 0 2px rgba(99,102,241,0.1)";
+                                e.currentTarget.style.boxShadow =
+                                  "0 0 0 2px rgba(99,102,241,0.1)";
                               }}
                               onBlur={(e) => {
                                 e.currentTarget.style.borderColor = "#334155";
@@ -680,14 +738,28 @@ export default function ModifiersManagement() {
 
                           {/* Price Input */}
                           <div>
-                            <label style={{ display: "block", fontSize: "12px", color: "#94a3b8", marginBottom: "6px", fontWeight: "500" }}>
+                            <label
+                              style={{
+                                display: "block",
+                                fontSize: "12px",
+                                color: "#94a3b8",
+                                marginBottom: "6px",
+                                fontWeight: "500",
+                              }}
+                            >
                               Price
                             </label>
                             <input
                               type="number"
                               placeholder="0"
                               value={option.price_adjustment}
-                              onChange={(e) => updateInlineOption(index, "price_adjustment", parseFloat(e.target.value) || 0)}
+                              onChange={(e) =>
+                                updateInlineOption(
+                                  index,
+                                  "price_adjustment",
+                                  parseFloat(e.target.value) || 0
+                                )
+                              }
                               step="1000"
                               style={{
                                 width: "100%",
@@ -702,7 +774,8 @@ export default function ModifiersManagement() {
                               }}
                               onFocus={(e) => {
                                 e.currentTarget.style.borderColor = "#6366f1";
-                                e.currentTarget.style.boxShadow = "0 0 0 2px rgba(99,102,241,0.1)";
+                                e.currentTarget.style.boxShadow =
+                                  "0 0 0 2px rgba(99,102,241,0.1)";
                               }}
                               onBlur={(e) => {
                                 e.currentTarget.style.borderColor = "#334155";
@@ -713,12 +786,26 @@ export default function ModifiersManagement() {
 
                           {/* Status Select */}
                           <div>
-                            <label style={{ display: "block", fontSize: "12px", color: "#94a3b8", marginBottom: "6px", fontWeight: "500" }}>
+                            <label
+                              style={{
+                                display: "block",
+                                fontSize: "12px",
+                                color: "#94a3b8",
+                                marginBottom: "6px",
+                                fontWeight: "500",
+                              }}
+                            >
                               Status
                             </label>
                             <select
                               value={option.status || "active"}
-                              onChange={(e) => updateInlineOption(index, "status", e.target.value)}
+                              onChange={(e) =>
+                                updateInlineOption(
+                                  index,
+                                  "status",
+                                  e.target.value
+                                )
+                              }
                               style={{
                                 width: "100%",
                                 padding: "10px 12px",
@@ -733,7 +820,8 @@ export default function ModifiersManagement() {
                               }}
                               onFocus={(e) => {
                                 e.currentTarget.style.borderColor = "#6366f1";
-                                e.currentTarget.style.boxShadow = "0 0 0 2px rgba(99,102,241,0.1)";
+                                e.currentTarget.style.boxShadow =
+                                  "0 0 0 2px rgba(99,102,241,0.1)";
                               }}
                               onBlur={(e) => {
                                 e.currentTarget.style.borderColor = "#334155";
@@ -766,9 +854,28 @@ export default function ModifiersManagement() {
 
                         {/* Price display */}
                         {option.price_adjustment !== 0 && (
-                          <div style={{ marginTop: "8px", fontSize: "12px", color: "#94a3b8" }}>
-                            Price adjustment: <span style={{ color: option.price_adjustment > 0 ? "#10b981" : "#ef4444", fontWeight: "bold" }}>
-                              {option.price_adjustment > 0 ? "+" : ""}{Number(option.price_adjustment).toLocaleString()} VND
+                          <div
+                            style={{
+                              marginTop: "8px",
+                              fontSize: "12px",
+                              color: "#94a3b8",
+                            }}
+                          >
+                            Price adjustment:{" "}
+                            <span
+                              style={{
+                                color:
+                                  option.price_adjustment > 0
+                                    ? "#10b981"
+                                    : "#ef4444",
+                                fontWeight: "bold",
+                              }}
+                            >
+                              {option.price_adjustment > 0 ? "+" : ""}
+                              {Number(
+                                option.price_adjustment
+                              ).toLocaleString()}{" "}
+                              VND
                             </span>
                           </div>
                         )}
@@ -776,16 +883,21 @@ export default function ModifiersManagement() {
                     ))}
                   </div>
                 ) : (
-                  <div style={{
-                    padding: "20px",
-                    textAlign: "center",
-                    background: "#0f172a",
-                    borderRadius: "8px",
-                    border: "1px dashed #334155",
-                    marginBottom: "15px",
-                  }}>
-                    <p style={{ color: "#64748b", fontSize: "14px", margin: 0 }}>
-                      No options yet. Click the button below to add your first option.
+                  <div
+                    style={{
+                      padding: "20px",
+                      textAlign: "center",
+                      background: "#0f172a",
+                      borderRadius: "8px",
+                      border: "1px dashed #334155",
+                      marginBottom: "15px",
+                    }}
+                  >
+                    <p
+                      style={{ color: "#64748b", fontSize: "14px", margin: 0 }}
+                    >
+                      No options yet. Click the button below to add your first
+                      option.
                     </p>
                   </div>
                 )}

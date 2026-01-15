@@ -20,6 +20,10 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   public order: PrismaClient['order'];
   public orderItem: PrismaClient['orderItem'];
   public orderItemModifier: PrismaClient['orderItemModifier'];
+  public notification: PrismaClient['notifications'];
+  public payment: PrismaClient['payments'];
+  public paymentMethod: PrismaClient['payment_methods'];
+  public billRequest: PrismaClient['bill_requests'];
 
   private client: PrismaClient;
   private pool: Pool;
@@ -50,6 +54,10 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     this.order = this.client.order;
     this.orderItem = this.client.orderItem;
     this.orderItemModifier = this.client.orderItemModifier;
+    this.notification = this.client.notifications;
+    this.payment = this.client.payments;
+    this.paymentMethod = this.client.payment_methods;
+    this.billRequest = this.client.bill_requests;
   }
 
   async onModuleInit() {

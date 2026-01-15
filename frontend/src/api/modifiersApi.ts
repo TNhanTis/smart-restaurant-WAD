@@ -21,7 +21,8 @@ export const modifiersApi = {
     includeOptions?: boolean;
   }) => {
     const params = new URLSearchParams();
-    if (filters?.restaurant_id) params.append("restaurant_id", filters.restaurant_id);
+    if (filters?.restaurant_id)
+      params.append("restaurant_id", filters.restaurant_id);
     if (filters?.status) params.append("status", filters.status);
     if (filters?.includeOptions)
       params.append("includeOptions", filters.includeOptions.toString());
