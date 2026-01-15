@@ -11,7 +11,7 @@ import { QueryItemsDto } from './dto/query-items.dto';
 
 @Injectable()
 export class MenuItemsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   /**
    * Create a new menu item

@@ -43,7 +43,7 @@ export class PaymentsService {
     } = dto;
 
     // 1. Validate bill request
-    const billRequest = await this.prisma.billRequest.findUnique({
+    const billRequest = await this.prisma.bill_requests.findUnique({
       where: { id: bill_request_id },
     });
 
@@ -58,7 +58,7 @@ export class PaymentsService {
     }
 
     // 2. Lấy payment method từ DB (dùng code, không có restaurant_id)
-    const paymentMethod = await this.prisma.paymentMethod.findFirst({
+    const paymentMethod = await this.prisma.payment_methods.findFirst({
       where: {
         code: payment_method.toLowerCase(),
         is_active: true,
@@ -74,7 +74,7 @@ export class PaymentsService {
     const totalAmount = amount + tips_amount;
 
     // 3. Tạo payment record (dùng đúng column names từ schema)
-    const payment = await this.prisma.payment.create({
+    const payment = await this.prisma.payments.create({
       data: {
         bill_request_id,
         payment_method_id: paymentMethod.id,
@@ -130,7 +130,7 @@ export class PaymentsService {
     }
 
     // 5. Update payment với gateway info
-    await this.prisma.payment.update({
+    await this.prisma.payments.update({
       where: { id: payment.id },
       data: {
         gateway_request_id: gatewayResponse.transaction_id,
@@ -165,7 +165,7 @@ export class PaymentsService {
     }
 
     // 2. Tìm payment (orderId chính là payment_id)
-    const payment = await this.prisma.payment.findUnique({
+    const payment = await this.prisma.payments.findUnique({
       where: { id: data.orderId },
       include: { bill_requests: true },
     });
@@ -177,7 +177,7 @@ export class PaymentsService {
     // 3. Update payment status
     const status = data.resultCode === 0 ? 'completed' : 'failed';
 
-    await this.prisma.payment.update({
+    await this.prisma.payments.update({
       where: { id: payment.id },
       data: {
         status,
@@ -220,7 +220,7 @@ export class PaymentsService {
 
     // 2. Parse embed_data để lấy payment_id
     const embedData = JSON.parse(data.embed_data);
-    const payment = await this.prisma.payment.findUnique({
+    const payment = await this.prisma.payments.findUnique({
       where: { id: embedData.payment_id },
       include: { bill_requests: true },
     });
@@ -232,7 +232,7 @@ export class PaymentsService {
     // 3. Update payment status (dùng đúng column names)
     const status = data.status === 1 ? 'completed' : 'failed';
 
-    await this.prisma.payment.update({
+    await this.prisma.payments.update({
       where: { id: payment.id },
       data: {
         status,
@@ -256,7 +256,7 @@ export class PaymentsService {
   private async completeBillPayment(bill_request_id: string) {
     console.log('📋 [Complete Bill] Starting for bill:', bill_request_id);
     
-    const billRequest = await this.prisma.billRequest.findUnique({
+    const billRequest = await this.prisma.bill_requests.findUnique({
       where: { id: bill_request_id },
     });
 
@@ -288,7 +288,7 @@ export class PaymentsService {
     console.log('✅ Orders updated:', updatedOrders.count, 'orders');
 
     // Update bill_request sang 'completed'
-    await this.prisma.billRequest.update({
+    await this.prisma.bill_requests.update({
       where: { id: bill_request_id },
       data: {
         status: 'completed',
@@ -300,7 +300,7 @@ export class PaymentsService {
     // Phase 4: Emit socket event 'bill-paid'
     try {
       // Lấy payment info để emit
-      const payment = await this.prisma.payment.findFirst({
+      const payment = await this.prisma.payments.findFirst({
         where: { bill_request_id },
         include: {
           bill_requests: {
@@ -341,7 +341,7 @@ export class PaymentsService {
     const payment_id = query.vnp_TxnRef;
     console.log('🔑 Payment ID:', payment_id);
     
-    const payment = await this.prisma.payment.findUnique({
+    const payment = await this.prisma.payments.findUnique({
       where: { id: payment_id },
       include: { bill_requests: true },
     });
@@ -387,7 +387,7 @@ export class PaymentsService {
       transactionNo: query.vnp_TransactionNo,
     });
 
-    await this.prisma.payment.update({
+    await this.prisma.payments.update({
       where: { id: payment.id },
       data: {
         status,
@@ -417,7 +417,7 @@ export class PaymentsService {
   }) {
     const { payment_id, received_amount, waiter_id } = dto;
 
-    const payment = await this.prisma.payment.findUnique({
+    const payment = await this.prisma.payments.findUnique({
       where: { id: payment_id },
       include: { bill_requests: true },
     });
@@ -434,7 +434,7 @@ export class PaymentsService {
 
     const change = received_amount - payment.amount.toNumber();
 
-    await this.prisma.payment.update({
+    await this.prisma.payments.update({
       where: { id: payment.id },
       data: {
         status: 'completed',
@@ -516,7 +516,7 @@ export class PaymentsService {
 
     // Query
     const [payments, total] = await Promise.all([
-      this.prisma.payment.findMany({
+      this.prisma.payments.findMany({
         where,
         skip,
         take: limit,
@@ -553,7 +553,7 @@ export class PaymentsService {
           created_at: 'desc',
         },
       }),
-      this.prisma.payment.count({ where }),
+      this.prisma.payments.count({ where }),
     ]);
 
     return {
@@ -571,7 +571,7 @@ export class PaymentsService {
    * Get payment details
    */
   async getPaymentDetail(paymentId: string) {
-    const payment = await this.prisma.payment.findUnique({
+    const payment = await this.prisma.payments.findUnique({
       where: { id: paymentId },
       include: {
         payment_methods: {
@@ -644,7 +644,7 @@ export class PaymentsService {
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
 
-    const payments = await this.prisma.payment.findMany({
+    const payments = await this.prisma.payments.findMany({
       where: {
         status: 'completed',
         completed_at: {
@@ -714,7 +714,7 @@ export class PaymentsService {
    * Analytics: Success rate by method
    */
   async getSuccessRateByMethod() {
-    const payments = await this.prisma.payment.findMany({
+    const payments = await this.prisma.payments.findMany({
       include: {
         payment_methods: true,
       },

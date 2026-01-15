@@ -1,15 +1,15 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { BillRequestsController } from './bill-requests.controller';
 import { BillRequestsService } from './bill-requests.service';
-import { PaymentsModule } from 'src/payments/payments.module';
-import { PrismaModule } from 'src/prisma/prisma.module';
-import { NotificationsModule } from 'src/notifications/notifications.module';
+import { PrismaModule } from '../prisma/prisma.module';
+import { PaymentsModule } from '../payments/payments.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
     PrismaModule,
-    PaymentsModule,
-    NotificationsModule,
+    forwardRef(() => PaymentsModule),
+    forwardRef(() => NotificationsModule),
   ],
   controllers: [BillRequestsController],
   providers: [BillRequestsService],

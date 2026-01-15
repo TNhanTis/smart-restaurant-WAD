@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getPublicRestaurants } from '../../api/publicApi';
@@ -13,6 +13,8 @@ const RestaurantList: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadRestaurants();
@@ -32,6 +34,23 @@ const RestaurantList: React.FC = () => {
       setFilteredRestaurants(filtered);
     }
   }, [searchQuery, restaurants]);
+
+  useEffect(() => {
+    // Close menu when clicking outside
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+
+    if (menuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [menuOpen]);
 
   const loadRestaurants = async () => {
     try {
@@ -62,6 +81,11 @@ const RestaurantList: React.FC = () => {
     navigate('/customer/login');
   };
 
+  const isRegisteredUser = () => {
+    // Check if user is registered (has auth_token)
+    return !!localStorage.getItem('auth_token');
+  };
+
   const getRestaurantEmoji = () => {
     // Random emoji for now since we don't have cuisine_type
     const emojis = ['🍽️', '🍝', '🍱', '�', '🥢', '�', '🥐', '🍛', '🍜', '�'];
@@ -82,9 +106,68 @@ const RestaurantList: React.FC = () => {
               <div className="user-name">{user?.full_name || user?.email || 'Guest'}</div>
             </div>
           </div>
-          <button className="logout-btn" onClick={handleLogout} title="Logout">
-            <span>🚪</span>
-          </button>
+
+          {/* User Menu */}
+          <div className="user-menu" ref={menuRef}>
+            <button
+              className="menu-toggle-btn"
+              onClick={() => setMenuOpen(!menuOpen)}
+              title="Menu"
+            >
+              <span>☰</span>
+            </button>
+
+            {menuOpen && (
+              <div className="menu-dropdown">
+                {isRegisteredUser() ? (
+                  <>
+                    <button
+                      className="menu-item"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        navigate('/customer/dashboard-profile');
+                      }}
+                    >
+                      <span className="menu-icon">👤</span>
+                      Profile
+                    </button>
+                    <button
+                      className="menu-item"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        navigate('/customer/order-history');
+                      }}
+                    >
+                      <span className="menu-icon">📦</span>
+                      Order History
+                    </button>
+                    <div className="menu-divider"></div>
+                    <button
+                      className="menu-item menu-item-danger"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        handleLogout();
+                      }}
+                    >
+                      <span className="menu-icon">🚪</span>
+                      Logout
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    className="menu-item"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      navigate('/customer/login');
+                    }}
+                  >
+                    <span className="menu-icon">�</span>
+                    Login / Register
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

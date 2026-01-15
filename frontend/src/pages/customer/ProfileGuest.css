@@ -1,0 +1,360 @@
+/* Profile Guest Page Styles */
+
+.profile-card {
+    background: white;
+    border-radius: 16px;
+    padding: 32px 20px;
+    margin: 16px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.profile-avatar {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    margin: 0 auto 16px;
+}
+
+.profile-name {
+    font-size: 24px;
+    font-weight: 700;
+    color: #2c3e50;
+    margin: 0 0 8px;
+}
+
+.profile-subtitle {
+    font-size: 14px;
+    color: #7f8c8d;
+    margin: 0;
+}
+
+.profile-email {
+    font-size: 15px;
+    color: #5a6c7d;
+    margin: 4px 0;
+}
+
+.profile-phone {
+    font-size: 14px;
+    color: #5a6c7d;
+    margin: 4px 0;
+}
+
+.btn-edit-profile {
+    margin-top: 16px;
+    padding: 10px 24px;
+    background: white;
+    border: 2px solid #e74c3c;
+    color: #e74c3c;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-edit-profile:hover {
+    background: #e74c3c;
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* Stats Card */
+.stats-card {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    margin: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.card-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0 0 16px;
+}
+
+.stats-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.stat-compact {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 8px;
+    background: #f8f9fa;
+    border-radius: 12px;
+}
+
+.stat-icon {
+    font-size: 24px;
+}
+
+.stat-text {
+    font-size: 13px;
+    font-weight: 600;
+    color: #2c3e50;
+    text-align: center;
+}
+
+/* Quick Actions */
+.quick-actions-card {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    margin: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.actions-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 20px 12px;
+    background: #f8f9fa;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.action-btn:hover {
+    background: #e9ecef;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.action-icon {
+    font-size: 32px;
+}
+
+.action-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+/* Account Card */
+.account-card {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    margin: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.account-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    margin-bottom: 8px;
+    background: #f8f9fa;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.account-btn:last-child {
+    margin-bottom: 0;
+}
+
+.account-btn:hover {
+    background: #e9ecef;
+    transform: translateX(4px);
+}
+
+.account-btn.logout {
+    background: #fff5f5;
+    color: #e74c3c;
+}
+
+.account-btn.logout:hover {
+    background: #ffe5e5;
+}
+
+.account-icon {
+    font-size: 24px;
+}
+
+.account-text {
+    flex: 1;
+    text-align: left;
+    font-weight: 600;
+    font-size: 15px;
+    color: #2c3e50;
+}
+
+.account-btn.logout .account-text {
+    color: #e74c3c;
+}
+
+.account-arrow {
+    font-size: 18px;
+    color: #95a5a6;
+}
+
+/* Benefits Card */
+.benefits-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 16px;
+    padding: 24px;
+    margin: 16px;
+    color: white;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.benefits-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.benefits-icon {
+    font-size: 32px;
+}
+
+.benefits-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0;
+}
+
+.benefits-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 24px;
+}
+
+.benefit-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    font-size: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.benefit-item:last-child {
+    border-bottom: none;
+}
+
+.benefit-check {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.benefits-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-signup,
+.btn-login {
+    flex: 1;
+    padding: 14px 24px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-signup {
+    background: white;
+    color: #667eea;
+}
+
+.btn-signup:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
+}
+
+.btn-login {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 2px solid white;
+}
+
+.btn-login:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+/* Help Card */
+.help-card {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    margin: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.help-button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    background: #f8f9fa;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    color: #2c3e50;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.help-button:last-child {
+    margin-bottom: 0;
+}
+
+.help-button:hover {
+    background: #e9ecef;
+    transform: translateX(4px);
+}
+
+.help-icon {
+    font-size: 24px;
+}
+
+.help-text {
+    flex: 1;
+    text-align: left;
+    font-weight: 500;
+}
+
+/* Responsive */
+@media (min-width: 768px) {
+    .stats-row {
+        gap: 16px;
+    }
+
+    .actions-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}

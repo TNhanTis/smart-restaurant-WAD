@@ -22,6 +22,7 @@ interface MenuItem {
     name: string;
   } | null;
   isAvailable: boolean;
+  isChefRecommended?: boolean;
 }
 
 export default function CustomerMenu() {
@@ -29,12 +30,13 @@ export default function CustomerMenu() {
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const restaurantId = searchParams.get('restaurant');
-  
+
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [restaurantName, setRestaurantName] = useState<string>('Restaurant Menu');
+  const [sortBy, setSortBy] = useState<string>(''); // '', 'popularity', 'chef'
 
   useEffect(() => {
     if (location.state && (location.state as any).restaurantName) {
@@ -50,7 +52,7 @@ export default function CustomerMenu() {
       try {
         const [categoriesData, menuData] = await Promise.all([
           getMenuCategories(restaurantId),
-          getPublicMenu(undefined, undefined, restaurantId),
+          getPublicMenu(undefined, undefined, restaurantId, sortBy),
         ]);
         setCategories(categoriesData || []);
         setMenuItems(menuData?.items || []);
@@ -60,13 +62,13 @@ export default function CustomerMenu() {
     };
 
     loadMenu();
-  }, [restaurantId, navigate, location.state]);
+  }, [restaurantId, navigate, location.state, sortBy]);
 
   const handleCategoryChange = async (categoryId: string) => {
     if (!restaurantId) return;
     setSelectedCategory(categoryId);
     try {
-      const menuData = await getPublicMenu(categoryId || undefined, searchTerm || undefined, restaurantId);
+      const menuData = await getPublicMenu(categoryId || undefined, searchTerm || undefined, restaurantId, sortBy);
       setMenuItems(menuData?.items || []);
     } catch (error) {
       console.error('Filter failed:', error);
@@ -77,10 +79,21 @@ export default function CustomerMenu() {
     if (!restaurantId) return;
     setSearchTerm(term);
     try {
-      const menuData = await getPublicMenu(selectedCategory || undefined, term || undefined, restaurantId);
+      const menuData = await getPublicMenu(selectedCategory || undefined, term || undefined, restaurantId, sortBy);
       setMenuItems(menuData?.items || []);
     } catch (error) {
       console.error('Search failed:', error);
+    }
+  };
+
+  const handleSortChange = async (newSortBy: string) => {
+    if (!restaurantId) return;
+    setSortBy(newSortBy);
+    try {
+      const menuData = await getPublicMenu(selectedCategory || undefined, searchTerm || undefined, restaurantId, newSortBy);
+      setMenuItems(menuData?.items || []);
+    } catch (error) {
+      console.error('Sort failed:', error);
     }
   };
 
@@ -89,8 +102,8 @@ export default function CustomerMenu() {
       {/* Header */}
       <div className="menu-header">
         <div className="header-left">
-          <button 
-            className="header-back" 
+          <button
+            className="header-back"
             onClick={() => navigate('/customer/restaurants')}
           >
             ←
@@ -136,6 +149,21 @@ export default function CustomerMenu() {
         </div>
       )}
 
+      {/* Sort Dropdown */}
+      <div className="sort-section">
+        <label htmlFor="sort-select" className="sort-label">Sort by:</label>
+        <select
+          id="sort-select"
+          className="sort-select"
+          value={sortBy}
+          onChange={(e) => handleSortChange(e.target.value)}
+        >
+          <option value="">Default</option>
+          <option value="popularity">Most Popular</option>
+          <option value="chef">Chef's Recommendations</option>
+        </select>
+      </div>
+
       {/* Menu Items Grid */}
       <div className="menu-items-grid">
         {menuItems.length === 0 ? (
@@ -145,19 +173,31 @@ export default function CustomerMenu() {
           </div>
         ) : (
           menuItems.map((item) => (
-            <div key={item.id} className="menu-item-card">
+            <div
+              key={item.id}
+              className="menu-item-card"
+              onClick={() => navigate(`/customer/menu/item/${item.id}`)}
+              style={{ cursor: 'pointer' }}
+            >
               <div className="item-image-wrapper">
                 {item.image ? (
                   <img src={item.image} alt={item.name} className="item-image" />
                 ) : (
-                  <div className="item-image" style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
+                  <div className="item-image" style={{
+                    display: 'flex',
+                    alignItems: 'center',
                     justifyContent: 'center',
                     fontSize: '48px',
                     background: '#f5f5f5'
                   }}>
                     🍽️
+                  </div>
+                )}
+                {/* Show badge for chef recommended items */}
+                {item.isChefRecommended && (
+                  <div className="chef-recommend-badge">
+                    <span className="chef-icon">👨‍🍳</span>
+                    <span className="chef-text">Chef's Pick</span>
                   </div>
                 )}
               </div>

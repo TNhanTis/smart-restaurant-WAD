@@ -52,6 +52,16 @@ export interface Table {
   location?: string;
 }
 
+// DTO for creating orders (matches backend expectations)
+export interface CreateOrderItemDto {
+  menu_item_id: string;
+  quantity: number;
+  special_requests?: string;
+  modifiers?: Array<{
+    modifier_option_id: string;
+  }>;
+}
+
 export interface Order {
   id: string;
   restaurant_id: string;
@@ -113,10 +123,12 @@ export const ordersApi = {
 
   // Create new order
   async create(orderData: {
+    restaurant_id: string;
     table_id: string;
     customer_id?: string;
-    items: OrderItem[];
-    special_instructions?: string;
+    session_id?: string;
+    items: CreateOrderItemDto[];
+    special_requests?: string;
   }): Promise<Order> {
     try {
       const response = await api.post("/api/orders", orderData);
@@ -219,4 +231,38 @@ export const ordersApi = {
       throw error;
     }
   },
+
+  async getOrderStatus(orderId: string): Promise<any> {
+    try {
+      const response = await api.get(`/api/orders/${orderId}/status`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching order status:", error);
+      throw error;
+    }
+  },
+
+  async getOrderById(orderId: string): Promise<any> {
+    try {
+      const response = await api.get(`/api/orders/${orderId}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching order details:", error);
+      throw error;
+    }
+  },
+
+  async addItemsToOrder(orderId: string, items: any[]): Promise<any> {
+    try {
+      const response = await api.post(`/api/orders/${orderId}/add-items`, {
+        items,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error adding items to order:", error);
+      throw error;
+    }
+  },
 };
+
+export default ordersApi;

@@ -59,11 +59,11 @@ export class SuperAdminService {
       }),
 
       // Revenue
-      this.prisma.payment.aggregate({
+      this.prisma.payments.aggregate({
         where: { status: 'completed' },
         _sum: { amount: true },
       }),
-      this.prisma.payment.aggregate({
+      this.prisma.payments.aggregate({
         where: {
           status: 'completed',
           completed_at: {
@@ -73,7 +73,7 @@ export class SuperAdminService {
         },
         _sum: { amount: true },
       }),
-      this.prisma.payment.aggregate({
+      this.prisma.payments.aggregate({
         where: {
           status: 'completed',
           completed_at: {
@@ -84,7 +84,7 @@ export class SuperAdminService {
       }),
 
       // Payment stats
-      this.prisma.payment.groupBy({
+      this.prisma.payments.groupBy({
         by: ['status'],
         _count: { id: true },
         _sum: { amount: true },
@@ -110,7 +110,7 @@ export class SuperAdminService {
       },
     });
 
-    const yesterdayRevenue = await this.prisma.payment.aggregate({
+    const yesterdayRevenue = await this.prisma.payments.aggregate({
       where: {
         status: 'completed',
         completed_at: {

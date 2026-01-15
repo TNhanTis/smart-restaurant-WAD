@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link, Location } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { authApi } from '../../api/authApi';
 import './CustomerAuth.css';
@@ -12,6 +12,7 @@ interface PasswordStrength {
 
 const CustomerRegister: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
@@ -65,7 +66,7 @@ const CustomerRegister: React.FC = () => {
       ...formData,
       [name]: type === 'checkbox' ? checked : value,
     });
-    
+
     // Clear error for this field
     if (errors[name]) {
       setErrors({ ...errors, [name]: '' });
@@ -130,7 +131,10 @@ const CustomerRegister: React.FC = () => {
       });
 
       login(response.access_token, response.user);
-      navigate('/customer/menu', { replace: true });
+
+      // Redirect to previous page or default to menu
+      const from = (location.state as { from?: Location })?.from?.pathname || '/customer/menu';
+      navigate(from, { replace: true });
     } catch (err: any) {
       setErrors({
         submit: err.response?.data?.message || 'Registration failed. Please try again.',

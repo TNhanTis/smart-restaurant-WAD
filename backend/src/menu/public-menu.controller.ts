@@ -3,7 +3,7 @@ import { PublicMenuService } from './public-menu.service';
 
 @Controller('api/public/menu')
 export class PublicMenuController {
-  constructor(private publicMenuService: PublicMenuService) {}
+  constructor(private publicMenuService: PublicMenuService) { }
 
   @Get('restaurants')
   async getRestaurants() {
@@ -15,13 +15,19 @@ export class PublicMenuController {
     @Query('category') categoryId?: string,
     @Query('search') searchTerm?: string,
     @Query('restaurant') restaurantId?: string,
+    @Query('sortBy') sortBy?: string,
   ) {
-    return this.publicMenuService.getMenu(categoryId, searchTerm, restaurantId);
+    return this.publicMenuService.getMenu(categoryId, searchTerm, restaurantId, sortBy);
   }
 
   @Get('items/:id')
   async getItemDetails(@Param('id') itemId: string) {
     return this.publicMenuService.getItemDetails(itemId);
+  }
+
+  @Get('items/:id/related')
+  async getRelatedItems(@Param('id') itemId: string) {
+    return this.publicMenuService.getRelatedItems(itemId);
   }
 
   @Get('categories')

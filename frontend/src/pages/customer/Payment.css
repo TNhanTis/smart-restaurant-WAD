@@ -1,0 +1,408 @@
+/* Payment Page Styles - Responsive */
+
+.payment-container {
+  min-height: 100vh;
+  background: #f8f9fa;
+  padding-bottom: 100px;
+}
+
+.payment-header {
+  background: #fff;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.payment-back-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #2c3e50;
+}
+
+.payment-header-content {
+  flex: 1;
+}
+
+.payment-header-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+  color: #2c3e50;
+}
+
+.payment-header-subtitle {
+  font-size: 14px;
+  color: #34495e;
+  margin: 0;
+}
+
+.payment-content {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Bill Header */
+.bill-header {
+  text-align: center;
+  padding: 30px 20px;
+  background: #fff;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.bill-header-icon {
+  font-size: 48px;
+  margin-bottom: 10px;
+}
+
+.bill-header-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 5px;
+  color: #2c3e50;
+}
+
+.bill-header-meta {
+  color: #34495e;
+  font-size: 14px;
+}
+
+/* Bill Section */
+.bill-section {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.bill-section-title {
+  font-weight: 600;
+  color: #34495e;
+  margin-bottom: 15px;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.bill-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 12px 0;
+  border-bottom: 1px solid #ecf0f1;
+}
+
+.bill-item:last-child {
+  border-bottom: none;
+}
+
+.bill-item-details {
+  display: flex;
+  gap: 10px;
+  flex: 1;
+}
+
+.bill-item-qty {
+  color: #e74c3c;
+  font-weight: 600;
+  min-width: 30px;
+}
+
+.bill-item-name {
+  font-weight: 500;
+  margin-bottom: 3px;
+  color: #2c3e50;
+}
+
+.bill-item-mods {
+  font-size: 13px;
+  color: #7f8c8d;
+}
+
+.bill-item-price {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2c3e50;
+}
+
+/* Totals */
+.bill-totals {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.bill-total-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  font-size: 15px;
+  color: #2c3e50;
+}
+
+.bill-total-row.grand-total {
+  font-size: 24px;
+  font-weight: 700;
+  padding-top: 15px;
+  margin-top: 10px;
+  border-top: 2px solid #2c3e50;
+  color: #e74c3c;
+}
+
+/* Payment Methods */
+.payment-methods {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.payment-method-title {
+  font-weight: 600;
+  margin-bottom: 15px;
+  font-size: 16px;
+  color: #2c3e50;
+}
+
+.payment-option {
+  padding: 15px;
+  border: 2px solid #ecf0f1;
+  border-radius: 12px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.payment-option:hover {
+  border-color: #e74c3c;
+}
+
+.payment-option.selected {
+  border-color: #e74c3c;
+  background: rgba(231, 76, 60, 0.05);
+}
+
+.payment-option input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.payment-option-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.payment-logo {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+/* Tips */
+.tips-section {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.tips-title {
+  font-weight: 600;
+  margin-bottom: 15px;
+  font-size: 16px;
+  color: #2c3e50;
+}
+
+.tips-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.tip-btn {
+  flex: 1;
+  padding: 12px;
+  border: 2px solid #ecf0f1;
+  background: #fff;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  color: #2c3e50;
+}
+
+.tip-btn:hover {
+  border-color: #e74c3c;
+}
+
+.tip-btn.selected {
+  border-color: #e74c3c;
+  background: #e74c3c;
+  color: #fff;
+}
+
+.tip-amount {
+  color: #34495e;
+  font-size: 14px;
+}
+
+.tip-amount strong {
+  color: #2c3e50;
+  font-size: 16px;
+}
+
+/* Customer Note */
+.note-section {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.note-title {
+  font-weight: 600;
+  margin-bottom: 10px;
+  font-size: 16px;
+  color: #2c3e50;
+}
+
+.note-input {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #ecf0f1;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.note-input:focus {
+  outline: none;
+  border-color: #e74c3c;
+}
+
+/* Request Bill Button */
+.request-bill-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  padding: 15px 20px;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+.request-bill-btn {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  display: block;
+  padding: 16px;
+  background: #e74c3c;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.request-bill-btn:hover {
+  background: #c0392b;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+}
+
+.request-bill-btn:disabled {
+  background: #95a5a6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Loading State */
+.loading-state {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #ecf0f1;
+  border-top-color: #e74c3c;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 15px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Error State */
+.error-state {
+  background: #fff;
+  border-radius: 12px;
+  padding: 30px 20px;
+  text-align: center;
+  margin: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.error-icon {
+  font-size: 48px;
+  margin-bottom: 15px;
+}
+
+.error-message {
+  color: #e74c3c;
+  margin-bottom: 20px;
+}
+
+.retry-btn {
+  padding: 12px 24px;
+  background: #e74c3c;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Responsive */
+@media (min-width: 768px) {
+  .payment-content {
+    padding: 30px 20px;
+  }
+
+  .request-bill-bar {
+    padding: 20px;
+  }
+}

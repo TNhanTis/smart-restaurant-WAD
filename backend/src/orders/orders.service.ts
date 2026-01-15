@@ -12,11 +12,13 @@ import {
 
 import { NotificationsGateway } from '../notifications/notifications.gateway';
 import { NotificationsService } from '../notifications/notifications.service';
+import { CartService } from '../cart/cart.service';
 
 @Injectable()
 export class OrdersService {
   constructor(
     private prisma: PrismaService,
+    private cartService: CartService,
     private notificationsGateway: NotificationsGateway,
     private notificationsService: NotificationsService,
   ) {}
@@ -48,6 +50,12 @@ export class OrdersService {
         restaurant_id: createDto.restaurant_id,
         is_deleted: false,
       },
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        status: true,
+      },
     });
 
     if (menuItems.length !== menuItemIds.length) {
@@ -65,7 +73,9 @@ export class OrdersService {
     }
 
     // Create a map of menu items for quick lookup
-    const menuItemMap = new Map(menuItems.map((item) => [item.id, item]));
+    const menuItemMap = new Map<string, (typeof menuItems)[0]>(
+      menuItems.map((item) => [item.id, item]),
+    );
 
     // Validate and collect all modifier option IDs
     const allModifierOptionIds = createDto.items
@@ -180,6 +190,19 @@ export class OrdersService {
 
       return newOrder;
     });
+
+    // Clear the cart after successful order creation
+    if (createDto.customer_id || createDto.session_id) {
+      try {
+        await this.cartService.clearCart(
+          createDto.customer_id ?? null,
+          createDto.session_id ?? '',
+        );
+      } catch (error) {
+        // Log error but don't fail order creation if cart clearing fails
+        console.error('Failed to clear cart after order creation:', error);
+      }
+    }
 
     // Return the complete order with items and modifiers
     const completeOrder = await this.getOrderDetails(order.id);
@@ -1105,5 +1128,168 @@ export class OrdersService {
     }
 
     console.log(`⚠️ Notified: Order ${order.order_number} cancelled`);
+  }
+
+  /**
+   * Add items to an existing open order
+   * Only allowed for orders with status: pending, accepted, preparing
+   */
+  async addItemsToOrder(orderId: string, items: any[]) {
+    // Get existing order
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        order_items: true,
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Order with ID ${orderId} not found`);
+    }
+
+    // Check if order is still open
+    const openStatuses = ['pending', 'accepted', 'preparing'];
+    if (!openStatuses.includes(order.status)) {
+      throw new BadRequestException(
+        `Cannot add items to order with status "${order.status}". Order must be pending, accepted, or preparing.`,
+      );
+    }
+
+    // Validate menu items
+    const menuItemIds = items.map((item) => item.menu_item_id);
+    const menuItems = await this.prisma.menuItem.findMany({
+      where: {
+        id: { in: menuItemIds },
+        is_deleted: false,
+      },
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        status: true,
+      },
+    });
+
+    if (menuItems.length !== menuItemIds.length) {
+      throw new BadRequestException(
+        'Some menu items are invalid or unavailable',
+      );
+    }
+
+    const menuItemsMap = new Map<string, (typeof menuItems)[0]>(
+      menuItems.map((item) => [item.id, item]),
+    );
+
+    // Validate modifiers
+    const allModifierIds = items
+      .flatMap((item) => item.modifiers || [])
+      .map((mod) => mod.modifier_option_id);
+
+    let modifierOptionsMap = new Map();
+    if (allModifierIds.length > 0) {
+      const modifierOptions = await this.prisma.modifierOption.findMany({
+        where: {
+          id: { in: allModifierIds },
+          status: 'active',
+        },
+      });
+
+      if (modifierOptions.length !== allModifierIds.length) {
+        throw new BadRequestException(
+          'Some modifier options are invalid or unavailable',
+        );
+      }
+
+      modifierOptionsMap = new Map(modifierOptions.map((opt) => [opt.id, opt]));
+    }
+
+    // Calculate new items subtotal
+    let additionalSubtotal = 0;
+    const newItemsData: any[] = [];
+
+    for (const item of items) {
+      const menuItem = menuItemsMap.get(item.menu_item_id);
+      if (!menuItem) {
+        throw new BadRequestException(
+          `Menu item ${item.menu_item_id} not found`,
+        );
+      }
+
+      // Round item price to whole number first
+      let itemSubtotal = Math.round(Number(menuItem.price)) * item.quantity;
+
+      const modifiersData: any[] = [];
+      if (item.modifiers && item.modifiers.length > 0) {
+        for (const mod of item.modifiers) {
+          const modOption = modifierOptionsMap.get(mod.modifier_option_id);
+          if (modOption) {
+            const priceAdjustment = Math.round(
+              Number(modOption.price_adjustment),
+            );
+            itemSubtotal = itemSubtotal + priceAdjustment * item.quantity;
+            modifiersData.push({
+              modifier_option_id: mod.modifier_option_id,
+              price_adjustment: modOption.price_adjustment,
+            });
+          }
+        }
+      }
+
+      additionalSubtotal += itemSubtotal;
+
+      newItemsData.push({
+        menu_item_id: item.menu_item_id,
+        quantity: item.quantity,
+        unit_price: menuItem.price,
+        subtotal: itemSubtotal,
+        special_requests: item.special_requests,
+        modifiers: modifiersData,
+      });
+    }
+
+    // Calculate new totals - round to whole numbers for VND
+    const newSubtotal = Number(order.subtotal) + additionalSubtotal;
+    const newTax = Math.round(newSubtotal * 0.1);
+    const newTotal = newSubtotal + newTax;
+
+    // Add items in transaction
+    const updatedOrder = await this.prisma.$transaction(async (tx: any) => {
+      // Create new order items
+      for (const itemData of newItemsData) {
+        const { modifiers, ...orderItemFields } = itemData;
+
+        const orderItem = await tx.orderItem.create({
+          data: {
+            order_id: orderId,
+            ...orderItemFields,
+          },
+        });
+
+        // Create order item modifiers
+        if (modifiers && modifiers.length > 0) {
+          await tx.orderItemModifier.createMany({
+            data: modifiers.map((mod) => ({
+              order_item_id: orderItem.id,
+              modifier_option_id: mod.modifier_option_id,
+              price_adjustment: mod.price_adjustment,
+            })),
+          });
+        }
+      }
+
+      // Update order totals
+      const updated = await tx.order.update({
+        where: { id: orderId },
+        data: {
+          subtotal: newSubtotal,
+          tax: newTax,
+          total: newTotal,
+        },
+      });
+
+      return updated;
+    });
+
+    return this.getOrderDetails(orderId);
   }
 }

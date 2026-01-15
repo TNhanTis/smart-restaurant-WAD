@@ -150,4 +150,42 @@ export class OrdersController {
     // Otherwise return JSON
     return this.ordersService.getOrderHistory(filters);
   }
+
+  /**
+   * POST /api/orders/:id/add-items
+   * Add items to an existing open order
+   * Recalculates totals and notifies waiter
+   */
+  @Post(':id/add-items')
+  async addItems(
+    @Param('id') id: string,
+    @Body(new ValidationPipe({ transform: true, whitelist: true }))
+    addItemsDto: any, // You can create AddItemsToOrderDto
+  ) {
+    return this.ordersService.addItemsToOrder(id, addItemsDto.items);
+  }
+
+  /**
+   * GET /api/orders/:id/status
+   * Get current order status and timeline
+   * For real-time tracking by customers
+   */
+  @Get(':id/status')
+  async getOrderStatus(@Param('id') id: string) {
+    const order = await this.ordersService.getOrderDetails(id);
+
+    return {
+      order_id: order.id,
+      order_number: order.order_number,
+      status: order.status,
+      timeline: {
+        created_at: order.created_at,
+        accepted_at: order.accepted_at,
+        preparing_at: order.preparing_at,
+        ready_at: order.ready_at,
+        served_at: order.served_at,
+        completed_at: order.completed_at,
+      },
+    };
+  }
 }

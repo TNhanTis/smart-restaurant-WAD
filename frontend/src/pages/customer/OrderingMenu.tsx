@@ -14,6 +14,7 @@ interface MenuItem {
     name: string;
   } | null;
   isAvailable: boolean;
+  isChefRecommended?: boolean;
 }
 
 interface Category {
@@ -52,12 +53,14 @@ export default function OrderingMenu() {
   const [tableInfo, setTableInfo] = useState<TableInfo | null>(null);
   const [restaurantInfo, setRestaurantInfo] = useState<RestaurantInfo | null>(null);
   const [specialInstructions, setSpecialInstructions] = useState('');
+  const [menuLoaded, setMenuLoaded] = useState(false);
+  const [sortBy, setSortBy] = useState<string>(''); // '', 'popularity', 'chef'
 
   useEffect(() => {
     // Get table and restaurant info from localStorage
     const storedTableInfo = localStorage.getItem('table_info');
     const storedRestaurantInfo = localStorage.getItem('restaurant_info');
-    
+
     if (!storedTableInfo || !storedRestaurantInfo) {
       // Redirect back to QR landing if no info found
       navigate('/');
@@ -66,23 +69,62 @@ export default function OrderingMenu() {
 
     const tableData = JSON.parse(storedTableInfo);
     const restaurantData = JSON.parse(storedRestaurantInfo);
-    
+
     setTableInfo(tableData);
     setRestaurantInfo(restaurantData);
 
-    loadMenu(restaurantData.id);
-  }, [navigate]);
+    // Only load menu if not already loaded
+    if (!menuLoaded) {
+      loadMenu(restaurantData.id);
+      setMenuLoaded(true);
+    }
+
+    // Check for re-order items
+    const reorderItems = localStorage.getItem('reorder_items');
+    const reorderRestaurantId = localStorage.getItem('reorder_restaurant_id');
+
+    if (reorderItems && reorderRestaurantId === restaurantData.id) {
+      try {
+        const items = JSON.parse(reorderItems);
+        const cartItems: CartItem[] = items.map((item: any, index: number) => ({
+          id: `${item.id}-${Date.now()}-${index}`,
+          menu_item_id: item.id,
+          name: item.name,
+          price: parseFloat(item.price),
+          quantity: item.quantity,
+          modifiers: item.modifiers || [],
+          subtotal: parseFloat(item.price) * item.quantity,
+        }));
+
+        setCart(cartItems);
+        setShowCart(true); // Auto-open cart to show re-ordered items
+
+        // Clear re-order data after loading
+        localStorage.removeItem('reorder_items');
+        localStorage.removeItem('reorder_restaurant_id');
+      } catch (error) {
+        console.error('Failed to load re-order items:', error);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount - navigate is stable from react-router
 
   const loadMenu = async (restaurantId: string) => {
     try {
-      setLoading(true);
+      // Don't show loading spinner if we already have menu data
+      if (menuItems.length === 0) {
+        setLoading(true);
+      }
+
       const [categoriesData, menuData] = await Promise.all([
         getMenuCategories(restaurantId),
-        getPublicMenu(selectedCategory, searchTerm, restaurantId),
+        getPublicMenu(selectedCategory, searchTerm, restaurantId, sortBy),
       ]);
 
       setCategories(categoriesData);
       setMenuItems(menuData.items);
+      console.log('Menu items loaded:', menuData.items);
+      console.log('Chef recommended items:', menuData.items.filter((item: any) => item.isChefRecommended));
     } catch (error) {
       console.error('Failed to load menu:', error);
     } finally {
@@ -94,7 +136,7 @@ export default function OrderingMenu() {
     if (!restaurantInfo) return;
     setSearchTerm(term);
     try {
-      const menuData = await getPublicMenu(selectedCategory, term, restaurantInfo.id);
+      const menuData = await getPublicMenu(selectedCategory, term, restaurantInfo.id, sortBy);
       setMenuItems(menuData.items);
     } catch (error) {
       console.error('Search failed:', error);
@@ -105,10 +147,21 @@ export default function OrderingMenu() {
     if (!restaurantInfo) return;
     setSelectedCategory(categoryId);
     try {
-      const menuData = await getPublicMenu(categoryId, searchTerm, restaurantInfo.id);
+      const menuData = await getPublicMenu(categoryId, searchTerm, restaurantInfo.id, sortBy);
       setMenuItems(menuData.items);
     } catch (error) {
       console.error('Filter failed:', error);
+    }
+  };
+
+  const handleSortChange = async (newSortBy: string) => {
+    if (!restaurantInfo) return;
+    setSortBy(newSortBy);
+    try {
+      const menuData = await getPublicMenu(selectedCategory, searchTerm, restaurantInfo.id, newSortBy);
+      setMenuItems(menuData.items);
+    } catch (error) {
+      console.error('Sort failed:', error);
     }
   };
 
@@ -180,7 +233,6 @@ export default function OrderingMenu() {
           {/* Search Bar */}
           <div className="search-section">
             <div className="search-bar">
-              <span className="search-icon">🔍</span>
               <input
                 type="text"
                 placeholder="Search dishes..."
@@ -209,6 +261,21 @@ export default function OrderingMenu() {
             ))}
           </div>
 
+          {/* Sort Dropdown */}
+          <div className="sort-section">
+            <label htmlFor="sort-select" className="sort-label">Sort by:</label>
+            <select
+              id="sort-select"
+              className="sort-select"
+              value={sortBy}
+              onChange={(e) => handleSortChange(e.target.value)}
+            >
+              <option value="">Default</option>
+              <option value="popularity">Most Popular</option>
+              <option value="chef">Chef's Recommendations</option>
+            </select>
+          </div>
+
           {/* Menu Items Grid */}
           <div className="menu-items-grid">
             {menuItems.length === 0 ? (
@@ -217,12 +284,34 @@ export default function OrderingMenu() {
               </div>
             ) : (
               menuItems.map((item) => (
-                <div key={item.id} className="menu-item-card">
-                  {item.image && (
-                    <div className="item-image-wrapper">
+                <div
+                  key={item.id}
+                  className="menu-item-card"
+                  onClick={() => navigate(`/customer/order/item/${item.id}`)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <div className="item-image-wrapper">
+                    {item.image ? (
                       <img src={item.image} alt={item.name} className="item-image" />
-                    </div>
-                  )}
+                    ) : (
+                      <div className="item-image" style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '48px',
+                        background: '#f5f5f5'
+                      }}>
+                        🍽️
+                      </div>
+                    )}
+                    {/* Show badge for chef recommended items */}
+                    {item.isChefRecommended && (
+                      <div className="chef-recommend-badge">
+                        <span className="chef-icon">👨‍🍳</span>
+                        <span className="chef-text">Chef's Pick</span>
+                      </div>
+                    )}
+                  </div>
                   <div className="item-details">
                     <h3 className="item-name">{item.name}</h3>
                     {item.description && (
@@ -235,51 +324,21 @@ export default function OrderingMenu() {
                           currency: 'VND',
                         }).format(item.price)}
                       </span>
-                      <button 
-                        className="btn-add-to-cart"
-                        onClick={() => addToCart(item)}
-                        disabled={!item.isAvailable}
-                      >
-                        {item.isAvailable ? '+ Add' : 'Unavailable'}
-                      </button>
+                      <span className={`item-status ${item.isAvailable ? 'available' : 'unavailable'}`}>
+                        {item.isAvailable ? '✓' : '✗'}
+                      </span>
                     </div>
                   </div>
                 </div>
               ))
             )}
           </div>
-
-          {/* Bottom Navigation */}
-          <div className="bottom-nav">
-            <button className="nav-item active">
-              <span className="nav-icon">🍽️</span>
-              <span className="nav-label">Menu</span>
-            </button>
-            <button 
-              className="nav-item"
-              onClick={() => setShowCart(true)}
-            >
-              <span className="nav-icon">🛒</span>
-              {cart.length > 0 && (
-                <span className="cart-badge">{getCartItemCount()}</span>
-              )}
-              <span className="nav-label">Cart</span>
-            </button>
-            <button className="nav-item">
-              <span className="nav-icon">📋</span>
-              <span className="nav-label">Orders</span>
-            </button>
-            <button className="nav-item">
-              <span className="nav-icon">👤</span>
-              <span className="nav-label">Profile</span>
-            </button>
-          </div>
         </>
       ) : (
         <>
           {/* Cart Page */}
           <div className="ordering-header">
-            <button 
+            <button
               className="header-back"
               onClick={() => setShowCart(false)}
             >
@@ -299,7 +358,7 @@ export default function OrderingMenu() {
                 <span className="empty-cart-icon">🛒</span>
                 <h3>Your cart is empty</h3>
                 <p>Add some delicious items to get started!</p>
-                <button 
+                <button
                   className="btn-continue-browsing"
                   onClick={() => setShowCart(false)}
                 >
@@ -337,7 +396,7 @@ export default function OrderingMenu() {
                           <span>{item.quantity}</span>
                           <button onClick={() => updateQuantity(item.id, item.quantity + 1)}>+</button>
                         </div>
-                        <button 
+                        <button
                           className="remove-btn"
                           onClick={() => removeFromCart(item.id)}
                           title="Remove item"
@@ -411,7 +470,7 @@ export default function OrderingMenu() {
                       currency: 'VND',
                     }).format(getCartTotal() * 1.1)}
                   </button>
-                  <button 
+                  <button
                     className="btn-continue-browsing"
                     onClick={() => setShowCart(false)}
                   >
@@ -424,7 +483,7 @@ export default function OrderingMenu() {
 
           {/* Bottom Navigation */}
           <div className="bottom-nav">
-            <button 
+            <button
               className="nav-item"
               onClick={() => setShowCart(false)}
             >

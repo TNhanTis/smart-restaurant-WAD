@@ -6,24 +6,28 @@ import { Pool } from 'pg';
 @Injectable()
 export class PrismaService implements OnModuleInit, OnModuleDestroy {
   // Expose all Prisma models
-  public table: PrismaClient['table'];
-  public menuCategory: PrismaClient['menuCategory'];
-  public menuItem: PrismaClient['menuItem'];
-  public menuItemPhoto: PrismaClient['menuItemPhoto'];
-  public modifierGroup: PrismaClient['modifierGroup'];
-  public modifierOption: PrismaClient['modifierOption'];
-  public menuItemModifierGroup: PrismaClient['menuItemModifierGroup'];
-  public user: PrismaClient['user'];
-  public role: PrismaClient['role'];
-  public userRole: PrismaClient['userRole'];
-  public restaurant: PrismaClient['restaurant'];
-  public order: PrismaClient['order'];
-  public orderItem: PrismaClient['orderItem'];
-  public orderItemModifier: PrismaClient['orderItemModifier'];
-  public notification: PrismaClient['notifications'];
-  public payment: PrismaClient['payments'];
-  public paymentMethod: PrismaClient['payment_methods'];
-  public billRequest: PrismaClient['bill_requests'];
+  public table;
+  public menuCategory;
+  public menuItem;
+  public menuItemPhoto;
+  public modifierGroup;
+  public modifierOption;
+  public menuItemModifierGroup;
+  public user;
+  public role;
+  public userRole;
+  public restaurant;
+  public order;
+  public orderItem;
+  public orderItemModifier;
+  public cart;
+  public cartItem;
+  public cartItemModifier;
+  public bill_requests;
+  public payment_methods;
+  public payments;
+  public review;
+  public notifications;
 
   private client: PrismaClient;
   private pool: Pool;
@@ -54,10 +58,14 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     this.order = this.client.order;
     this.orderItem = this.client.orderItem;
     this.orderItemModifier = this.client.orderItemModifier;
-    this.notification = this.client.notifications;
-    this.payment = this.client.payments;
-    this.paymentMethod = this.client.payment_methods;
-    this.billRequest = this.client.bill_requests;
+    this.cart = this.client.cart;
+    this.cartItem = this.client.cartItem;
+    this.cartItemModifier = this.client.cartItemModifier;
+    this.bill_requests = this.client.bill_requests;
+    this.payment_methods = this.client.payment_methods;
+    this.payments = this.client.payments;
+    this.review = this.client.review;
+    this.notifications = this.client.notifications;
   }
 
   async onModuleInit() {

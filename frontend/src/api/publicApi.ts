@@ -19,12 +19,13 @@ export const getPublicRestaurants = async () => {
 };
 
 // Public Menu API
-export const getPublicMenu = async (categoryId?: string, searchTerm?: string, restaurantId?: string) => {
+export const getPublicMenu = async (categoryId?: string, searchTerm?: string, restaurantId?: string, sortBy?: string) => {
   const params = new URLSearchParams();
   if (categoryId) params.append('category', categoryId);
   if (searchTerm) params.append('search', searchTerm);
   if (restaurantId) params.append('restaurant', restaurantId);
-  
+  if (sortBy) params.append('sortBy', sortBy);
+
   const response = await api.get(`/api/public/menu?${params.toString()}`);
   return response.data;
 };
@@ -34,10 +35,15 @@ export const getMenuItem = async (itemId: string) => {
   return response.data;
 };
 
+export const getRelatedItems = async (itemId: string) => {
+  const response = await api.get(`/api/public/menu/items/${itemId}/related`);
+  return response.data;
+};
+
 export const getMenuCategories = async (restaurantId?: string) => {
   const params = new URLSearchParams();
   if (restaurantId) params.append('restaurant', restaurantId);
-  
+
   const response = await api.get(`/api/public/menu/categories?${params.toString()}`);
   return response.data;
 };
@@ -47,5 +53,6 @@ export default {
   getPublicRestaurants,
   getPublicMenu,
   getMenuItem,
+  getRelatedItems,
   getMenuCategories,
 };

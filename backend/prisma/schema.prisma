@@ -78,14 +78,16 @@ model MenuItem {
   status              String                  @db.VarChar(20)
   is_chef_recommended Boolean                 @default(false)
   is_deleted          Boolean                 @default(false)
+  average_rating      Decimal?                @default(0) @db.Decimal(3, 2)
+  review_count        Int                     @default(0)
   created_at          DateTime                @default(now()) @db.Timestamp(6)
   updated_at          DateTime                @updatedAt @db.Timestamp(6)
-  cart_items          cart_items[]
+  cart_items          CartItem[]
   modifier_groups     MenuItemModifierGroup[]
   photos              MenuItemPhoto[]
   category            MenuCategory            @relation(fields: [category_id], references: [id])
   order_items         OrderItem[]
-  reviews             reviews[]
+  reviews             Review[]
 
   @@index([restaurant_id])
   @@index([category_id])
@@ -126,14 +128,14 @@ model ModifierGroup {
 }
 
 model ModifierOption {
-  id                   String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  group_id             String                @db.Uuid
-  name                 String                @db.VarChar(80)
-  price_adjustment     Decimal               @default(0) @db.Decimal(12, 2)
-  status               String                @default("active") @db.VarChar(20)
-  created_at           DateTime              @default(now()) @db.Timestamp(6)
-  cart_item_modifiers  cart_item_modifiers[]
-  group                ModifierGroup         @relation(fields: [group_id], references: [id], onDelete: Cascade)
+  id                   String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  group_id             String              @db.Uuid
+  name                 String              @db.VarChar(80)
+  price_adjustment     Decimal             @default(0) @db.Decimal(12, 2)
+  status               String              @default("active") @db.VarChar(20)
+  created_at           DateTime            @default(now()) @db.Timestamp(6)
+  cart_item_modifiers  CartItemModifier[]
+  group                ModifierGroup       @relation(fields: [group_id], references: [id], onDelete: Cascade)
   order_item_modifiers OrderItemModifier[]
 
   @@index([group_id])
@@ -177,8 +179,8 @@ model User {
   payments_payments_received_byTousers payments[]      @relation("payments_received_byTousers")
   payments_payments_refunded_byTousers payments[]      @relation("payments_refunded_byTousers")
   restaurants                          Restaurant[]
-  reviews                              reviews[]
   user_roles                           UserRole[]
+  reviews                              Review[]
 
   @@index([email])
   @@index([status])
@@ -195,6 +197,25 @@ model UserRole {
   @@id([user_id, role_id])
   @@map("user_roles")
 }
+
+model Review {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  menu_item_id  String   @db.Uuid
+  user_id       String   @db.Uuid
+  rating        Int      // 1-5 stars
+  comment       String?  // Optional comment
+  created_at    DateTime @default(now()) @db.Timestamp(6)
+  updated_at    DateTime @updatedAt @db.Timestamp(6)
+  
+  menu_item     MenuItem @relation(fields: [menu_item_id], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  
+  @@unique([menu_item_id, user_id]) // One review per user per item
+  @@index([menu_item_id])
+  @@index([user_id])
+  @@map("reviews")
+}
+
 
 model Order {
   id               String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -225,7 +246,6 @@ model Order {
   @@index([customer_id])
   @@index([status])
   @@index([created_at])
-  @@index([waiter_id], map: "idx_orders_waiter_id")
   @@map("orders")
 }
 
@@ -237,6 +257,7 @@ model OrderItem {
   unit_price       Decimal             @db.Decimal(12, 2)
   subtotal         Decimal             @db.Decimal(12, 2)
   special_requests String?
+  status           OrderItemStatus     @default(QUEUED)
   created_at       DateTime            @default(now()) @db.Timestamp(6)
   modifiers        OrderItemModifier[]
   menu_item        MenuItem            @relation(fields: [menu_item_id], references: [id])
@@ -261,44 +282,74 @@ model OrderItemModifier {
   @@map("order_item_modifiers")
 }
 
-model cart_item_modifiers {
+model Cart {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customer_id String?    @db.Uuid
+  session_id  String     @db.VarChar(255)
+  created_at  DateTime?  @default(now()) @db.Timestamp(6)
+  updated_at  DateTime?  @default(now()) @updatedAt @db.Timestamp(6)
+  cart_items  CartItem[]
+
+  @@index([customer_id], map: "idx_carts_customer_id")
+  @@index([session_id], map: "idx_carts_session_id")
+  @@map("carts")
+}
+
+model CartItem {
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cart_id          String             @db.Uuid
+  menu_item_id     String             @db.Uuid
+  quantity         Int
+  special_requests String?
+  created_at       DateTime?          @default(now()) @db.Timestamp(6)
+  updated_at       DateTime?          @default(now()) @updatedAt @db.Timestamp(6)
+  modifiers        CartItemModifier[]
+  cart             Cart               @relation(fields: [cart_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  menu_item        MenuItem           @relation(fields: [menu_item_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([cart_id], map: "idx_cart_items_cart_id")
+  @@index([menu_item_id], map: "idx_cart_items_menu_item_id")
+  @@map("cart_items")
+}
+
+model CartItemModifier {
   id                 String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   cart_item_id       String         @db.Uuid
   modifier_option_id String         @db.Uuid
   created_at         DateTime?      @default(now()) @db.Timestamp(6)
-  cart_items         cart_items     @relation(fields: [cart_item_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  modifier_options   ModifierOption @relation(fields: [modifier_option_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  cart_item          CartItem       @relation(fields: [cart_item_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  modifier_option    ModifierOption @relation(fields: [modifier_option_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([cart_item_id], map: "idx_cart_item_modifiers_cart_item_id")
   @@index([modifier_option_id], map: "idx_cart_item_modifiers_modifier_option_id")
+  @@map("cart_item_modifiers")
 }
 
-model cart_items {
-  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  cart_id             String                @db.Uuid
-  menu_item_id        String                @db.Uuid
-  quantity            Int
-  special_requests    String?
-  created_at          DateTime?             @default(now()) @db.Timestamp(6)
-  updated_at          DateTime?             @default(now()) @db.Timestamp(6)
-  cart_item_modifiers cart_item_modifiers[]
-  carts               carts                 @relation(fields: [cart_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  menu_items          MenuItem              @relation(fields: [menu_item_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+model bill_requests {
+  id                  String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  restaurant_id       String     @db.Uuid
+  table_id            String     @db.Uuid
+  payment_method_code String     @db.VarChar(20)
+  subtotal            Decimal    @db.Decimal(12, 2)
+  tips_amount         Decimal?   @default(0) @db.Decimal(12, 2)
+  total_amount        Decimal    @db.Decimal(12, 2)
+  order_ids           Json
+  customer_note       String?
+  status              String?    @default("pending") @db.VarChar(20)
+  accepted_by         String?    @db.Uuid
+  accepted_at         DateTime?  @db.Timestamp(6)
+  created_at          DateTime?  @default(now()) @db.Timestamp(6)
+  updated_at          DateTime?  @default(now()) @db.Timestamp(6)
+  users               User?      @relation(fields: [accepted_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  restaurants         Restaurant @relation(fields: [restaurant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tables              Table      @relation(fields: [table_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  payments            payments[]
 
-  @@index([cart_id], map: "idx_cart_items_cart_id")
-  @@index([menu_item_id], map: "idx_cart_items_menu_item_id")
-}
-
-model carts {
-  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  customer_id String?      @db.Uuid
-  session_id  String       @db.VarChar(255)
-  created_at  DateTime?    @default(now()) @db.Timestamp(6)
-  updated_at  DateTime?    @default(now()) @db.Timestamp(6)
-  cart_items  cart_items[]
-
-  @@index([customer_id], map: "idx_carts_customer_id")
-  @@index([session_id], map: "idx_carts_session_id")
+  @@index([created_at], map: "idx_bill_requests_created")
+  @@index([restaurant_id], map: "idx_bill_requests_restaurant")
+  @@index([restaurant_id, status], map: "idx_bill_requests_restaurant_status")
+  @@index([status], map: "idx_bill_requests_status")
+  @@index([table_id], map: "idx_bill_requests_table")
 }
 
 model notifications {
@@ -362,55 +413,14 @@ model payments {
   users_payments_received_byTousers User?           @relation("payments_received_byTousers", fields: [received_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users_payments_refunded_byTousers User?           @relation("payments_refunded_byTousers", fields: [refunded_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
+  @@index([bill_request_id], map: "idx_payments_bill_request")
   @@index([created_at], map: "idx_payments_created")
   @@index([gateway_request_id], map: "idx_payments_gateway_request")
   @@index([payment_method_id], map: "idx_payments_method")
   @@index([order_id], map: "idx_payments_order")
   @@index([status], map: "idx_payments_status")
-  @@index([bill_request_id], map: "idx_payments_bill_request")
 }
 
-model bill_requests {
-  id                  String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  restaurant_id       String     @db.Uuid
-  table_id            String     @db.Uuid
-  payment_method_code String     @db.VarChar(20)
-  subtotal            Decimal    @db.Decimal(12, 2)
-  tips_amount         Decimal?   @default(0) @db.Decimal(12, 2)
-  total_amount        Decimal    @db.Decimal(12, 2)
-  order_ids           Json
-  customer_note       String?
-  status              String?    @default("pending") @db.VarChar(20)
-  accepted_by         String?    @db.Uuid
-  accepted_at         DateTime?  @db.Timestamp(6)
-  created_at          DateTime?  @default(now()) @db.Timestamp(6)
-  updated_at          DateTime?  @default(now()) @db.Timestamp(6)
-  users               User?      @relation(fields: [accepted_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  restaurants         Restaurant @relation(fields: [restaurant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  tables              Table      @relation(fields: [table_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  payments            payments[]
-
-  @@index([created_at], map: "idx_bill_requests_created")
-  @@index([restaurant_id], map: "idx_bill_requests_restaurant")
-  @@index([restaurant_id, status], map: "idx_bill_requests_restaurant_status")
-  @@index([status], map: "idx_bill_requests_status")
-  @@index([table_id], map: "idx_bill_requests_table")
-}
-
-model reviews {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  menu_item_id String   @db.Uuid
-  user_id      String   @db.Uuid
-  rating       Int      @default(5)
-  comment      String?
-  created_at   DateTime @default(now()) @db.Timestamp(6)
-  updated_at   DateTime @db.Timestamp(6)
-  menu_items   MenuItem @relation(fields: [menu_item_id], references: [id], onDelete: Cascade)
-  users        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
-
-  @@index([menu_item_id])
-  @@index([user_id])
-}
 
 enum OrderStatus {
   pending
@@ -421,4 +431,10 @@ enum OrderStatus {
   completed
   cancelled
   rejected
+}
+
+enum OrderItemStatus {
+  QUEUED
+  COOKING
+  READY
 }
