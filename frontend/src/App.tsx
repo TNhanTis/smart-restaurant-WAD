@@ -80,6 +80,22 @@ function App() {
                     element={<CustomerRegister />}
                   />
 
+                  {/* Browse menu (before QR scan) - view only */}
+                  <Route path="/customer/menu/item/:id" element={<ItemDetailView />} />
+
+                  {/* Ordering menu (after QR scan) - with cart functionality */}
+                  <Route path="/customer/order" element={<CustomerLayout><OrderingMenu /></CustomerLayout>} />
+                  <Route path="/customer/order/item/:id" element={<CustomerLayout><ItemDetail /></CustomerLayout>} />
+                  <Route path="/customer/cart" element={<CustomerLayout><ShoppingCart /></CustomerLayout>} />
+                  <Route path="/customer/order-status/:id?" element={<CustomerLayout><OrderStatus /></CustomerLayout>} />
+                  <Route path="/customer/payment" element={<CustomerLayout><Payment /></CustomerLayout>} />
+                  <Route path="/customer/payment-status/:billRequestId" element={<CustomerLayout><PaymentStatus /></CustomerLayout>} />
+
+                  {/* Customer account routes */}
+                  <Route path="/customer/order-history" element={<OrderHistory />} />
+                  <Route path="/customer/profile" element={<CustomerLayout><ProfileWrapper /></CustomerLayout>} />
+                  <Route path="/customer/dashboard-profile" element={<CustomerLayout><DashboardProfile /></CustomerLayout>} />
+
                   {/* Admin routes */}
                   <Route path="/admin/login" element={<AdminLogin />} />
                   <Route
