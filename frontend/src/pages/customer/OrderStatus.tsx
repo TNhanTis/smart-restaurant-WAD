@@ -9,6 +9,8 @@ function OrderStatus() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [sessionTotal, setSessionTotal] = useState(0);
+  const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
+  const isRegistered = !!localStorage.getItem('auth_token');
 
   useEffect(() => {
     fetchOrders();
@@ -67,8 +69,9 @@ function OrderStatus() {
     const currentIndex = steps.indexOf(status);
     return steps.map((step, index) => ({
       label: getStatusText(step),
-      completed: index < currentIndex,
-      active: index === currentIndex,
+      completed: index < currentIndex || (index === currentIndex && status === 'ready'),
+      active: index === currentIndex && status !== 'ready',
+      stepName: step,
     }));
   };
 
@@ -80,7 +83,30 @@ function OrderStatus() {
     if (diff < 1) return 'Just now';
     if (diff < 60) return `${diff} mins ago`;
     const hours = Math.floor(diff / 60);
+    const mins = diff % 60;
+    if (hours > 0 && mins > 0) return `${hours}h ${mins}m ago`;
     return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  };
+
+  const toggleOrderItems = (orderId: string) => {
+    setExpandedOrders(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(orderId)) {
+        newSet.delete(orderId);
+      } else {
+        newSet.add(orderId);
+      }
+      return newSet;
+    });
+  };
+
+  const getItemStatusBadge = (status: string) => {
+    const statusConfig: Record<string, { label: string; icon: string; className: string }> = {
+      QUEUED: { label: 'Queued', icon: '⏳', className: 'status-queued' },
+      COOKING: { label: 'Cooking', icon: '🔥', className: 'status-cooking' },
+      READY: { label: 'Ready', icon: '✓', className: 'status-ready' },
+    };
+    return statusConfig[status] || statusConfig.QUEUED;
   };
 
   if (loading) {
@@ -110,14 +136,14 @@ function OrderStatus() {
 
       {/* Content */}
       <div className="content" style={{ paddingBottom: '100px' }}>
-        {/* Current Session Summary */}
-        <div className="session-summary">
-          <div className="session-info">
-            <div className="session-label">Session Total</div>
-            <div className="session-total">{Math.round(Number(sessionTotal)).toLocaleString('vi-VN')}₫</div>
+        {/* Current Session Card */}
+        <div className="session-card">
+          <div className="session-header">
+            <span className="session-title">Current Session</span>
+            <span className="session-total">{Math.round(Number(sessionTotal)).toLocaleString('vi-VN')}₫</span>
           </div>
           <button className="request-bill-btn" onClick={() => navigate('/customer/payment')}>
-            Request Bill
+            💳 Request Bill
           </button>
           <div className="session-meta">
             <span>📄 {orders.length} Orders</span>
@@ -154,7 +180,7 @@ function OrderStatus() {
                 <div className="order-progress">
                   {steps.map((step, index) => (
                     <React.Fragment key={index}>
-                      <div className={`progress-step ${step.completed ? 'completed' : ''} ${step.active ? 'active' : ''}`}>
+                      <div className={`progress-step ${step.completed ? 'completed' : ''} ${step.active ? 'active' : ''} ${step.active && (step as any).stepName === 'preparing' ? 'preparing' : ''}`}>
                         <div className="progress-dot">
                           {step.completed ? '✓' : ''}
                         </div>
@@ -175,23 +201,71 @@ function OrderStatus() {
                   </div>
                 )}
 
-                {/* Order Items */}
-                <div className="order-items">
-                  {(order as any).order_items?.map((item: any) => (
-                    <div key={item.id} className="order-item">
-                      <span className="item-qty">{item.quantity}x</span>
-                      <span className="item-name">
-                        {item.menu_item?.name || 'Item'}
-                        {item.modifiers && item.modifiers.length > 0 && (
-                          <span className="item-mods">
-                            {' '}({item.modifiers.map((m: any) => m.modifier_option?.name).join(', ')})
+                {/* View Items Button - Registered Users Only */}
+                {isRegistered && (order as any).order_items?.length > 0 && (
+                  <button
+                    className="view-items-btn"
+                    onClick={() => toggleOrderItems(order.id)}
+                  >
+                    <span className="btn-icon">📋</span>
+                    <span>View Items ({(order as any).order_items.length})</span>
+                    <span className="btn-arrow">{expandedOrders.has(order.id) ? '▲' : '▼'}</span>
+                  </button>
+                )}
+
+                {/* Expandable Order Items - Registered Users Only */}
+                {isRegistered && expandedOrders.has(order.id) && (
+                  <div className="order-items-expanded">
+                    {(order as any).order_items?.map((item: any) => {
+                      const statusBadge = getItemStatusBadge(item.status || 'QUEUED');
+                      return (
+                        <div key={item.id} className="order-item-detailed">
+                          <div className="item-main">
+                            <span className="item-qty">{item.quantity}x</span>
+                            <div className="item-info">
+                              <span className="item-name">
+                                {item.menu_item?.name || 'Item'}
+                              </span>
+                              {item.modifiers && item.modifiers.length > 0 && (
+                                <span className="item-mods">
+                                  {item.modifiers.map((m: any) => m.modifier_option?.name).join(', ')}
+                                </span>
+                              )}
+                              {item.special_requests && (
+                                <span className="item-special-requests">
+                                  Note: {item.special_requests}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <span className={`item-status-badge ${statusBadge.className}`}>
+                            <span className="status-icon">{statusBadge.icon}</span>
+                            <span className="status-label">{statusBadge.label}</span>
                           </span>
-                        )}
-                      </span>
-                      <span className="item-status cooking">🔥 Cooking</span>
-                    </div>
-                  ))}
-                </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Order Items Summary - Always Visible */}
+                {!isRegistered && (
+                  <div className="order-items">
+                    {(order as any).order_items?.map((item: any) => (
+                      <div key={item.id} className="order-item">
+                        <span className="item-qty">{item.quantity}x</span>
+                        <span className="item-name">
+                          {item.menu_item?.name || 'Item'}
+                          {item.modifiers && item.modifiers.length > 0 && (
+                            <span className="item-mods">
+                              {' '}({item.modifiers.map((m: any) => m.modifier_option?.name).join(', ')})
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 <div className="order-total">
                   <span>Order Total</span>
