@@ -34,7 +34,7 @@ export default function ProtectedRoute({
     return <Navigate to="/admin/login" state={{ from: location }} replace />;
   }
 
-  if (roles && !roles.some((role) => user?.roles.includes(role))) {
+  if (roles && !roles.some((role) => user?.roles?.includes(role))) {
     return (
       <div
         style={{
