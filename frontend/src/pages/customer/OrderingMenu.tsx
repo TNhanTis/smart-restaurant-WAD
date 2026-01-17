@@ -165,7 +165,7 @@ export default function OrderingMenu() {
     }
   };
 
-  const addToCart = (item: MenuItem) => {
+  const _addToCart = (item: MenuItem) => {
     setCart(prevCart => {
       const existingItem = prevCart.find(cartItem => cartItem.id === item.id);
       if (existingItem) {

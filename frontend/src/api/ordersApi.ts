@@ -72,7 +72,10 @@ export interface Order {
   subtotal: number;
   tax: number;
   total: number;
+  total_price?: number; // Alias for total
+  discount?: number;
   special_requests?: string;
+  special_instructions?: string; // Alias for special_requests
   created_at: string;
   updated_at: string;
   accepted_at?: string;
@@ -82,6 +85,7 @@ export interface Order {
   completed_at?: string;
   table?: Table;
   order_items?: OrderItem[];
+  items?: OrderItem[]; // Alias for order_items
 }
 
 export interface GetOrdersParams {

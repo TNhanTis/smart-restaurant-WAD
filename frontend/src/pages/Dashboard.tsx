@@ -24,7 +24,7 @@ export default function Dashboard() {
 
       setStats(statsData);
       setRecentOrders(
-        Array.isArray(ordersData) ? ordersData : ordersData.orders || []
+        Array.isArray(ordersData) ? ordersData : ordersData.data || []
       );
       setError(null);
     } catch (err: any) {
@@ -202,9 +202,8 @@ export default function Dashboard() {
                   </div>
                   <div className="stat-label">Avg. Prep Time</div>
                   <div
-                    className={`stat-change ${
-                      (stats?.avgPrepTime || 0) > 15 ? "negative" : ""
-                    }`}
+                    className={`stat-change ${(stats?.avgPrepTime || 0) > 15 ? "negative" : ""
+                      }`}
                   >
                     {(stats?.avgPrepTime || 0) > 15 ? "↑" : "✓"}{" "}
                     {Math.abs((stats?.avgPrepTime || 0) - 15)} min from target
@@ -232,42 +231,41 @@ export default function Dashboard() {
                         key={index}
                         className={`bar ${index === 5 ? "active" : ""}`}
                         style={{
-                          height: `${
-                            (day.revenue /
+                          height: `${(day.revenue /
                               Math.max(
-                                ...stats.weeklyRevenue.map((d) => d.revenue)
+                                ...(stats.weeklyRevenue?.map((d) => d.revenue) || [1])
                               )) *
                             100
-                          }%`,
+                            }%`,
                         }}
                       >
                         <span>{day.day}</span>
                       </div>
                     )) || (
-                      <>
-                        <div className="bar" style={{ height: "60%" }}>
-                          <span>Mon</span>
-                        </div>
-                        <div className="bar" style={{ height: "75%" }}>
-                          <span>Tue</span>
-                        </div>
-                        <div className="bar" style={{ height: "45%" }}>
-                          <span>Wed</span>
-                        </div>
-                        <div className="bar" style={{ height: "90%" }}>
-                          <span>Thu</span>
-                        </div>
-                        <div className="bar" style={{ height: "85%" }}>
-                          <span>Fri</span>
-                        </div>
-                        <div className="bar active" style={{ height: "100%" }}>
-                          <span>Sat</span>
-                        </div>
-                        <div className="bar" style={{ height: "70%" }}>
-                          <span>Sun</span>
-                        </div>
-                      </>
-                    )}
+                        <>
+                          <div className="bar" style={{ height: "60%" }}>
+                            <span>Mon</span>
+                          </div>
+                          <div className="bar" style={{ height: "75%" }}>
+                            <span>Tue</span>
+                          </div>
+                          <div className="bar" style={{ height: "45%" }}>
+                            <span>Wed</span>
+                          </div>
+                          <div className="bar" style={{ height: "90%" }}>
+                            <span>Thu</span>
+                          </div>
+                          <div className="bar" style={{ height: "85%" }}>
+                            <span>Fri</span>
+                          </div>
+                          <div className="bar active" style={{ height: "100%" }}>
+                            <span>Sat</span>
+                          </div>
+                          <div className="bar" style={{ height: "70%" }}>
+                            <span>Sun</span>
+                          </div>
+                        </>
+                      )}
                   </div>
                 </div>
               </div>

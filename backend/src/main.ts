@@ -17,8 +17,8 @@ async function bootstrap() {
   ].filter((url): url is string => Boolean(url));
 
   app.enableCors({
-    origin: process.env.NODE_ENV === 'production' 
-      ? allowedOrigins 
+    origin: process.env.NODE_ENV === 'production'
+      ? allowedOrigins
       : true, // Allow all origins in development
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -40,8 +40,12 @@ async function bootstrap() {
   });
 
   const port = process.env.PORT ?? 3000;
-  await app.listen(port);
+
+  // Listen on all network interfaces (0.0.0.0) to allow access from mobile/other devices
+  await app.listen(port, '0.0.0.0');
+
   console.log(`Application is running on: http://localhost:${port}`);
+  console.log(`Network access: http://0.0.0.0:${port}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`Allowed origins: ${allowedOrigins.join(', ')}`);
 }

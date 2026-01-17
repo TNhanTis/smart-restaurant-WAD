@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import cartApi, { Cart as CartData, CartItem } from '../../api/cartApi';
 import { ordersApi } from '../../api/ordersApi';
@@ -111,7 +111,7 @@ function ShoppingCart() {
     }
   };
 
-  const handleClearCart = async () => {
+  const _handleClearCart = async () => {
     if (!confirm('Clear all items from cart?')) return;
 
     try {

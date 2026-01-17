@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import './PaymentStatus.css';
 
@@ -26,7 +26,7 @@ type BillStatus = 'pending' | 'accepted' | 'completed';
 
 function PaymentStatus() {
     const navigate = useNavigate();
-    const { billRequestId } = useParams();
+    const { billRequestId: _billRequestId } = useParams();
 
     // Demo: Change status every 3 seconds for demonstration
     const [status, setStatus] = useState<BillStatus>('pending');

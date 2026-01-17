@@ -5,7 +5,6 @@ import "../App.css";
 interface OrderDetailsModalProps {
   order: Order;
   onClose: () => void;
-  onStatusUpdate: () => void;
 }
 
 export default function OrderDetailsModal({
@@ -61,7 +60,7 @@ export default function OrderDetailsModal({
             <h3>Order Items</h3>
             <div className="order-items-list">
               {order.items && order.items.length > 0 ? (
-                order.items.map((item, index) => (
+                order.items.map((item: any, index: number) => (
                   <div key={index} className="order-item-card">
                     <div className="order-item-info">
                       <div className="order-item-name">
@@ -75,7 +74,7 @@ export default function OrderDetailsModal({
                       )}
                       {item.modifiers && item.modifiers.length > 0 && (
                         <div className="order-item-modifiers">
-                          {item.modifiers.map((mod, idx) => (
+                          {item.modifiers.map((mod: any, idx: number) => (
                             <span key={idx} className="modifier-tag">
                               + {mod.name}
                             </span>
