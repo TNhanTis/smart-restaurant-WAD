@@ -5,7 +5,14 @@ import { PrismaService } from '../prisma/prisma.service';
 export class PublicMenuService {
   constructor(private prisma: PrismaService) { }
 
-  async getMenu(categoryId?: string, searchTerm?: string, restaurantId?: string, sortBy?: string) {
+  async getMenu(
+    categoryId?: string,
+    searchTerm?: string,
+    restaurantId?: string,
+    sortBy?: string,
+    page: number = 1,
+    limit: number = 20,
+  ) {
     // Build where clause
     const where: any = {
       status: 'active', // Only show active items
@@ -33,9 +40,18 @@ export class PublicMenuService {
       { name: 'asc' },
     ];
 
+    // Calculate pagination
+    const skip = (page - 1) * limit;
+    const take = limit;
+
+    // Get total count for pagination metadata
+    const totalCount = await this.prisma.menuItem.count({ where });
+
     // Fetch menu items with categories and photos
     const items = await this.prisma.menuItem.findMany({
       where,
+      skip,
+      take,
       include: {
         category: {
           select: {
@@ -91,6 +107,11 @@ export class PublicMenuService {
       },
     });
 
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(totalCount / limit);
+    const hasNextPage = page < totalPages;
+    const hasPreviousPage = page > 1;
+
     // Format response
     return {
       categories,
@@ -108,7 +129,14 @@ export class PublicMenuService {
         isChefRecommended: item.is_chef_recommended,
         orderCount: sortBy === 'popularity' ? ((item as any).order_items?.length || 0) : undefined,
       })),
-      totalItems: sortedItems.length,
+      pagination: {
+        page,
+        limit,
+        total: totalCount,
+        totalPages,
+        hasNextPage,
+        hasPreviousPage,
+      },
     };
   }
 

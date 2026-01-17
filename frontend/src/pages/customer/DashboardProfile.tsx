@@ -4,6 +4,8 @@ import {
     getCustomerProfile,
     updateCustomerProfile,
     changeCustomerPassword,
+    uploadCustomerAvatar,
+    deleteCustomerAvatar,
 } from '../../api/customersApi';
 import './DashboardProfile.css';
 
@@ -12,6 +14,7 @@ interface CustomerProfile {
     email: string;
     full_name: string;
     phone?: string;
+    avatar_url?: string;
     created_at: string;
 }
 
@@ -115,19 +118,33 @@ const DashboardProfile: React.FC = () => {
                 return;
             }
 
-            // TODO: Handle photo upload when backend API is ready
-            // For now, just update text fields
+            // Upload avatar if photo selected
+            if (photoFile) {
+                await uploadCustomerAvatar(profile.id, photoFile);
+                setPhotoFile(null);
+                setPhotoPreview(null);
+            }
 
-            const response = await updateCustomerProfile(profile.id, updateData);
+            // Update profile if there are text field changes
+            if (Object.keys(updateData).length > 0) {
+                const response = await updateCustomerProfile(profile.id, updateData);
 
-            // Update localStorage
-            const authUser = JSON.parse(localStorage.getItem('auth_user') || '{}');
-            authUser.full_name = response.data.full_name;
-            authUser.email = response.data.email;
-            localStorage.setItem('auth_user', JSON.stringify(authUser));
+                // Update localStorage
+                const authUser = JSON.parse(localStorage.getItem('auth_user') || '{}');
+                authUser.full_name = response.data.full_name;
+                authUser.email = response.data.email;
+                localStorage.setItem('auth_user', JSON.stringify(authUser));
 
-            setProfile(response.data);
-            setSuccess(response.message);
+                setProfile(response.data);
+                setSuccess(response.message);
+            } else {
+                // If only avatar was uploaded
+                setSuccess('Avatar uploaded successfully');
+            }
+
+            // Reload profile to get latest data (including avatar)
+            await loadProfile();
+
 
             // Clear success message after 3 seconds
             setTimeout(() => setSuccess(''), 3000);
@@ -214,18 +231,18 @@ const DashboardProfile: React.FC = () => {
                 </button>
                 <div className="header-content">
                     <h1 className="header-title">Account Settings</h1>
-                    <p className="header-subtitle">Manage your account</p>
                 </div>
-                <button className="logout-header-btn" onClick={handleLogout}>
-                    <span>🚪</span>
-                </button>
             </div>
+
+
 
             {/* Profile Avatar Section */}
             <div className="profile-avatar-section">
                 <div className="profile-avatar-large">
                     {photoPreview ? (
-                        <img src={photoPreview} alt="Profile" />
+                        <img src={photoPreview} alt="Profile Preview" />
+                    ) : profile?.avatar_url ? (
+                        <img src={profile.avatar_url} alt="Profile" />
                     ) : (
                         profile?.full_name?.charAt(0).toUpperCase() || 'U'
                     )}
@@ -247,6 +264,26 @@ const DashboardProfile: React.FC = () => {
                     </label>
                     {photoFile && (
                         <p className="upload-hint">Photo ready to save</p>
+                    )}
+                    {profile?.avatar_url && !photoFile && (
+                        <button
+                            type="button"
+                            className="delete-photo-btn"
+                            onClick={async () => {
+                                if (confirm('Are you sure you want to delete your avatar?')) {
+                                    try {
+                                        await deleteCustomerAvatar(profile.id);
+                                        setSuccess('Avatar deleted successfully');
+                                        await loadProfile();
+                                        setTimeout(() => setSuccess(''), 3000);
+                                    } catch (err: any) {
+                                        setError(err.response?.data?.message || 'Failed to delete avatar');
+                                    }
+                                }
+                            }}
+                        >
+                            🗑️ Remove Photo
+                        </button>
                     )}
                 </div>
             </div>
