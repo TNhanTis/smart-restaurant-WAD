@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import type { Request, Response } from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -16,8 +17,12 @@ async function bootstrap() {
   ].filter((url): url is string => Boolean(url));
 
   app.enableCors({
-    origin: allowedOrigins,
+    origin: process.env.NODE_ENV === 'production' 
+      ? allowedOrigins 
+      : true, // Allow all origins in development
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
   // Enable global validation
@@ -29,9 +34,15 @@ async function bootstrap() {
     }),
   );
 
-  await app.listen(process.env.PORT ?? 3000);
-  console.log(
-    `Application is running on: http://localhost:${process.env.PORT ?? 3000}`,
-  );
+  // Health check endpoint for production
+  app.getHttpAdapter().get('/health', (_req: Request, res: Response) => {
+    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+
+  const port = process.env.PORT ?? 3000;
+  await app.listen(port);
+  console.log(`Application is running on: http://localhost:${port}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`Allowed origins: ${allowedOrigins.join(', ')}`);
 }
 bootstrap();

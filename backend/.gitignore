@@ -1,5 +1,9 @@
 node_modules
 
+# Environment variables (IMPORTANT: Never commit these!)
+.env
+.env.local
+.env.production
 
 /generated/prisma
 # Node
@@ -9,14 +13,15 @@ node_modules/
 dist/
 *.tsbuildinfo
 
-
-
 # Prisma
 prisma/generated/
 
 # Logs
 npm-debug.log*
 yarn-debug.log*
+*.log
 
 # Editor
 .vscode/*
+!.vscode/settings.json
+!.vscode/launch.json
