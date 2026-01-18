@@ -255,7 +255,7 @@ export class PaymentsService {
    */
   private async completeBillPayment(bill_request_id: string) {
     console.log('📋 [Complete Bill] Starting for bill:', bill_request_id);
-    
+
     const billRequest = await this.prisma.bill_requests.findUnique({
       where: { id: bill_request_id },
     });
@@ -327,11 +327,11 @@ export class PaymentsService {
   async handleVNPayIPN(query: any) {
     console.log('🔍 [VNPay IPN Handler] Starting...');
     console.log('📦 Received query:', JSON.stringify(query, null, 2));
-    
+
     // 1. Verify signature
     const isValid = this.vnpayService.verifySignature(query);
     console.log('🔐 Signature valid:', isValid);
-    
+
     if (!isValid) {
       console.error('❌ Invalid signature');
       return { RspCode: '97', Message: 'Invalid signature' };
@@ -340,7 +340,7 @@ export class PaymentsService {
     // 2. Lấy payment_id từ vnp_TxnRef
     const payment_id = query.vnp_TxnRef;
     console.log('🔑 Payment ID:', payment_id);
-    
+
     const payment = await this.prisma.payments.findUnique({
       where: { id: payment_id },
       include: { bill_requests: true },
@@ -361,17 +361,17 @@ export class PaymentsService {
     // 3. Kiểm tra amount (convert Decimal to number)
     const vnp_Amount = parseInt(query.vnp_Amount) / 100;
     const paymentAmount = payment.amount.toNumber();
-    
+
     // So sánh với tolerance 1 VND do rounding
     const amountDiff = Math.abs(vnp_Amount - paymentAmount);
-    
+
     console.log('💵 Amount check:', {
       vnpAmount: vnp_Amount,
       paymentAmount: paymentAmount,
       difference: amountDiff,
       withinTolerance: amountDiff < 1,
     });
-    
+
     if (amountDiff >= 1) {
       console.error('❌ Amount mismatch (difference >= 1 VND)');
       return { RspCode: '04', Message: 'Invalid amount' };
@@ -380,7 +380,7 @@ export class PaymentsService {
     // 4. Update payment status (dùng đúng column names)
     const responseCode = query.vnp_ResponseCode;
     const status = responseCode === '00' ? 'completed' : 'failed';
-    
+
     console.log('📝 Updating payment:', {
       responseCode,
       status,
@@ -694,10 +694,7 @@ export class PaymentsService {
         stats.transactions > 0 ? stats.revenue / stats.transactions : 0;
     });
 
-    const totalRevenue = payments.reduce(
-      (sum, p) => sum + Number(p.amount),
-      0,
-    );
+    const totalRevenue = payments.reduce((sum, p) => sum + Number(p.amount), 0);
 
     return {
       period: {
