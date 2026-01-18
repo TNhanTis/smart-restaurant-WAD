@@ -95,7 +95,12 @@ export default function OrderingMenu() {
       );
 
       const newItems = menuData?.items || [];
-      setAllMenuItems(prev => [...prev, ...newItems]);
+      // Filter out duplicates before appending
+      setAllMenuItems(prev => {
+        const existingIds = new Set(prev.map(item => item.id));
+        const uniqueNewItems = newItems.filter((item: MenuItem) => !existingIds.has(item.id));
+        return [...prev, ...uniqueNewItems];
+      });
     } catch (error) {
       console.error('Failed to load more items:', error);
     }
@@ -172,13 +177,20 @@ export default function OrderingMenu() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run once on mount - navigate is stable from react-router
 
-  const loadMenu = async (restaurantId: string, pageNum: number = 1, append: boolean = false) => {
+  const loadMenu = useCallback(async (restaurantId: string, pageNum: number = 1, append: boolean = false, categoryFilter?: string) => {
     try {
       setLoading(true); // Always set loading when loading menu
 
+      // Use passed categoryFilter if provided, otherwise use selectedCategory from state
+      const categoryToUse = categoryFilter !== undefined ? categoryFilter : selectedCategory;
+
+      // If user is searching, load ALL items to ensure search works correctly
+      // Otherwise, use pagination (20 items per page)
+      const limit = searchTerm.trim() ? 1000 : 20;
+
       const [categoriesData, menuData] = await Promise.all([
         pageNum === 1 ? getMenuCategories(restaurantId) : Promise.resolve(categories),
-        getPublicMenu(selectedCategory, undefined, restaurantId, sortBy, pageNum, 20),
+        getPublicMenu(categoryToUse || undefined, undefined, restaurantId, sortBy, pageNum, limit),
       ]);
 
       if (pageNum === 1) {
@@ -186,7 +198,7 @@ export default function OrderingMenu() {
       }
 
       const items = menuData?.items || [];
-      
+
       if (append) {
         setAllMenuItems(prev => [...prev, ...items]);
       } else {
@@ -202,16 +214,13 @@ export default function OrderingMenu() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [categories, selectedCategory, sortBy, searchTerm]);
 
   // Fuzzy search and filter logic
   const filteredItems = useMemo(() => {
     let items = allMenuItems;
 
-    // Filter by category
-    if (selectedCategory) {
-      items = items.filter(item => item.category?.id === selectedCategory);
-    }
+    // Note: Category filtering is done server-side, no need to filter here
 
     // Apply fuzzy search
     if (searchTerm.trim()) {
@@ -262,11 +271,9 @@ export default function OrderingMenu() {
         } finally {
           setLoading(false);
         }
-      } else if (searchTerm === '' && debouncedSearchTerm === '') {
-        // Only reload when both searchTerm and debouncedSearchTerm are empty
-        // This prevents unnecessary reload during typing
-        await loadMenu(restaurantInfo.id, 1, false);
       }
+      // Note: When search is cleared, items remain as-is.
+      // User can select a category to reload with proper filter.
     };
 
     performSearch();
@@ -278,9 +285,13 @@ export default function OrderingMenu() {
     // API call will be triggered by useEffect after debounce delay
   };
 
-  const handleCategoryChange = (categoryId: string) => {
+  const handleCategoryChange = async (categoryId: string) => {
     setSelectedCategory(categoryId);
     setPage(1);
+    // Reload menu with new category filter - pass categoryId directly to avoid stale closure
+    if (restaurantInfo?.id) {
+      await loadMenu(restaurantInfo.id, 1, false, categoryId);
+    }
   };
 
   const handleSortChange = async (newSortBy: string) => {

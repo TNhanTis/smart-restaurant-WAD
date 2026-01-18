@@ -61,14 +61,22 @@ export default function CustomerMenu() {
   });
 
   // Helper function to load menu
-  const loadMenu = useCallback(async (pageNum: number = 1, append: boolean = false) => {
+  const loadMenu = useCallback(async (pageNum: number = 1, append: boolean = false, categoryFilter?: string) => {
     if (!restaurantId) return;
 
     try {
       setLoading(true);
+
+      // Use passed categoryFilter if provided, otherwise use selectedCategory from state
+      const categoryToUse = categoryFilter !== undefined ? categoryFilter : selectedCategory;
+
+      // If user is searching, load ALL items to ensure search works correctly
+      // Otherwise, use pagination (20 items per page)
+      const limit = searchTerm.trim() ? 1000 : 20;
+
       const [categoriesData, menuData] = await Promise.all([
         pageNum === 1 ? getMenuCategories(restaurantId) : Promise.resolve(categories),
-        getPublicMenu(undefined, undefined, restaurantId, sortBy, pageNum, 20),
+        getPublicMenu(categoryToUse || undefined, undefined, restaurantId, sortBy, pageNum, limit),
       ]);
 
       if (pageNum === 1) {
@@ -85,27 +93,59 @@ export default function CustomerMenu() {
       }
 
       setTotalPages(menuData?.pagination?.totalPages || 1);
-      if (append) {
-        setPage(pageNum);
-      }
     } catch (error) {
       console.error('Failed to load menu:', error);
     } finally {
       setLoading(false);
     }
-  }, [restaurantId, sortBy, categories]);
+  }, [restaurantId, sortBy, categories, selectedCategory, searchTerm]);
 
   // Load more items for infinite scroll
-  const loadMoreItems = useCallback(async () => {
-    if (page >= totalPages || loading) return;
-    await loadMenu(page + 1, true);
-  }, [page, totalPages, loading, loadMenu]);
+  const handleLoadMore = useCallback(async () => {
+    if (!restaurantId || searchTerm.trim() || page >= totalPages) return;
 
-  // Infinite scroll hook
-  const { isLoadingMore } = useInfiniteScroll(loadMoreItems, {
-    enabled: page < totalPages && !searchTerm && !selectedCategory,
+    const nextPage = page + 1;
+    setPage(nextPage);
+
+    try {
+      const menuData = await getPublicMenu(
+        selectedCategory,
+        undefined,
+        restaurantId,
+        sortBy,
+        nextPage,
+        20
+      );
+
+      const newItems = menuData?.items || [];
+      // Filter out duplicates before appending
+      setAllMenuItems(prev => {
+        const existingIds = new Set(prev.map(item => item.id));
+        const uniqueNewItems = newItems.filter((item: MenuItem) => !existingIds.has(item.id));
+        return [...prev, ...uniqueNewItems];
+      });
+    } catch (error) {
+      console.error('Failed to load more items:', error);
+    }
+  }, [restaurantId, searchTerm, page, totalPages, selectedCategory, sortBy]);
+
+  const { isLoadingMore, hasMore, setHasMore } = useInfiniteScroll(handleLoadMore, {
     threshold: 500,
+    enabled: !searchTerm.trim() && page < totalPages,
   });
+
+  // Update hasMore when pagination changes
+  useEffect(() => {
+    setHasMore(page < totalPages && !searchTerm.trim());
+  }, [page, totalPages, searchTerm, setHasMore]);
+
+  // Initialize state from URL params on mount
+  useEffect(() => {
+    if (urlParams.searchTerm) setSearchTerm(urlParams.searchTerm);
+    if (urlParams.selectedCategory) setSelectedCategory(urlParams.selectedCategory);
+    if (urlParams.sortBy) setSortBy(urlParams.sortBy);
+    if (urlParams.page) setPage(Number(urlParams.page));
+  }, []); // Only run once on mount
 
   useEffect(() => {
     if (location.state && (location.state as any).restaurantName) {
@@ -117,40 +157,15 @@ export default function CustomerMenu() {
       return;
     }
 
-    // Initialize from URL params
-    const initialPage = urlParams.page || 1;
-
-    if (urlParams.searchTerm) setSearchTerm(urlParams.searchTerm);
-    if (urlParams.selectedCategory) setSelectedCategory(urlParams.selectedCategory);
-    if (urlParams.sortBy) setSortBy(urlParams.sortBy);
-
-    // Load all pages from 1 to initialPage
-    const loadInitialPages = async () => {
-      if (initialPage === 1) {
-        // Just load page 1
-        await loadMenu(1, false);
-      } else {
-        // Load page 1 first
-        await loadMenu(1, false);
-
-        // Then load pages 2 to initialPage sequentially
-        for (let p = 2; p <= initialPage; p++) {
-          await loadMenu(p, true);  // Append mode
-        }
-      }
-    };
-
-    loadInitialPages();
+    // Load initial menu
+    loadMenu(1, false);
   }, [restaurantId, navigate, location.state]);
 
   // Fuzzy search and filter logic
   const filteredItems = useMemo(() => {
     let items = allMenuItems;
 
-    // Filter by category
-    if (selectedCategory) {
-      items = items.filter(item => item.category?.id === selectedCategory);
-    }
+    // Note: Category filtering is done server-side, no need to filter here
 
     // Apply fuzzy search
     if (searchTerm.trim()) {
@@ -201,18 +216,21 @@ export default function CustomerMenu() {
         } finally {
           setLoading(false);
         }
-      } else if (searchTerm === '' && debouncedSearchTerm === '') {
-        // Only reload when both searchTerm and debouncedSearchTerm are empty
-        await loadMenu(1, false);
       }
+      // Note: When search is cleared, items remain as-is.
+      // User can select a category to reload with proper filter.
     };
 
     performSearch();
   }, [debouncedSearchTerm, restaurantId, sortBy]);
 
-  const handleCategoryChange = (categoryId: string) => {
+  const handleCategoryChange = async (categoryId: string) => {
     setSelectedCategory(categoryId);
     setPage(1);
+    // Reload menu with new category filter - pass categoryId directly to avoid stale closure
+    if (restaurantId) {
+      await loadMenu(1, false, categoryId);
+    }
   };
 
   const handleSearch = (term: string) => {
@@ -373,8 +391,8 @@ export default function CustomerMenu() {
           </div>
         )}
 
-        {/* End of list indicator */}
-        {!loading && !isLoadingMore && page >= totalPages && menuItems.length > 0 && (
+        {/* End of results message */}
+        {!hasMore && menuItems.length > 0 && !searchTerm.trim() && (
           <div style={{
             gridColumn: '1 / -1',
             textAlign: 'center',
