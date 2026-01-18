@@ -22,6 +22,7 @@ export default function OrderManagement() {
   const { selectedRestaurant, loading: restaurantLoading } = useRestaurant();
 
   const [orders, setOrders] = useState<Order[]>([]);
+  const [allOrders, setAllOrders] = useState<Order[]>([]); // Store all orders for badge counting
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,7 +33,7 @@ export default function OrderManagement() {
   const [statusFilter, setStatusFilter] = useState<OrderStatusFilter>("all");
   const [dateFilter, setDateFilter] = useState<
     "today" | "yesterday" | "week" | "month" | "all"
-  >("today");
+  >("all"); // Changed from "today" to "all" to show all active orders
 
   // Advanced filters for history
   const [startDate, setStartDate] = useState("");
@@ -91,6 +92,7 @@ export default function OrderManagement() {
       const restaurantId = selectedRestaurant.id;
 
       let response;
+      let allOrdersResponse; // For badge counts
 
       if (viewMode === "history") {
         // Use history endpoint for completed orders
@@ -108,6 +110,15 @@ export default function OrderManagement() {
       } else {
         // Active orders (today by default)
         const dateRange = getDateRange();
+        
+        // First, fetch all orders for badge counts
+        const allParams: any = {
+          restaurant_id: restaurantId,
+          ...dateRange,
+        };
+        allOrdersResponse = await ordersApi.getAll(allParams);
+        
+        // Then fetch filtered orders for display
         const params: any = {
           restaurant_id: restaurantId,
           ...dateRange,
@@ -117,7 +128,9 @@ export default function OrderManagement() {
           params.status = statusFilter;
         }
 
+        console.log("📤 Fetching orders with params:", params);
         response = await ordersApi.getAll(params);
+        console.log("📥 Received response:", response);
       }
 
       // Handle both array and object response formats
@@ -129,6 +142,21 @@ export default function OrderManagement() {
         setOrders(data.data || []);
         setTotalOrders(data.total || 0);
       }
+      
+      // Store all orders for badge counting (only in active mode)
+      if (viewMode === "active" && allOrdersResponse) {
+        if (Array.isArray(allOrdersResponse)) {
+          setAllOrders(allOrdersResponse);
+        } else {
+          const allData = allOrdersResponse as OrdersResponse;
+          setAllOrders(allData.data || []);
+        }
+      } else {
+        // In history mode, use filtered orders
+        setAllOrders(Array.isArray(response) ? response : (response as OrdersResponse).data || []);
+      }
+      
+      console.log("✅ Final orders count:", orders.length);
     } catch (err: any) {
       console.error("Failed to load orders:", err);
       setError(err.response?.data?.message || "Failed to load orders");
@@ -266,15 +294,12 @@ export default function OrderManagement() {
 
   // Get status counts from loaded orders
   const getStatusCount = (status: OrderStatusFilter) => {
-    if (status === "all") return totalOrders;
-    return orders.filter((o) => o.status.toLowerCase() === status).length;
+    if (status === "all") return allOrders.length;
+    return allOrders.filter((o) => o.status.toLowerCase() === status).length;
   };
 
-  // Filter orders by status client-side (since API might not support all filters)
-  const filteredOrders =
-    statusFilter === "all"
-      ? orders
-      : orders.filter((o) => o.status.toLowerCase() === statusFilter);
+  // Orders are already filtered by backend, no need for client-side filtering
+  const filteredOrders = orders;
 
   // Pagination
   const paginatedOrders = filteredOrders.slice(
@@ -577,6 +602,15 @@ export default function OrderManagement() {
           >
             Served
             <span className="tab-count">{getStatusCount("served")}</span>
+          </button>
+          <button
+            className={`status-tab ${
+              statusFilter === "completed" ? "active" : ""
+            }`}
+            onClick={() => setStatusFilter("completed")}
+          >
+            Completed
+            <span className="tab-count success">{getStatusCount("completed")}</span>
           </button>
         </div>
       )}
