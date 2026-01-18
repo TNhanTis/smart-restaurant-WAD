@@ -83,11 +83,12 @@ export class TablesController {
   }
 
   /**
-   * GET /api/tables/status?restaurant_id={uuid}
+   * GET /tables/status/overview?restaurant_id={uuid}
    * Get table status overview for a restaurant
    * Returns all tables with their occupancy status and counts
    */
   @Get('status/overview')
+  @Roles('admin', 'waiter', 'super_admin')
   getTableStatusOverview(@Query('restaurant_id') restaurantId: string) {
     if (!restaurantId) {
       return {

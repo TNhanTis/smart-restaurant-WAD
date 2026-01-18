@@ -210,7 +210,14 @@ export class TablesService {
         location: table.location,
         capacity: table.capacity,
         status: occupancyStatus,
-        current_order: table.orders[0] || null,
+        current_orders: table.orders.map(order => ({
+          id: order.id,
+          order_number: order.order_number,
+          status: order.status,
+          total_price: order.total,
+          items_count: 0, // TODO: Calculate from order_items
+        })),
+        last_order_time: table.orders[0]?.created_at?.toISOString() || null,
       };
     });
 
