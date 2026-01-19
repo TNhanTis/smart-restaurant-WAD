@@ -6,6 +6,8 @@ export interface KitchenOrderItem {
   quantity: number;
   unit_price: number;
   notes?: string;
+  status?: "QUEUED" | "COOKING" | "READY" | "REJECTED";
+  rejection_reason?: string;
   menu_item: {
     id: string;
     name: string;
@@ -41,6 +43,8 @@ export interface KitchenOrder {
     name: string;
     quantity: number;
     prep_time_minutes?: number;
+    status?: "QUEUED" | "COOKING" | "READY" | "REJECTED";
+    rejection_reason?: string;
     modifiers?: Array<{
       name: string;
     }>;
@@ -153,4 +157,17 @@ export const getDelayedOrders = async (
     { params },
   );
   return response.data.data || [];
+};
+
+// Update individual order item status
+export const updateItemStatus = async (
+  orderId: string,
+  itemId: string,
+  status: "QUEUED" | "COOKING" | "READY",
+): Promise<KitchenOrder> => {
+  const response = await axiosInstance.patch(
+    `/api/orders/${orderId}/items/${itemId}/status`,
+    { status },
+  );
+  return response.data;
 };

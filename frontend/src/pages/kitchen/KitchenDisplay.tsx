@@ -8,6 +8,7 @@ import {
   KitchenOrder,
   batchStartPreparing,
   getDelayedOrders,
+  updateItemStatus,
 } from "../../api/kitchenApi";
 import OrderDetailModal, {
   OrderDetail,
@@ -234,27 +235,42 @@ export default function KitchenDisplay() {
   };
 
   const convertToOrderDetail = (order: KitchenOrder): OrderDetail => {
+    const items = order.items.map((item) => {
+      const unitPrice = Number((item as any).unit_price || 0);
+      const modifiers =
+        item.modifiers?.map((m) => ({
+          id: m.name,
+          name: m.name,
+          price: Number((m as any).price || 0),
+        })) || [];
+
+      return {
+        id: item.id,
+        menu_item_id: item.id,
+        name: item.name,
+        quantity: item.quantity,
+        unit_price: unitPrice,
+        notes: item.special_requests,
+        modifiers,
+      };
+    });
+
+    // Calculate total price from items
+    const totalPrice = items.reduce((sum, item) => {
+      const modifiersTotal =
+        item.modifiers?.reduce((mSum, m) => mSum + m.price, 0) || 0;
+      return sum + (item.unit_price + modifiersTotal) * item.quantity;
+    }, 0);
+
     return {
       id: order.id,
       order_number: order.order_number,
       table_id: order.table_id,
       table_number: order.table.table_number,
       status: order.status,
-      total_price: 0, // Kitchen doesn't track price
+      total_price: totalPrice,
       special_instructions: order.special_instructions,
-      items: order.items.map((item) => ({
-        id: item.id,
-        menu_item_id: item.id,
-        name: item.name,
-        quantity: item.quantity,
-        unit_price: 0,
-        notes: item.special_requests,
-        modifiers: item.modifiers?.map((m) => ({
-          id: m.name,
-          name: m.name,
-          price: 0,
-        })),
-      })),
+      items,
       created_at: order.created_at,
       updated_at: order.created_at,
       accepted_at: order.accepted_at,
@@ -382,25 +398,129 @@ export default function KitchenDisplay() {
         )}
 
         <div className="order-items-list">
-          {order.items.map((item, idx) => (
-            <div key={idx} className="order-item">
-              <div className="item-quantity">{item.quantity}</div>
-              <div className="item-details">
-                <div className="item-name">{item.name}</div>
-                {item.modifiers && item.modifiers.length > 0 && (
-                  <div className="item-modifiers">
-                    + {item.modifiers.map((m) => m.name).join(", ")}
+          {order.items
+            .filter((item) => item.status !== "REJECTED") // Hide rejected items from kitchen
+            .map((item, idx) => (
+              <div key={idx} className="order-item">
+                <div className="item-quantity">{item.quantity}</div>
+                <div className="item-details">
+                  <div className="item-name">
+                    {item.name}
+                    {item.status && (
+                      <span
+                        className={`item-status-badge ${item.status.toLowerCase()}`}
+                        style={{
+                          display: "inline-block",
+                          padding: "2px 6px",
+                          borderRadius: "4px",
+                          fontSize: "0.7rem",
+                          marginLeft: "6px",
+                          background:
+                            item.status === "READY"
+                              ? "#dcfce7"
+                              : item.status === "COOKING"
+                                ? "#fef3c7"
+                                : "#e5e7eb",
+                          color:
+                            item.status === "READY"
+                              ? "#16a34a"
+                              : item.status === "COOKING"
+                                ? "#d97706"
+                                : "#6b7280",
+                        }}
+                      >
+                        {item.status}
+                      </span>
+                    )}
                   </div>
-                )}
-                {item.special_requests && (
-                  <div className="item-notes">📝 {item.special_requests}</div>
+                  {item.modifiers && item.modifiers.length > 0 && (
+                    <div className="item-modifiers">
+                      + {item.modifiers.map((m) => m.name).join(", ")}
+                    </div>
+                  )}
+                  {item.special_requests && (
+                    <div className="item-notes">📝 {item.special_requests}</div>
+                  )}
+                  {(column === "preparing" || column === "received") && (
+                    <div
+                      className="item-status-buttons"
+                      style={{
+                        display: "flex",
+                        gap: "4px",
+                        marginTop: "4px",
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {item.status !== "COOKING" && (
+                        <button
+                          style={{
+                            padding: "2px 6px",
+                            fontSize: "0.65rem",
+                            background: "#fef3c7",
+                            color: "#d97706",
+                            border: "1px solid #fde047",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                          }}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            try {
+                              await updateItemStatus(
+                                order.id,
+                                item.id,
+                                "COOKING",
+                              );
+                              await loadOrders();
+                            } catch (error) {
+                              console.error(
+                                "Error updating item status:",
+                                error,
+                              );
+                            }
+                          }}
+                        >
+                          🔥 Cooking
+                        </button>
+                      )}
+                      {item.status !== "READY" && (
+                        <button
+                          style={{
+                            padding: "2px 6px",
+                            fontSize: "0.65rem",
+                            background: "#dcfce7",
+                            color: "#16a34a",
+                            border: "1px solid #bbf7d0",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                          }}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            try {
+                              await updateItemStatus(
+                                order.id,
+                                item.id,
+                                "READY",
+                              );
+                              await loadOrders();
+                            } catch (error) {
+                              console.error(
+                                "Error updating item status:",
+                                error,
+                              );
+                            }
+                          }}
+                        >
+                          ✓ Ready
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+                {item.special_requests?.toLowerCase().includes("hot") && (
+                  <span className="hot-indicator">🔥</span>
                 )}
               </div>
-              {item.notes?.toLowerCase().includes("hot") && (
-                <span className="hot-indicator">🔥</span>
-              )}
-            </div>
-          ))}
+            ))}
         </div>
 
         {column === "received" && (
@@ -614,18 +734,16 @@ export default function KitchenDisplay() {
                 item.modifiers && item.modifiers.length > 0
                   ? `
                 <div class="modifiers">
-                  + ${item.modifiers
-                    .map((m) => m.modifier_option.name)
-                    .join(", ")}
+                  + ${item.modifiers.map((m) => m.name).join(", ")}
                 </div>
               `
                   : ""
               }
               ${
-                item.notes
+                item.special_requests
                   ? `
                 <div class="notes">
-                  📝 ${item.notes}
+                  📝 ${item.special_requests}
                 </div>
               `
                   : ""

@@ -6,6 +6,7 @@ import {
   getRestaurantOrders,
   acceptOrder,
   rejectOrder,
+  rejectOrderItem,
   serveOrder,
   completeOrder,
   WaiterOrder,
@@ -156,6 +157,8 @@ export default function WaiterOrders() {
         quantity: item.quantity,
         unit_price: item.unit_price,
         notes: item.notes,
+        status: item.status,
+        rejection_reason: item.rejection_reason,
         modifiers: item.modifiers,
       })),
       created_at: order.created_at,
@@ -215,27 +218,119 @@ export default function WaiterOrders() {
         </div>
 
         <div className="order-items-list">
-          {order.items.map((item, idx) => (
-            <div key={idx} className="order-item">
-              <div className="item-details">
-                <span className="item-quantity">{item.quantity}x</span>
-                <div className="item-info">
-                  <span className="item-name">{item.name}</span>
-                  {item.modifiers && item.modifiers.length > 0 && (
-                    <span className="item-modifiers">
-                      {item.modifiers.map((m) => m.name).join(", ")}
-                    </span>
-                  )}
-                  {item.notes && (
-                    <span className="item-notes">Note: {item.notes}</span>
-                  )}
+          {order.items
+            .filter((item) => item.status !== "REJECTED") // Hide rejected items
+            .map((item, idx) => (
+              <div key={idx} className="order-item">
+                <div className="item-details">
+                  <span className="item-quantity">{item.quantity}x</span>
+                  <div className="item-info">
+                    <span className="item-name">{item.name}</span>
+                    {item.status && (
+                      <span
+                        className={`item-status-badge ${item.status.toLowerCase()}`}
+                        style={{
+                          display: "inline-block",
+                          padding: "2px 6px",
+                          borderRadius: "4px",
+                          fontSize: "0.75rem",
+                          marginLeft: "8px",
+                          background:
+                            item.status === "REJECTED"
+                              ? "#fee2e2"
+                              : item.status === "READY"
+                                ? "#dcfce7"
+                                : item.status === "COOKING"
+                                  ? "#fef3c7"
+                                  : "#e5e7eb",
+                          color:
+                            item.status === "REJECTED"
+                              ? "#dc2626"
+                              : item.status === "READY"
+                                ? "#16a34a"
+                                : item.status === "COOKING"
+                                  ? "#d97706"
+                                  : "#6b7280",
+                        }}
+                      >
+                        {item.status === "REJECTED"
+                          ? "❌ REJECTED"
+                          : item.status}
+                      </span>
+                    )}
+                    {item.modifiers && item.modifiers.length > 0 && (
+                      <span className="item-modifiers">
+                        {item.modifiers.map((m) => m.name).join(", ")}
+                      </span>
+                    )}
+                    {item.notes && (
+                      <span className="item-notes">Note: {item.notes}</span>
+                    )}
+                    {item.status === "REJECTED" && item.rejection_reason && (
+                      <span
+                        className="item-rejection-reason"
+                        style={{
+                          fontSize: "0.75rem",
+                          color: "#dc2626",
+                          fontStyle: "italic",
+                        }}
+                      >
+                        Reason: {item.rejection_reason}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
+                >
+                  <span className="item-price">
+                    {formatPrice(item.unit_price * item.quantity)}
+                  </span>
+                  {(activeTab === "pending" || activeTab === "accepted") &&
+                    item.status !== "REJECTED" && (
+                      <button
+                        className="btn-reject-item"
+                        style={{
+                          padding: "4px 8px",
+                          fontSize: "0.75rem",
+                          background: "#fee2e2",
+                          color: "#dc2626",
+                          border: "1px solid #fecaca",
+                          borderRadius: "4px",
+                          cursor: "pointer",
+                        }}
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          const reason = prompt(
+                            `Reject "${item.name}"? Enter reason:`,
+                          );
+                          if (reason) {
+                            try {
+                              await rejectOrderItem(order.id, item.id, reason);
+
+                              // Close modal if open to force refresh
+                              if (
+                                showDetailModal &&
+                                selectedOrder?.id === order.id
+                              ) {
+                                setShowDetailModal(false);
+                                setSelectedOrder(null);
+                              }
+
+                              await loadOrders();
+                            } catch (error) {
+                              console.error("Error rejecting item:", error);
+                              alert("Failed to reject item");
+                            }
+                          }
+                        }}
+                      >
+                        ✕
+                      </button>
+                    )}
                 </div>
               </div>
-              <span className="item-price">
-                {formatPrice(item.unit_price * item.quantity)}
-              </span>
-            </div>
-          ))}
+            ))}
         </div>
 
         {activeTab === "pending" && (

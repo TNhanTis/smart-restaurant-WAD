@@ -188,27 +188,31 @@ function Payment() {
             <div className="bill-section-title">
               Order #{index + 1} - {order.order_number}
             </div>
-            {order.order_items?.map((item: any) => (
-              <div key={item.id} className="bill-item">
-                <div className="bill-item-details">
-                  <span className="bill-item-qty">{item.quantity}x</span>
-                  <div>
-                    <div className="bill-item-name">{item.menu_item?.name}</div>
-                    {item.modifiers && item.modifiers.length > 0 && (
-                      <div className="bill-item-mods">
-                        +{" "}
-                        {item.modifiers
-                          .map((m: any) => m.modifier_option?.name)
-                          .join(", ")}
+            {order.order_items
+              ?.filter((item: any) => item.status !== "REJECTED") // Hide rejected items from bill
+              .map((item: any) => (
+                <div key={item.id} className="bill-item">
+                  <div className="bill-item-details">
+                    <span className="bill-item-qty">{item.quantity}x</span>
+                    <div>
+                      <div className="bill-item-name">
+                        {item.menu_item?.name}
                       </div>
-                    )}
+                      {item.modifiers && item.modifiers.length > 0 && (
+                        <div className="bill-item-mods">
+                          +{" "}
+                          {item.modifiers
+                            .map((m: any) => m.modifier_option?.name)
+                            .join(", ")}
+                        </div>
+                      )}
+                    </div>
                   </div>
+                  <span className="bill-item-price">
+                    {Math.round(item.subtotal).toLocaleString("vi-VN")}₫
+                  </span>
                 </div>
-                <span className="bill-item-price">
-                  {Math.round(item.subtotal).toLocaleString("vi-VN")}₫
-                </span>
-              </div>
-            ))}
+              ))}
           </div>
         ))}
 
