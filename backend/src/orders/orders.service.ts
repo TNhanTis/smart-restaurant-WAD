@@ -64,7 +64,7 @@ export class OrdersService {
 
     // Check if any items are unavailable
     const unavailableItems = menuItems.filter(
-      (item) => item.status !== 'active',
+      (item) => item.status !== 'available',
     );
     if (unavailableItems.length > 0) {
       throw new BadRequestException(
