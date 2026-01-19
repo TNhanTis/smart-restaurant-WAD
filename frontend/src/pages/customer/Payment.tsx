@@ -2,19 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ordersApi from "../../api/ordersApi";
 import billRequestsApi from "../../api/billRequestsApi";
+import paymentsApi, { PaymentMethod } from "../../api/paymentsApi";
 import "./Payment.css";
-
-interface PaymentMethod {
-  code: string;
-  name: string;
-  logo?: string;
-  color?: string;
-}
-
-const PAYMENT_METHODS: PaymentMethod[] = [
-  { code: "vnpay", name: "VNPay", logo: "V", color: "#ec1c24" },
-  { code: "cash", name: "Pay at Counter", logo: "💵" },
-];
 
 const TIP_PERCENTAGES = [10, 15, 20];
 
@@ -25,7 +14,8 @@ function Payment() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("vnpay");
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("");
   const [tipPercentage, setTipPercentage] = useState(15);
   const [customTip, setCustomTip] = useState(0);
   const [customerNote, setCustomerNote] = useState("");
@@ -35,7 +25,27 @@ function Payment() {
 
   useEffect(() => {
     loadTableAndOrders();
+    loadPaymentMethods();
   }, []);
+
+  const loadPaymentMethods = async () => {
+    try {
+      const methods = await paymentsApi.getPaymentMethods();
+      setPaymentMethods(methods);
+      // Set default payment method to first available (usually CASH or VNPAY)
+      if (methods.length > 0) {
+        setSelectedPaymentMethod(methods[0].code.toUpperCase());
+      }
+    } catch (error) {
+      console.error("Error loading payment methods:", error);
+      // Fallback to hardcoded methods
+      setPaymentMethods([
+        { id: '1', code: 'CASH', name: 'Cash', display_order: 1 },
+        { id: '2', code: 'VNPAY', name: 'VNPay', display_order: 2 },
+      ]);
+      setSelectedPaymentMethod('CASH');
+    }
+  };
 
   const loadTableAndOrders = async () => {
     try {
@@ -117,14 +127,8 @@ function Payment() {
       navigate(`/customer/payment-status/${billRequest.id}`);
     } catch (err: any) {
       console.error("Error creating bill request:", err);
-
-      // For demo purposes: navigate to demo page even if API fails
-      console.log("⚠️ API failed, navigating to demo page for testing");
-      navigate("/customer/payment-status/demo");
-
-      // Uncomment below to show error instead
-      // setError(err.response?.data?.message || 'Failed to create bill request');
-      // setSubmitting(false);
+      setError(err.response?.data?.message || 'Failed to create bill request');
+      setSubmitting(false);
     }
   };
 
@@ -235,21 +239,25 @@ function Payment() {
         {/* Payment Methods */}
         <div className="payment-methods">
           <h3 className="payment-method-title">Payment Method</h3>
-          {PAYMENT_METHODS.map((method) => (
+          {paymentMethods.map((method) => (
             <div
               key={method.code}
-              className={`payment-option ${selectedPaymentMethod === method.code ? "selected" : ""}`}
-              onClick={() => setSelectedPaymentMethod(method.code)}
+              className={`payment-option ${selectedPaymentMethod === method.code.toUpperCase() ? "selected" : ""}`}
+              onClick={() => setSelectedPaymentMethod(method.code.toUpperCase())}
             >
               <input
                 type="radio"
                 name="payment"
-                checked={selectedPaymentMethod === method.code}
-                onChange={() => setSelectedPaymentMethod(method.code)}
+                checked={selectedPaymentMethod === method.code.toUpperCase()}
+                onChange={() => setSelectedPaymentMethod(method.code.toUpperCase())}
               />
               <div className="payment-option-label">
-                <span className="payment-logo" style={{ color: method.color }}>
-                  {method.logo}
+                <span className="payment-logo">
+                  {method.logo_url ? (
+                    <img src={method.logo_url} alt={method.name} style={{ width: '24px', height: '24px' }} />
+                  ) : (
+                    method.code === 'VNPAY' ? '🏦' : '💵'
+                  )}
                 </span>
                 {method.name}
               </div>

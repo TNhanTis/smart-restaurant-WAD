@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useSocket } from "../../contexts/SocketContext";
 import billRequestsApi from "../../api/billRequestsApi";
+import paymentsApi from "../../api/paymentsApi";
 import "./PaymentStatus.css";
 
 type BillStatus = "pending" | "accepted" | "completed" | "rejected";
@@ -9,15 +10,62 @@ type BillStatus = "pending" | "accepted" | "completed" | "rejected";
 function PaymentStatus() {
   const navigate = useNavigate();
   const { billRequestId } = useParams();
+  const [searchParams] = useSearchParams();
   const { socket } = useSocket();
 
   const [status, setStatus] = useState<BillStatus>("pending");
   const [bill, setBill] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+  const [paymentVerified, setPaymentVerified] = useState(false);
+
+  // Check if this is a VNPay return
+  useEffect(() => {
+    const vnpResponseCode = searchParams.get('vnp_ResponseCode');
+    const vnpTxnRef = searchParams.get('vnp_TxnRef');
+    
+    if (vnpResponseCode && vnpTxnRef) {
+      console.log('🔔 VNPay return detected, verifying payment...');
+      verifyVNPayPayment();
+    }
+  }, [searchParams]);
+
+  const verifyVNPayPayment = async () => {
+    try {
+      setLoading(true);
+      
+      // Convert URLSearchParams to object
+      const queryParams: Record<string, string> = {};
+      searchParams.forEach((value, key) => {
+        queryParams[key] = value;
+      });
+
+      console.log('📤 Verifying VNPay payment with params:', queryParams);
+      const result = await paymentsApi.verifyVNPayReturn(queryParams);
+      
+      console.log('📥 VNPay verification result:', result);
+
+      if (result.success) {
+        setStatus('completed');
+        setPaymentVerified(true);
+        // Optionally reload bill request to get updated status
+        if (billRequestId && billRequestId !== 'demo') {
+          await loadBillRequest();
+        }
+      } else {
+        setStatus('rejected');
+        console.error('❌ VNPay payment failed:', result.error);
+      }
+    } catch (error) {
+      console.error('❌ Error verifying VNPay payment:', error);
+      setStatus('rejected');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (billRequestId && billRequestId !== "demo") {
+    if (billRequestId && billRequestId !== "demo" && !searchParams.has('vnp_ResponseCode')) {
       loadBillRequest();
     }
   }, [billRequestId]);
@@ -65,6 +113,7 @@ function PaymentStatus() {
     try {
       setLoading(true);
       const response = await billRequestsApi.get(billRequestId);
+      console.log('📥 Bill request loaded:', response);
       setBill(response);
       setStatus(response.status as BillStatus);
     } catch (error) {
@@ -74,8 +123,15 @@ function PaymentStatus() {
     }
   };
 
-  // Hardcoded demo - you can change this to test different states
-  const displayBill = bill || {
+  // Transform bill data to handle both singular and plural field names from backend
+  const displayBill = bill ? {
+    restaurant: bill.restaurants || bill.restaurant || { name: "N/A" },
+    table: bill.tables || bill.table || { table_number: "N/A" },
+    payment_method_code: bill.payment_method_code,
+    subtotal: bill.subtotal,
+    tips_amount: bill.tips_amount,
+    total_amount: bill.total_amount,
+  } : {
     restaurant: { name: "Restaurant" },
     table: { table_number: "T--" },
     payment_method_code: "vnpay",
@@ -152,21 +208,6 @@ function PaymentStatus() {
   const handleOpenPayment = () => {
     if (paymentUrl) {
       window.open(paymentUrl, "_blank");
-    }
-  };
-
-  const handleSimulateProgress = () => {
-    // Demo function to cycle through statuses
-    if (status === "pending") {
-      setStatus("accepted");
-      setPaymentUrl(
-        "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?demo=1",
-      );
-    } else if (status === "accepted") {
-      setStatus("completed");
-    } else if (status === "completed") {
-      setStatus("pending");
-      setPaymentUrl(null);
     }
   };
 
@@ -261,13 +302,12 @@ function PaymentStatus() {
         </div>
 
         {/* QR Code Section (only show when accepted) */}
-        {statusConfig.showQR && (
+        {status === "accepted" && bill?.payment_method_code === "CASH" && (
           <div className="qr-section">
-            <h3 className="qr-title">Scan to Pay</h3>
-            <div className="qr-code-placeholder">📱</div>
+            <h3 className="qr-title">Cash Payment</h3>
+            <div className="qr-code-placeholder">�</div>
             <p className="qr-instruction">
-              Scan this QR code with your {bill.payment_method.name} app to
-              complete the payment
+              Please prepare cash payment. Waiter will confirm receipt shortly.
             </p>
           </div>
         )}
@@ -286,6 +326,13 @@ function PaymentStatus() {
                 Back to Menu
               </button>
             </>
+          ) : status === "rejected" ? (
+            <button
+              className="action-btn primary"
+              onClick={() => navigate("/customer/payment")}
+            >
+              Try Again
+            </button>
           ) : (
             <button
               className="action-btn secondary"
@@ -294,27 +341,6 @@ function PaymentStatus() {
               Cancel Request
             </button>
           )}
-        </div>
-
-        {/* Demo Control (remove in production) */}
-        <div style={{ marginTop: "30px", textAlign: "center" }}>
-          <button
-            onClick={handleSimulateProgress}
-            style={{
-              padding: "10px 20px",
-              background: "#3498db",
-              color: "#fff",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontSize: "14px",
-            }}
-          >
-            🎬 Demo: Simulate Progress ({status})
-          </button>
-          <p style={{ marginTop: "10px", fontSize: "12px", color: "#7f8c8d" }}>
-            Click to cycle through: Pending → Accepted → Completed
-          </p>
         </div>
       </div>
     </div>

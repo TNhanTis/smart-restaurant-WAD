@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class PublicMenuService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async getMenu(
     categoryId?: string,
@@ -71,10 +71,10 @@ export class PublicMenuService {
         order_items:
           sortBy === 'popularity'
             ? {
-                select: {
-                  id: true,
-                },
-              }
+              select: {
+                id: true,
+              },
+            }
             : false,
       },
       orderBy:
@@ -94,7 +94,7 @@ export class PublicMenuService {
     }
 
     // Fetch all active categories
-    const categoriesWhere: any = { status: 'available' };
+    const categoriesWhere: any = { status: 'active' };
     if (restaurantId) {
       categoriesWhere.restaurant_id = restaurantId;
     }
@@ -126,9 +126,9 @@ export class PublicMenuService {
         image: item.photos[0]?.url || null,
         category: item.category
           ? {
-              id: item.category.id,
-              name: item.category.name,
-            }
+            id: item.category.id,
+            name: item.category.name,
+          }
           : null,
         isAvailable: item.status === 'available',
         isChefRecommended: item.is_chef_recommended,
@@ -210,9 +210,9 @@ export class PublicMenuService {
       price: item.price,
       category: item.category
         ? {
-            id: item.category.id,
-            name: item.category.name,
-          }
+          id: item.category.id,
+          name: item.category.name,
+        }
         : null,
       photos: item.photos.map((photo) => ({
         id: photo.id,
@@ -237,7 +237,7 @@ export class PublicMenuService {
   }
 
   async getCategories(restaurantId?: string) {
-    const where: any = { status: 'available' };
+    const where: any = { status: 'active' };
     if (restaurantId) {
       where.restaurant_id = restaurantId;
     }
@@ -275,7 +275,7 @@ export class PublicMenuService {
   async getRestaurants() {
     const restaurants = await this.prisma.restaurant.findMany({
       where: {
-        status: 'available',
+        status: 'active',
       },
       select: {
         id: true,
