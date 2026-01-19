@@ -28,21 +28,21 @@ model Restaurant {
 }
 
 model Table {
-  id                  String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  table_number        String            @db.VarChar(50)
+  id                  String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  table_number        String          @db.VarChar(50)
   capacity            Int
-  location            String?           @db.VarChar(100)
+  location            String?         @db.VarChar(100)
   description         String?
-  status              String            @default("active") @db.VarChar(20)
-  occupancy_status    OccupancyStatus   @default(available)
-  qr_token            String?           @db.VarChar(500)
-  qr_token_created_at DateTime?         @db.Timestamp(6)
-  created_at          DateTime          @default(now()) @db.Timestamp(6)
-  updated_at          DateTime          @updatedAt @db.Timestamp(6)
-  restaurant_id       String            @db.Uuid
+  status              String          @default("active") @db.VarChar(20)
+  qr_token            String?         @db.VarChar(500)
+  qr_token_created_at DateTime?       @db.Timestamp(6)
+  created_at          DateTime        @default(now()) @db.Timestamp(6)
+  updated_at          DateTime        @updatedAt @db.Timestamp(6)
+  restaurant_id       String          @db.Uuid
+  occupancy_status    OccupancyStatus @default(available)
   bill_requests       bill_requests[]
   orders              Order[]
-  restaurant          Restaurant        @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+  restaurant          Restaurant      @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
 
   @@unique([restaurant_id, table_number])
   @@index([restaurant_id])
@@ -170,17 +170,17 @@ model User {
   password_hash                        String?           @db.VarChar(255)
   full_name                            String?           @db.VarChar(100)
   phone                                String?           @db.VarChar(20)
-  avatar_url                           String?
   status                               String            @default("active") @db.VarChar(20)
   is_deleted                           Boolean           @default(false)
   created_at                           DateTime          @default(now()) @db.Timestamp(6)
   updated_at                           DateTime          @updatedAt @db.Timestamp(6)
   last_login_at                        DateTime?         @db.Timestamp(6)
-  email_verified                       Boolean           @default(false)
+  auth_provider                        String            @default("local") @db.VarChar(20)
+  avatar_url                           String?
   email_verification_token             String?           @db.VarChar(255)
   email_verification_token_expires_at  DateTime?         @db.Timestamp(6)
+  email_verified                       Boolean           @default(false)
   google_id                            String?           @unique @db.VarChar(255)
-  auth_provider                        String            @default("local") @db.VarChar(20)
   bill_requests                        bill_requests[]
   notifications                        notifications[]
   orders                               Order[]
@@ -231,6 +231,7 @@ model Order {
   restaurant_id    String      @db.Uuid
   table_id         String      @db.Uuid
   customer_id      String?     @db.Uuid
+  guest_name       String?     @db.VarChar(100)
   order_number     String      @unique @db.VarChar(50)
   status           OrderStatus @default(pending)
   subtotal         Decimal     @db.Decimal(12, 2)
@@ -268,6 +269,7 @@ model OrderItem {
   special_requests String?
   created_at       DateTime            @default(now()) @db.Timestamp(6)
   status           OrderItemStatus     @default(QUEUED)
+  rejection_reason String?
   modifiers        OrderItemModifier[]
   menu_item        MenuItem            @relation(fields: [menu_item_id], references: [id])
   order            Order               @relation(fields: [order_id], references: [id], onDelete: Cascade)
@@ -463,6 +465,7 @@ enum OrderItemStatus {
   QUEUED
   COOKING
   READY
+  REJECTED
 }
 
 enum OccupancyStatus {

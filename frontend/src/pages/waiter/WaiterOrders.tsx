@@ -73,9 +73,10 @@ export default function WaiterOrders() {
       const readyData = ready?.data || ready;
       setReadyOrders(Array.isArray(readyData) ? readyData : []);
 
+      // Only load orders with status "completed" (already paid)
       const completed = await getRestaurantOrders(
         restaurantId,
-        "served,completed",
+        "completed",
       );
       console.log("Completed orders response:", completed);
       const completedData = completed?.data || completed;
@@ -274,24 +275,7 @@ export default function WaiterOrders() {
           </div>
         )}
 
-        {activeTab === "completed" && order.status === "served" && (
-          <div className="order-actions" onClick={(e) => e.stopPropagation()}>
-            <button
-              className="btn-accept"
-              onClick={async () => {
-                try {
-                  await completeOrder(order.id, restaurantId);
-                  await loadOrders();
-                } catch (error) {
-                  console.error("Error completing order:", error);
-                  alert("Failed to mark order as completed. Please try again.");
-                }
-              }}
-            >
-              Mark as Completed
-            </button>
-          </div>
-        )}
+        {/* Completed orders don't need any actions - they are already paid */}
       </div>
     );
   };

@@ -29,7 +29,10 @@ function OrderStatus() {
         const { id: tableId } = JSON.parse(tableInfo);
         const response = await ordersApi.getByTable(tableId);
         // Backend returns { data: [], total: N }, extract the data array
-        ordersData = (response as any).data || response;
+        const allOrders = (response as any).data || response;
+        
+        // Filter out completed orders (already paid)
+        ordersData = allOrders.filter((order: Order) => order.status !== 'completed');
       }
 
       setOrders(ordersData);

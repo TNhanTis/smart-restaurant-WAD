@@ -70,7 +70,10 @@ function Payment() {
 
       // Get all unpaid orders for this table
       const response = await ordersApi.getByTable(table.id);
-      const ordersData = (response as any).data || response;
+      const allOrders = (response as any).data || response;
+      
+      // Filter out completed orders (already paid)
+      const ordersData = allOrders.filter((order: any) => order.status !== 'completed');
 
       setOrders(ordersData);
       setLoading(false);

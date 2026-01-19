@@ -21,7 +21,7 @@ export class OrdersService {
     private cartService: CartService,
     private notificationsGateway: NotificationsGateway,
     private notificationsService: NotificationsService,
-  ) {}
+  ) { }
 
   /**
    * Create a new order with items and modifiers
@@ -179,6 +179,7 @@ export class OrdersService {
           restaurant_id: createDto.restaurant_id,
           table_id: createDto.table_id,
           customer_id: createDto.customer_id,
+          guest_name: createDto.guest_name,
           order_number: orderNumber,
           status: 'pending',
           subtotal,

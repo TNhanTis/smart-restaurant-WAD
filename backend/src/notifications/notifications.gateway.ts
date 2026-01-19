@@ -309,6 +309,22 @@ export class NotificationsGateway
         timestamp: new Date().toISOString(),
       });
     }
+    
+    // Also broadcast to all (for anonymous customers)
+    this.emitToAll('payment_completed', {
+      bill_request_id: billRequest.id,
+      payment_id: payment.id,
+      type: 'payment_success',
+      title: 'Payment Successful',
+      message: 'Your payment has been completed successfully',
+      data: {
+        payment_id: payment.id,
+        amount: payment.amount,
+        payment_method: billRequest.payment_method_code,
+        change: payment.change_amount || 0,
+      },
+      timestamp: new Date().toISOString(),
+    });
 
     this.logger.log(`Notified: Payment ${payment.id} completed`);
   }

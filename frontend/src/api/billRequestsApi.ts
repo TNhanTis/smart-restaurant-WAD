@@ -105,6 +105,25 @@ export const billRequestsApi = {
     const response = await api.patch(`/api/bill-requests/${id}/cancel`);
     return response.data;
   },
+
+  /**
+   * Complete cash payment (waiter)
+   */
+  completeCashPayment: async (
+    billRequestId: string,
+    receivedAmount: number,
+  ): Promise<{
+    success: boolean;
+    message: string;
+    payment_id: string;
+    bill_request_id: string;
+  }> => {
+    const response = await api.post(
+      `/api/bill-requests/${billRequestId}/complete-cash`,
+      { received_amount: receivedAmount },
+    );
+    return response.data;
+  },
 };
 
 export default billRequestsApi;

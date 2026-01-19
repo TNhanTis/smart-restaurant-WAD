@@ -90,6 +90,7 @@ function App() {
                     element={<RestaurantList />}
                   />
                   <Route path="/customer/menu" element={<CustomerMenu />} />
+                  <Route path="/customer/order-history" element={<OrderHistory />} />
                   <Route path="/customer/login" element={<CustomerLogin />} />
                   <Route
                     path="/customer/register"

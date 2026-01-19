@@ -76,7 +76,7 @@ function PaymentStatus() {
       return;
     }
 
-    // Listen for payment ready event
+    // Listen for payment ready event (VNPay)
     socket.on("payment_ready", (data: any) => {
       console.log("Payment ready event received:", data);
 
@@ -93,6 +93,26 @@ function PaymentStatus() {
       }
     });
 
+    // Listen for bill accepted event (CASH)
+    socket.on("bill_accepted", (data: any) => {
+      console.log("Bill accepted event received:", data);
+
+      if (data.bill_request_id === billRequestId) {
+        console.log("✅ Bill accepted for CASH payment");
+        setStatus("accepted");
+      }
+    });
+
+    // Listen for payment completed event
+    socket.on("payment_completed", (data: any) => {
+      console.log("Payment completed event received:", data);
+
+      if (data.bill_request_id === billRequestId) {
+        console.log("✅ Payment completed for this bill request");
+        setStatus("completed");
+      }
+    });
+
     // Listen for bill request rejected
     socket.on("bill_request_rejected", (data: any) => {
       console.log("Bill request rejected:", data);
@@ -103,6 +123,8 @@ function PaymentStatus() {
 
     return () => {
       socket.off("payment_ready");
+      socket.off("bill_accepted");
+      socket.off("payment_completed");
       socket.off("bill_request_rejected");
     };
   }, [socket, billRequestId]);

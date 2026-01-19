@@ -89,4 +89,16 @@ export class BillRequestsController {
   async cancel(@Param('id') id: string) {
     return this.billRequestsService.cancel(id);
   }
+
+  /**
+   * POST /api/bill-requests/:id/complete-cash
+   * Waiter confirms cash payment received and completes the bill
+   */
+  @Post(':id/complete-cash')
+  async completeCashPayment(
+    @Param('id') id: string,
+    @Body() body: { received_amount: number },
+  ) {
+    return this.billRequestsService.completeCashPayment(id, body.received_amount);
+  }
 }

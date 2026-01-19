@@ -365,9 +365,17 @@ export class BillRequestsService {
           amount: billRequest.total_amount,
         });
       } else {
-        console.warn(
-          '⚠️ [Bill Request] Cannot emit socket - missing payment_url',
+        // For CASH payment (no URL), notify customer that bill is accepted
+        console.log(
+          '📡 [Bill Request] Broadcasting bill_accepted event for CASH payment:',
+          id,
         );
+        this.notificationsGateway.emitToAll('bill_accepted', {
+          bill_request_id: id,
+          payment_id: payment.payment_id,
+          payment_method: billRequest.payment_method_code,
+          amount: billRequest.total_amount,
+        });
       }
 
       return {
@@ -464,5 +472,107 @@ export class BillRequestsService {
     console.log('❌ [Bill Request] Cancelled:', id);
 
     return { message: 'Bill request cancelled successfully' };
+  }
+
+  /**
+   * Complete cash payment for accepted bill request
+   */
+  async completeCashPayment(billRequestId: string, receivedAmount: number) {
+    try {
+      console.log('💵 [Bill Request] Completing cash payment:', {
+        billRequestId,
+        receivedAmount,
+      });
+
+      // 1. Find the bill request
+      const billRequest = await this.prisma.bill_requests.findUnique({
+        where: { id: billRequestId },
+        include: {
+          payments: true,
+        },
+      });
+
+      if (!billRequest) {
+        throw new NotFoundException('Bill request not found');
+      }
+
+      if (billRequest.status !== 'accepted') {
+        throw new BadRequestException(
+          `Bill request must be accepted first. Current status: ${billRequest.status}`,
+        );
+      }
+
+      if (billRequest.payment_method_code?.toLowerCase() !== 'cash') {
+        throw new BadRequestException(
+          `This endpoint is only for cash payments. Current method: ${billRequest.payment_method_code}`,
+        );
+      }
+
+      // 2. Find the payment record created during accept
+      const payment = billRequest.payments?.[0];
+      if (!payment) {
+        throw new NotFoundException(
+          'Payment record not found for this bill request',
+        );
+      }
+
+      // 3. Update payment status to completed
+      await this.prisma.payments.update({
+        where: { id: payment.id },
+        data: {
+          status: 'completed',
+          updated_at: new Date(),
+        },
+      });
+
+      // 4. Update bill request status to completed
+      await this.prisma.bill_requests.update({
+        where: { id: billRequestId },
+        data: {
+          status: 'completed',
+          updated_at: new Date(),
+        },
+      });
+
+      // 5. Update all orders to completed
+      const orderIds = billRequest.order_ids as string[];
+      await this.prisma.order.updateMany({
+        where: {
+          id: { in: orderIds },
+        },
+        data: {
+          status: 'completed',
+          updated_at: new Date(),
+        },
+      });
+
+      console.log('✅ [Bill Request] Cash payment completed:', {
+        billRequestId,
+        paymentId: payment.id,
+        orderCount: orderIds.length,
+      });
+
+      // 6. Emit payment_completed event via socket
+      this.notificationsGateway.emitToAll('payment_completed', {
+        bill_request_id: billRequestId,
+        payment_id: payment.id,
+        status: 'completed',
+        message: 'Payment completed successfully',
+      });
+
+      return {
+        success: true,
+        message: 'Cash payment completed successfully',
+        payment_id: payment.id,
+        bill_request_id: billRequestId,
+      };
+    } catch (error) {
+      console.error('❌ [Bill Request] Complete cash payment error:', {
+        message: error.message,
+        stack: error.stack,
+        billRequestId,
+      });
+      throw error;
+    }
   }
 }
