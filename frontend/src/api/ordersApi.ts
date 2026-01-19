@@ -28,6 +28,8 @@ export interface OrderItem {
   unit_price: number;
   subtotal: number;
   special_requests?: string;
+  status?: "QUEUED" | "COOKING" | "READY" | "REJECTED";
+  rejection_reason?: string;
   menu_item?: {
     id: string;
     name: string;

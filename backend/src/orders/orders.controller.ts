@@ -280,4 +280,32 @@ export class OrdersController {
       },
     };
   }
+
+  /**
+   * PATCH /api/orders/:orderId/items/:itemId/status
+   * Update individual order item status (Kitchen)
+   * Auto-updates order status based on all items
+   */
+  @Patch(':orderId/items/:itemId/status')
+  async updateItemStatus(
+    @Param('orderId') orderId: string,
+    @Param('itemId') itemId: string,
+    @Body() body: { status: 'QUEUED' | 'COOKING' | 'READY' },
+  ) {
+    return this.ordersService.updateItemStatus(orderId, itemId, body.status);
+  }
+
+  /**
+   * POST /api/orders/:orderId/items/:itemId/reject
+   * Reject an individual order item (Waiter)
+   * Updates order total and notifies customer
+   */
+  @Post(':orderId/items/:itemId/reject')
+  async rejectItem(
+    @Param('orderId') orderId: string,
+    @Param('itemId') itemId: string,
+    @Body() body: { reason?: string },
+  ) {
+    return this.ordersService.rejectOrderItem(orderId, itemId, body.reason);
+  }
 }

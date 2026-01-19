@@ -97,6 +97,8 @@ export class WaiterService {
           quantity: item.quantity,
           unit_price: item.unit_price,
           notes: item.special_requests,
+          status: item.status,
+          rejection_reason: item.rejection_reason,
           modifiers: item.modifiers.map((mod) => ({
             id: mod.modifier_option?.id || mod.id,
             name: mod.modifier_option.name,
@@ -232,6 +234,8 @@ export class WaiterService {
           quantity: item.quantity,
           unit_price: item.unit_price,
           notes: item.special_requests,
+          status: item.status,
+          rejection_reason: item.rejection_reason,
           modifiers: item.modifiers.map((mod) => ({
             id: mod.modifier_option?.id || mod.id,
             name: mod.modifier_option.name,
@@ -540,6 +544,8 @@ export class WaiterService {
           quantity: item.quantity,
           unit_price: item.unit_price,
           notes: item.special_requests,
+          status: item.status,
+          rejection_reason: item.rejection_reason,
           modifiers: [],
         })),
         created_at: order.created_at,

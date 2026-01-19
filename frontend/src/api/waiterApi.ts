@@ -14,6 +14,8 @@ export interface OrderItem {
   unit_price: number;
   notes?: string;
   modifiers?: OrderModifier[];
+  status?: "QUEUED" | "COOKING" | "READY" | "REJECTED";
+  rejection_reason?: string;
 }
 
 export interface WaiterOrder {
@@ -164,4 +166,17 @@ export const getWaiterLeaderboard = async (
     params: { restaurant_id: restaurantId },
   });
   return response.data.data;
+};
+
+// Reject individual order item
+export const rejectOrderItem = async (
+  orderId: string,
+  itemId: string,
+  reason?: string,
+): Promise<WaiterOrder> => {
+  const response = await axiosInstance.post(
+    `/api/orders/${orderId}/items/${itemId}/reject`,
+    { reason },
+  );
+  return response.data;
 };
