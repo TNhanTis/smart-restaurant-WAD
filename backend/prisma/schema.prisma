@@ -39,6 +39,7 @@ model Table {
   created_at          DateTime        @default(now()) @db.Timestamp(6)
   updated_at          DateTime        @updatedAt @db.Timestamp(6)
   restaurant_id       String          @db.Uuid
+  occupancy_status    OccupancyStatus @default(available)
   bill_requests       bill_requests[]
   orders              Order[]
   restaurant          Restaurant      @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
@@ -169,17 +170,17 @@ model User {
   password_hash                        String?           @db.VarChar(255)
   full_name                            String?           @db.VarChar(100)
   phone                                String?           @db.VarChar(20)
-  avatar_url                           String?
   status                               String            @default("active") @db.VarChar(20)
   is_deleted                           Boolean           @default(false)
   created_at                           DateTime          @default(now()) @db.Timestamp(6)
   updated_at                           DateTime          @updatedAt @db.Timestamp(6)
   last_login_at                        DateTime?         @db.Timestamp(6)
-  email_verified                       Boolean           @default(false)
+  auth_provider                        String            @default("local") @db.VarChar(20)
+  avatar_url                           String?
   email_verification_token             String?           @db.VarChar(255)
   email_verification_token_expires_at  DateTime?         @db.Timestamp(6)
+  email_verified                       Boolean           @default(false)
   google_id                            String?           @unique @db.VarChar(255)
-  auth_provider                        String            @default("local") @db.VarChar(20)
   bill_requests                        bill_requests[]
   notifications                        notifications[]
   orders                               Order[]
@@ -462,4 +463,10 @@ enum OrderItemStatus {
   QUEUED
   COOKING
   READY
+}
+
+enum OccupancyStatus {
+  available
+  occupied
+  reserved
 }
