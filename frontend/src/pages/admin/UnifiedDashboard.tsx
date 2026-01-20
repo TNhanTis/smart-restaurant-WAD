@@ -268,12 +268,43 @@ export default function UnifiedDashboard() {
   return (
     <div className="unified-dashboard">
       {/* Header */}
-      <div className="dashboard-header">
-        <div>
-          <h1 className="page-title">
+      <header className="header" style={{
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        borderRadius: '1.5rem',
+        padding: '2.5rem 3rem',
+        marginBottom: '2rem',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+        position: 'relative',
+        overflow: 'hidden',
+        flexWrap: 'wrap',
+        gap: '20px'
+      }}>
+        {/* Decorative Circles */}
+        <div style={{ position: 'absolute', top: '-20%', right: '-5%', width: '300px', height: '300px', background: 'rgba(255,255,255,0.1)', borderRadius: '50%' }}></div>
+        <div style={{ position: 'absolute', bottom: '-40%', left: '-10%', width: '400px', height: '400px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%' }}></div>
+
+        <div style={{ position: 'relative', zIndex: 1, color: 'white' }}>
+          <h1 style={{
+            fontSize: '2.5rem',
+            fontWeight: '800',
+            color: 'white',
+            margin: '0 0 0.5rem 0',
+            lineHeight: 1.2,
+            letterSpacing: '-0.025em',
+            textShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            WebkitTextFillColor: 'white'
+          }}>
             {isSuperAdmin ? "Super Admin Dashboard" : "Dashboard"}
           </h1>
-          <p className="page-subtitle">
+          <p style={{
+            color: 'rgba(255, 255, 255, 0.9)',
+            margin: 0,
+            fontSize: '1.1rem',
+            fontWeight: '500'
+          }}>
             {selectedRestaurant
               ? `${selectedRestaurant.name} - Analytics & Reports`
               : restaurantLoading
@@ -282,31 +313,59 @@ export default function UnifiedDashboard() {
           </p>
         </div>
 
-        {/* Restaurant Selector - Only for non-super-admin */}
-        {!isSuperAdmin && (
-          <div style={{ marginRight: "20px" }}>
-            <RestaurantSelector />
-          </div>
-        )}
+        <div style={{ position: 'relative', zIndex: 1, display: "flex", gap: "20px", alignItems: "center", flexWrap: 'wrap' }}>
+          {/* Restaurant Selector - Only for non-super-admin */}
+          {!isSuperAdmin && (
+            <div className="header-selector">
+              <RestaurantSelector />
+            </div>
+          )}
 
-        <div className="date-range-filter">
-          <label>From:</label>
-          <input
-            type="date"
-            value={dateRange.start}
-            onChange={(e) => handleDateChange("start", e.target.value)}
-            max={dateRange.end}
-          />
-          <label>To:</label>
-          <input
-            type="date"
-            value={dateRange.end}
-            onChange={(e) => handleDateChange("end", e.target.value)}
-            min={dateRange.start}
-            max={new Date().toISOString().split("T")[0]}
-          />
+          <div className="date-range-filter" style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            background: 'rgba(255, 255, 255, 0.2)',
+            padding: '0.6rem 1rem',
+            borderRadius: '12px',
+            border: '1px solid rgba(255, 255, 255, 0.3)',
+            backdropFilter: 'blur(4px)'
+          }}>
+            <label style={{ color: 'white', fontWeight: 'bold', fontSize: '0.875rem' }}>FROM:</label>
+            <input
+              type="date"
+              value={dateRange.start}
+              onChange={(e) => handleDateChange("start", e.target.value)}
+              max={dateRange.end}
+              style={{
+                background: 'rgba(255, 255, 255, 0.9)',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '4px 8px',
+                color: '#334155',
+                fontWeight: '500',
+                outline: 'none'
+              }}
+            />
+            <label style={{ color: 'white', fontWeight: 'bold', fontSize: '0.875rem' }}>TO:</label>
+            <input
+              type="date"
+              value={dateRange.end}
+              onChange={(e) => handleDateChange("end", e.target.value)}
+              min={dateRange.start}
+              style={{
+                background: 'rgba(255, 255, 255, 0.9)',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '4px 8px',
+                color: '#334155',
+                fontWeight: '500',
+                outline: 'none'
+              }}
+            />
+          </div>
         </div>
-      </div>
+      </header>
 
       {/* Error Message */}
       {error && (
@@ -366,11 +425,10 @@ export default function UnifiedDashboard() {
                 <div className="stat-value">{systemStats.orders.total}</div>
                 <div className="stat-label">Total Orders</div>
                 <div
-                  className={`stat-change ${
-                    systemStats.orders.growth_vs_yesterday >= 0
+                  className={`stat-change ${systemStats.orders.growth_vs_yesterday >= 0
                       ? "positive"
                       : "negative"
-                  }`}
+                    }`}
                 >
                   {systemStats.orders.today} today (
                   {systemStats.orders.growth_vs_yesterday > 0 ? "+" : ""}
@@ -389,11 +447,10 @@ export default function UnifiedDashboard() {
                 </div>
                 <div className="stat-label">Total Revenue</div>
                 <div
-                  className={`stat-change ${
-                    systemStats.revenue.growth_vs_yesterday >= 0
+                  className={`stat-change ${systemStats.revenue.growth_vs_yesterday >= 0
                       ? "positive"
                       : "negative"
-                  }`}
+                    }`}
                 >
                   {formatCurrency(systemStats.revenue.today)} today (
                   {systemStats.revenue.growth_vs_yesterday > 0 ? "+" : ""}
@@ -429,11 +486,10 @@ export default function UnifiedDashboard() {
                         </td>
                         <td>
                           <span
-                            className={`badge ${
-                              restaurant.status === "active"
+                            className={`badge ${restaurant.status === "active"
                                 ? "badge-success"
                                 : "badge-danger"
-                            }`}
+                              }`}
                           >
                             {restaurant.status}
                           </span>
@@ -728,22 +784,22 @@ export default function UnifiedDashboard() {
                       <div className="retention-card">
                         <div className="retention-value">
                           {typeof customerRetention.summary.retention_rate ===
-                          "string"
+                            "string"
                             ? customerRetention.summary.retention_rate
                             : `${customerRetention.summary.retention_rate.toFixed(
-                                1,
-                              )}%`}
+                              1,
+                            )}%`}
                         </div>
                         <div className="retention-label">Retention Rate</div>
                       </div>
                       <div className="retention-card">
                         <div className="retention-value">
                           {typeof customerRetention.average_orders_per_customer ===
-                          "string"
+                            "string"
                             ? customerRetention.average_orders_per_customer
                             : customerRetention.average_orders_per_customer.toFixed(
-                                1,
-                              )}
+                              1,
+                            )}
                         </div>
                         <div className="retention-label">
                           Avg Orders/Customer

@@ -363,7 +363,7 @@ export default function ModifiersManagement() {
         marginBottom: '2rem',
         padding: '0 0.5rem'
       }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#e2e8f0', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#334155', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ width: '8px', height: '24px', background: '#667eea', borderRadius: '4px', display: 'inline-block' }}></span>
           All Groups
         </h2>

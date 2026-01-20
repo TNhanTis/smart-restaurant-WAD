@@ -117,41 +117,81 @@ export const ReportsPage: React.FC = () => {
 
   return (
     <div className="reports-page">
-      <div className="page-header">
-        <h1>Reports & Analytics</h1>
-        <div className="date-range-picker">
-          <label>
-            From:
-            <input
-              type="date"
-              value={dateRange.startDate}
-              onChange={(e) =>
-                setDateRange((prev) => ({ ...prev, startDate: e.target.value }))
-              }
-            />
-          </label>
-          <label>
-            To:
-            <input
-              type="date"
-              value={dateRange.endDate}
-              onChange={(e) =>
-                setDateRange((prev) => ({ ...prev, endDate: e.target.value }))
-              }
-            />
-          </label>
-        </div>
-      </div>
+      <header className="header" style={{
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        borderRadius: '1.5rem',
+        padding: '2.5rem 3rem',
+        marginBottom: '2rem',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+        position: 'relative',
+        overflow: 'hidden',
+        flexWrap: 'wrap',
+        gap: '20px'
+      }}>
+        {/* Decorative Circles */}
+        <div style={{ position: 'absolute', top: '-20%', right: '-5%', width: '300px', height: '300px', background: 'rgba(255,255,255,0.1)', borderRadius: '50%' }}></div>
+        <div style={{ position: 'absolute', bottom: '-40%', left: '-10%', width: '400px', height: '400px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%' }}></div>
 
-      {/* Restaurant Selector */}
-      <RestaurantSelector />
+        <div style={{ position: 'relative', zIndex: 1, color: 'white' }}>
+          <h1 style={{
+            fontSize: '2.5rem',
+            fontWeight: '800',
+            color: 'white',
+            margin: '0 0 0.5rem 0',
+            lineHeight: 1.2,
+            letterSpacing: '-0.025em',
+            textShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            WebkitTextFillColor: 'white'
+          }}>Reports & Analytics</h1>
+          <p style={{
+            color: 'rgba(255, 255, 255, 0.9)',
+            margin: 0,
+            fontSize: '1.1rem',
+            fontWeight: '500'
+          }}>Insights into your restaurant's performance</p>
+        </div>
+
+        <div style={{ position: 'relative', zIndex: 1, display: "flex", gap: "20px", alignItems: "center" }}>
+          {/* Restaurant Selector in Header */}
+          <div className="header-selector">
+            <RestaurantSelector />
+          </div>
+
+          {/* Date Range Picker - Uses generic class from CSS */}
+          <div className="date-range-picker">
+            <label>
+              From:
+              <input
+                type="date"
+                value={dateRange.startDate}
+                onChange={(e) =>
+                  setDateRange((prev) => ({ ...prev, startDate: e.target.value }))
+                }
+              />
+            </label>
+            <label>
+              To:
+              <input
+                type="date"
+                value={dateRange.endDate}
+                onChange={(e) =>
+                  setDateRange((prev) => ({ ...prev, endDate: e.target.value }))
+                }
+              />
+            </label>
+          </div>
+        </div>
+      </header>
 
       {/* Empty State Warning */}
       {revenueData.length === 0 && (
         <div
           style={{
             padding: "20px",
-            margin: "20px 0",
+            marginBottom: "20px",
             background: "#fef3c7",
             border: "1px solid #fbbf24",
             borderRadius: "8px",

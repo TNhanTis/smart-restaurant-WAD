@@ -6,6 +6,45 @@ import OrderStatusBadge from "../components/OrderStatusBadge";
 import { useRestaurant } from "../contexts/RestaurantContext";
 import "../App.css";
 
+// SVG Icon Components
+const ClipboardIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+    <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+  </svg>
+);
+
+const DownloadIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
+  </svg>
+);
+
+const RefreshIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="23 4 23 10 17 10" />
+    <polyline points="1 20 1 14 7 14" />
+    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+  </svg>
+);
+
+const PlusIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="5" x2="12" y2="19" />
+    <line x1="5" y1="12" x2="19" y2="12" />
+  </svg>
+);
+
+const DatabaseIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <ellipse cx="12" cy="5" rx="9" ry="3" />
+    <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+  </svg>
+);
+
 type OrderStatusFilter =
   | "all"
   | "pending"
@@ -618,28 +657,141 @@ export default function OrderManagement() {
   return (
     <div>
       {/* Header */}
-      <div className="admin-header">
-        <div>
-          <h1 className="page-title">Orders Management</h1>
-          <p className="page-subtitle">
-            Manage and track all restaurant orders
-          </p>
+      {/* Refined Gradient Header */}
+      <header className="header" style={{
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        borderRadius: '1.5rem',
+        padding: '2.5rem 3rem',
+        marginBottom: '2rem',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        {/* Decorative Circles */}
+        <div style={{ position: 'absolute', top: '-20%', right: '-5%', width: '300px', height: '300px', background: 'rgba(255,255,255,0.1)', borderRadius: '50%' }}></div>
+        <div style={{ position: 'absolute', bottom: '-40%', left: '-10%', width: '400px', height: '400px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%' }}></div>
+
+        <div style={{ position: 'relative', zIndex: 1, color: 'white' }}>
+          <h1 style={{
+            fontSize: '2.5rem',
+            fontWeight: '800',
+            color: 'white',
+            margin: '0 0 0.5rem 0',
+            lineHeight: 1.2,
+            letterSpacing: '-0.025em',
+            textShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            WebkitTextFillColor: 'white'
+          }}>Orders Management</h1>
+          <p style={{
+            color: 'rgba(255, 255, 255, 0.9)',
+            margin: 0,
+            fontSize: '1.1rem',
+            fontWeight: '500'
+          }}>Manage and track all restaurant orders</p>
         </div>
-        <div style={{ display: "flex", gap: "10px" }}>
-          <button className="btn-secondary" onClick={handleExportCSV}>
+
+        <div style={{ position: 'relative', zIndex: 1, display: "flex", gap: "10px", alignItems: "center" }}>
+          {/* Secondary Actions - Glass Style */}
+          <button
+            onClick={handleExportCSV}
+            style={{
+              padding: '0.6rem 1rem',
+              background: 'rgba(255,255,255,0.2)',
+              color: 'white',
+              border: '1px solid rgba(255,255,255,0.3)',
+              borderRadius: '12px',
+              backdropFilter: 'blur(4px)',
+              cursor: 'pointer',
+              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.3)'}
+            onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+          >
             📥 Export CSV
           </button>
-          <button className="btn-secondary" onClick={handleRefresh}>
+          <button
+            onClick={handleRefresh}
+            style={{
+              padding: '0.6rem 1rem',
+              background: 'rgba(255,255,255,0.2)',
+              color: 'white',
+              border: '1px solid rgba(255,255,255,0.3)',
+              borderRadius: '12px',
+              backdropFilter: 'blur(4px)',
+              cursor: 'pointer',
+              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.3)'}
+            onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+          >
             🔄 Refresh
           </button>
-          <button className="btn-secondary" onClick={handleOpenKDS}>
-            📺 Open KDS
+          <button
+            onClick={handleOpenKDS}
+            style={{
+              padding: '0.6rem 1rem',
+              background: 'rgba(255,255,255,0.2)',
+              color: 'white',
+              border: '1px solid rgba(255,255,255,0.3)',
+              borderRadius: '12px',
+              backdropFilter: 'blur(4px)',
+              cursor: 'pointer',
+              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.3)'}
+            onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+          >
+            <DatabaseIcon /> Open KDS
           </button>
-          <button className="btn-primary" onClick={handleManualOrder}>
-            + Manual Order
+
+          <button
+            onClick={handleManualOrder}
+            style={{
+              padding: 'var(--space-3) var(--space-6)',
+              background: 'white',
+              color: '#667eea',
+              border: 'none',
+              borderRadius: 'var(--radius-xl)',
+              fontSize: 'var(--text-sm)',
+              fontWeight: 'var(--font-bold)',
+              cursor: 'pointer',
+              transition: 'all var(--transition-fast)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 'var(--space-2)',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              whiteSpace: 'nowrap'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.95)';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.2)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'white';
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+            }}
+          >
+            <PlusIcon /> Manual Order
           </button>
         </div>
-      </div>
+      </header>
 
       {/* View Mode Tabs */}
       <div className="status-tabs" style={{ marginBottom: "10px" }}>
@@ -679,9 +831,8 @@ export default function OrderManagement() {
             <span className="tab-count">{totalOrders}</span>
           </button>
           <button
-            className={`status-tab ${
-              statusFilter === "pending" ? "active" : ""
-            }`}
+            className={`status-tab ${statusFilter === "pending" ? "active" : ""
+              }`}
             onClick={() => setStatusFilter("pending")}
           >
             Pending
@@ -690,18 +841,16 @@ export default function OrderManagement() {
             </span>
           </button>
           <button
-            className={`status-tab ${
-              statusFilter === "accepted" ? "active" : ""
-            }`}
+            className={`status-tab ${statusFilter === "accepted" ? "active" : ""
+              }`}
             onClick={() => setStatusFilter("accepted")}
           >
             Accepted
             <span className="tab-count">{getStatusCount("accepted")}</span>
           </button>
           <button
-            className={`status-tab ${
-              statusFilter === "preparing" ? "active" : ""
-            }`}
+            className={`status-tab ${statusFilter === "preparing" ? "active" : ""
+              }`}
             onClick={() => setStatusFilter("preparing")}
           >
             Preparing
@@ -715,18 +864,16 @@ export default function OrderManagement() {
             <span className="tab-count success">{getStatusCount("ready")}</span>
           </button>
           <button
-            className={`status-tab ${
-              statusFilter === "served" ? "active" : ""
-            }`}
+            className={`status-tab ${statusFilter === "served" ? "active" : ""
+              }`}
             onClick={() => setStatusFilter("served")}
           >
             Served
             <span className="tab-count">{getStatusCount("served")}</span>
           </button>
           <button
-            className={`status-tab ${
-              statusFilter === "completed" ? "active" : ""
-            }`}
+            className={`status-tab ${statusFilter === "completed" ? "active" : ""
+              }`}
             onClick={() => setStatusFilter("completed")}
           >
             Completed
