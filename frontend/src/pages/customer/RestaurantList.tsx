@@ -188,7 +188,6 @@ const RestaurantList: React.FC = () => {
       {/* Search Bar */}
       <div className="search-bar-container">
         <div className="search-bar">
-          <span className="search-icon">🔍</span>
           <input
             type="text"
             className="search-input"
