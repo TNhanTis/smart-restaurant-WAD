@@ -27,6 +27,11 @@ export interface DashboardSummary {
   pending_orders: number;
   preparing_orders: number;
   ready_orders: number;
+  // Comparison with yesterday
+  yesterday_revenue?: number;
+  yesterday_orders_count?: number;
+  revenue_growth_percent?: number;
+  orders_growth_percent?: number;
 }
 
 export interface AveragePrepTimeData {

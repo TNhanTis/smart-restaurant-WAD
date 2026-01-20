@@ -208,14 +208,19 @@ export class ReportsService {
   }
 
   /**
-   * Get dashboard summary
+   * Get dashboard summary with yesterday comparison for trend indicators
    */
   async getDashboardSummary(restaurantId: string) {
     const today = new Date();
     const todayStart = startOfDay(today);
     const todayEnd = endOfDay(today);
 
-    // Today's revenue
+    // Yesterday's date range
+    const yesterday = subDays(today, 1);
+    const yesterdayStart = startOfDay(yesterday);
+    const yesterdayEnd = endOfDay(yesterday);
+
+    // Today's revenue and orders
     const todayOrders = await this.prisma.order.aggregate({
       where: {
         restaurant_id: restaurantId,
@@ -223,6 +228,24 @@ export class ReportsService {
         created_at: {
           gte: todayStart,
           lte: todayEnd,
+        },
+      },
+      _sum: {
+        total: true,
+      },
+      _count: {
+        id: true,
+      },
+    });
+
+    // Yesterday's revenue and orders for comparison
+    const yesterdayOrders = await this.prisma.order.aggregate({
+      where: {
+        restaurant_id: restaurantId,
+        status: OrderStatus.completed,
+        created_at: {
+          gte: yesterdayStart,
+          lte: yesterdayEnd,
         },
       },
       _sum: {
@@ -259,12 +282,31 @@ export class ReportsService {
       },
     });
 
+    // Calculate growth percentages
+    const todayRevenue = todayOrders._sum.total || 0;
+    const yesterdayRevenue = yesterdayOrders._sum.total || 0;
+    const todayOrdersCount = todayOrders._count.id;
+    const yesterdayOrdersCount = yesterdayOrders._count.id;
+
+    const revenueGrowth = yesterdayRevenue > 0 
+      ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100 
+      : todayRevenue > 0 ? 100 : 0;
+
+    const ordersGrowth = yesterdayOrdersCount > 0 
+      ? ((todayOrdersCount - yesterdayOrdersCount) / yesterdayOrdersCount) * 100 
+      : todayOrdersCount > 0 ? 100 : 0;
+
     return {
-      today_revenue: todayOrders._sum.total || 0,
-      today_orders_count: todayOrders._count.id,
+      today_revenue: todayRevenue,
+      today_orders_count: todayOrdersCount,
       pending_orders: pendingOrders,
       preparing_orders: preparingOrders,
       ready_orders: readyOrders,
+      // Comparison data
+      yesterday_revenue: yesterdayRevenue,
+      yesterday_orders_count: yesterdayOrdersCount,
+      revenue_growth_percent: Math.round(revenueGrowth * 10) / 10,
+      orders_growth_percent: Math.round(ordersGrowth * 10) / 10,
     };
   }
 

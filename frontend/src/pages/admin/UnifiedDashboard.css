@@ -263,6 +263,37 @@
   color: var(--text-muted);
 }
 
+/* Trend indicator for comparison with yesterday */
+.stat-trend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-top: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  width: fit-content;
+}
+
+.stat-trend.positive {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.stat-trend.negative {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+/* Sublabel for context */
+.stat-sublabel {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
 /* ========================================
    SUPER ADMIN SECTION
    ======================================== */
@@ -353,21 +384,34 @@
 .charts-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: var(--space-5);
+  gap: var(--space-6);
 }
 
 .chart-card {
   display: flex;
   flex-direction: column;
   background: var(--bg-primary);
-  border-radius: var(--radius-xl);
+  border-radius: 16px;
   padding: var(--space-6);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border-light);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: none;
+  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+.chart-card:hover {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
 }
 
 .chart-card.full-width {
   grid-column: 1 / -1;
+}
+
+.chart-card h3 {
+  margin: 0 0 var(--space-4) 0;
+  color: #1e293b;
+  font-weight: 700;
+  font-size: 1.1rem;
 }
 
 .chart-summary {

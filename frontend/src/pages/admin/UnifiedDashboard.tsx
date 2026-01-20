@@ -235,10 +235,32 @@ export default function UnifiedDashboard() {
   }, [selectedRestaurant, dateRange]);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(amount);
+    // Format with Vietnamese locale and ₫ symbol
+    return new Intl.NumberFormat("vi-VN").format(amount) + " ₫";
+  };
+
+  // Render trend indicator with arrow and percentage
+  const renderTrendIndicator = (growthPercent: number | undefined, label: string = "so với hôm qua") => {
+    if (growthPercent === undefined || growthPercent === null) return null;
+    
+    const isPositive = growthPercent >= 0;
+    const color = isPositive ? "#10b981" : "#ef4444";
+    const arrow = isPositive ? "↑" : "↓";
+    
+    return (
+      <div className="stat-trend" style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "4px",
+        fontSize: "0.8rem",
+        fontWeight: "600",
+        color: color,
+        marginTop: "6px"
+      }}>
+        <span style={{ fontSize: "1rem" }}>{arrow}</span>
+        <span>{Math.abs(growthPercent).toFixed(1)}% {label}</span>
+      </div>
+    );
   };
 
   const handleDateChange = (field: "start" | "end", value: string) => {
@@ -538,6 +560,7 @@ export default function UnifiedDashboard() {
                       {formatCurrency(summary.today_revenue)}
                     </div>
                     <div className="stat-label">Today's Revenue</div>
+                    {renderTrendIndicator(summary.revenue_growth_percent)}
                   </div>
                 </div>
 
@@ -553,6 +576,7 @@ export default function UnifiedDashboard() {
                       {summary.today_orders_count}
                     </div>
                     <div className="stat-label">Orders Today</div>
+                    {renderTrendIndicator(summary.orders_growth_percent)}
                   </div>
                 </div>
 
@@ -566,6 +590,9 @@ export default function UnifiedDashboard() {
                   <div className="stat-content">
                     <div className="stat-value">{summary.pending_orders}</div>
                     <div className="stat-label">Pending Orders</div>
+                    <div className="stat-sublabel" style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "4px" }}>
+                      Đang chờ xử lý
+                    </div>
                   </div>
                 </div>
 
@@ -579,6 +606,9 @@ export default function UnifiedDashboard() {
                   <div className="stat-content">
                     <div className="stat-value">{summary.preparing_orders}</div>
                     <div className="stat-label">Preparing Orders</div>
+                    <div className="stat-sublabel" style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "4px" }}>
+                      Đang chế biến
+                    </div>
                   </div>
                 </div>
               </div>
@@ -590,143 +620,253 @@ export default function UnifiedDashboard() {
             <div className="advanced-reports">
               <h2 className="section-title">Advanced Analytics</h2>
 
-              <div className="charts-grid">
-                {/* Revenue by Category */}
+              <div className="charts-grid" style={{ gap: "24px" }}>
+                {/* Revenue by Category - Donut Chart */}
                 {revenueByCategory &&
                   revenueByCategory.categories.length > 0 && (
-                    <div className="card chart-card">
-                      <h3>Revenue by Category</h3>
-                      <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={revenueByCategory.categories}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="category_name" />
-                          <YAxis />
+                    <div className="card chart-card" style={{
+                      background: "white",
+                      borderRadius: "16px",
+                      padding: "24px",
+                      boxShadow: "0 4px 20px rgba(0,0,0,0.08)"
+                    }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                        <h3 style={{ margin: 0, color: "#1e293b", fontWeight: "700" }}>Revenue by Category</h3>
+                        <div style={{ 
+                          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                          color: "white",
+                          padding: "8px 16px",
+                          borderRadius: "20px",
+                          fontSize: "0.9rem",
+                          fontWeight: "700"
+                        }}>
+                          {formatCurrency(revenueByCategory.total_revenue)}
+                        </div>
+                      </div>
+                      <ResponsiveContainer width="100%" height={280}>
+                        <PieChart>
+                          <Pie
+                            data={revenueByCategory.categories as any[]}
+                            dataKey="total_revenue"
+                            nameKey="category_name"
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={100}
+                            paddingAngle={3}
+                            label={({ name, percent }: { name?: string; percent?: number }) => 
+                              `${name || ''} (${((percent || 0) * 100).toFixed(0)}%)`
+                            }
+                            labelLine={{ stroke: "#64748b", strokeWidth: 1 }}
+                          >
+                            {revenueByCategory.categories.map((_, index) => (
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={COLORS[index % COLORS.length]}
+                              />
+                            ))}
+                          </Pie>
                           <Tooltip
                             formatter={(value) => formatCurrency(Number(value))}
+                            contentStyle={{ 
+                              borderRadius: "8px", 
+                              border: "none",
+                              boxShadow: "0 4px 12px rgba(0,0,0,0.15)" 
+                            }}
                           />
-                          <Legend />
-                          <Bar
-                            dataKey="total_revenue"
-                            fill="#3b82f6"
-                            name="Revenue"
-                          />
-                        </BarChart>
+                        </PieChart>
                       </ResponsiveContainer>
-                      <div className="chart-summary">
-                        <strong>Total:</strong>{" "}
-                        {formatCurrency(revenueByCategory.total_revenue)}
-                      </div>
                     </div>
                   )}
 
-                {/* Kitchen Efficiency */}
+                {/* Kitchen Efficiency - with proper legend labels */}
                 {kitchenEfficiency &&
                   kitchenEfficiency.orders_by_prep_time.length > 0 && (
-                    <div className="card chart-card">
-                      <h3>Kitchen Efficiency</h3>
-                      <ResponsiveContainer width="100%" height={300}>
-                        <PieChart>
-                          <Pie
-                            data={kitchenEfficiency.orders_by_prep_time as any}
-                            dataKey="order_count"
-                            nameKey="time_range"
-                            cx="50%"
-                            cy="50%"
-                            outerRadius={100}
-                            label
+                    <div className="card chart-card" style={{
+                      background: "white",
+                      borderRadius: "16px",
+                      padding: "24px",
+                      boxShadow: "0 4px 20px rgba(0,0,0,0.08)"
+                    }}>
+                      <h3 style={{ margin: "0 0 16px 0", color: "#1e293b", fontWeight: "700" }}>Kitchen Efficiency</h3>
+                      <ResponsiveContainer width="100%" height={280}>
+                        <BarChart 
+                          data={kitchenEfficiency.orders_by_prep_time.map(item => ({
+                            ...item,
+                            // Translate time_range to Vietnamese for better readability
+                            display_name: (item.time_range || '')
+                              .replace("Under", "Dưới")
+                              .replace("Over", "Trên")
+                              .replace("min", "phút")
+                              .replace("-", " - ")
+                          }))}
+                          layout="vertical"
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                          <XAxis type="number" />
+                          <YAxis 
+                            type="category" 
+                            dataKey="display_name" 
+                            width={100}
+                            tick={{ fontSize: 12 }}
+                          />
+                          <Tooltip 
+                            formatter={(value, _name) => [`${value} đơn hàng`, "Số lượng"]}
+                            contentStyle={{ 
+                              borderRadius: "8px", 
+                              border: "none",
+                              boxShadow: "0 4px 12px rgba(0,0,0,0.15)" 
+                            }}
+                          />
+                          <Bar 
+                            dataKey="order_count" 
+                            fill="#3b82f6"
+                            radius={[0, 4, 4, 0]}
+                            name="Số đơn hàng"
                           >
-                            {kitchenEfficiency.orders_by_prep_time.map(
-                              (_, index) => (
-                                <Cell
-                                  key={`cell-${index}`}
-                                  fill={COLORS[index % COLORS.length]}
-                                />
-                              ),
-                            )}
-                          </Pie>
-                          <Tooltip />
-                          <Legend />
-                        </PieChart>
+                            {kitchenEfficiency.orders_by_prep_time.map((_, index) => (
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={COLORS[index % COLORS.length]}
+                              />
+                            ))}
+                          </Bar>
+                        </BarChart>
                       </ResponsiveContainer>
-                      <div className="chart-summary">
-                        <strong>Avg Prep Time:</strong>{" "}
-                        {kitchenEfficiency.average_prep_time_minutes.toFixed(1)}{" "}
-                        min
+                      <div className="chart-summary" style={{
+                        marginTop: "16px",
+                        padding: "12px 16px",
+                        background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                        borderRadius: "10px",
+                        color: "white",
+                        fontWeight: "600",
+                        display: "inline-block"
+                      }}>
+                        ⏱️ Avg Prep Time: {kitchenEfficiency.average_prep_time_minutes.toFixed(1)} min
                       </div>
                     </div>
                   )}
 
                 {/* Peak Hours */}
                 {peakHours && peakHours.hourly_breakdown.length > 0 && (
-                  <div className="card chart-card full-width">
-                    <h3>Peak Hours Analysis</h3>
+                  <div className="card chart-card full-width" style={{
+                    background: "white",
+                    borderRadius: "16px",
+                    padding: "24px",
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.08)"
+                  }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                      <h3 style={{ margin: 0, color: "#1e293b", fontWeight: "700" }}>Peak Hours Analysis</h3>
+                      <div style={{ 
+                        background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                        color: "white",
+                        padding: "8px 16px",
+                        borderRadius: "20px",
+                        fontSize: "0.85rem",
+                        fontWeight: "600"
+                      }}>
+                        🔥 Peak: {peakHours.peak_hour.hour}:00
+                      </div>
+                    </div>
                     <ResponsiveContainer width="100%" height={300}>
                       <LineChart data={peakHours.hourly_breakdown}>
-                        <CartesianGrid strokeDasharray="3 3" />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                         <XAxis
                           dataKey="hour"
                           tickFormatter={(hour) => `${hour}:00`}
+                          tick={{ fontSize: 12 }}
                         />
-                        <YAxis />
+                        <YAxis tick={{ fontSize: 12 }} />
                         <Tooltip
                           labelFormatter={(hour) => `${hour}:00`}
                           formatter={(value, name) =>
-                            name === "total_revenue"
+                            name === "Revenue"
                               ? formatCurrency(Number(value))
-                              : value
+                              : [`${value} đơn`, name]
                           }
+                          contentStyle={{ 
+                            borderRadius: "8px", 
+                            border: "none",
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.15)" 
+                          }}
                         />
                         <Legend />
                         <Line
                           type="monotone"
                           dataKey="order_count"
                           stroke="#3b82f6"
-                          name="Orders"
+                          strokeWidth={3}
+                          dot={{ fill: "#3b82f6", strokeWidth: 2, r: 4 }}
+                          name="Đơn hàng"
                         />
                         <Line
                           type="monotone"
                           dataKey="total_revenue"
                           stroke="#10b981"
-                          name="Revenue"
+                          strokeWidth={3}
+                          dot={{ fill: "#10b981", strokeWidth: 2, r: 4 }}
+                          name="Doanh thu"
                         />
                       </LineChart>
                     </ResponsiveContainer>
-                    <div className="chart-summary">
-                      <strong>Peak Hour:</strong> {peakHours.peak_hour.hour}:00
-                      ({peakHours.peak_hour.order_count} orders,{" "}
-                      {formatCurrency(peakHours.peak_hour.total_revenue)})
+                    <div className="chart-summary" style={{
+                      marginTop: "16px",
+                      padding: "12px 20px",
+                      background: "#f8fafc",
+                      borderRadius: "10px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px"
+                    }}>
+                      <span style={{ fontWeight: "600", color: "#475569" }}>📊 Giờ cao điểm:</span>
+                      <span style={{ color: "#1e293b", fontWeight: "700" }}>{peakHours.peak_hour.hour}:00</span>
+                      <span style={{ color: "#64748b" }}>|</span>
+                      <span style={{ color: "#3b82f6", fontWeight: "600" }}>{peakHours.peak_hour.order_count} đơn</span>
+                      <span style={{ color: "#64748b" }}>|</span>
+                      <span style={{ color: "#10b981", fontWeight: "600" }}>{formatCurrency(peakHours.peak_hour.total_revenue)}</span>
                     </div>
                   </div>
                 )}
 
                 {/* Waiter Performance */}
                 {waiterPerformance && waiterPerformance.waiters.length > 0 && (
-                  <div className="card chart-card full-width">
-                    <h3>Waiter Performance</h3>
+                  <div className="card chart-card full-width" style={{
+                    background: "white",
+                    borderRadius: "16px",
+                    padding: "24px",
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.08)"
+                  }}>
+                    <h3 style={{ margin: "0 0 16px 0", color: "#1e293b", fontWeight: "700" }}>Waiter Performance</h3>
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={waiterPerformance.waiters}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="waiter_name" />
-                        <YAxis />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <XAxis dataKey="waiter_name" tick={{ fontSize: 12 }} />
+                        <YAxis tick={{ fontSize: 12 }} />
                         <Tooltip
                           formatter={(value, name) => {
                             const nameStr = String(name);
-                            return nameStr.includes("revenue") ||
-                              nameStr.includes("value")
+                            return nameStr.includes("Doanh thu")
                               ? formatCurrency(Number(value))
-                              : value;
+                              : [`${value} đơn`, nameStr];
+                          }}
+                          contentStyle={{ 
+                            borderRadius: "8px", 
+                            border: "none",
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.15)" 
                           }}
                         />
                         <Legend />
                         <Bar
                           dataKey="total_orders"
                           fill="#3b82f6"
-                          name="Orders"
+                          name="Số đơn"
+                          radius={[4, 4, 0, 0]}
                         />
                         <Bar
                           dataKey="total_revenue"
                           fill="#10b981"
-                          name="Revenue"
+                          name="Doanh thu"
+                          radius={[4, 4, 0, 0]}
                         />
                       </BarChart>
                     </ResponsiveContainer>
