@@ -40,14 +40,14 @@ export default function UserManagement() {
     roles: ["customer"], // Default to customer
   });
 
-  // Check if user has permission - only admin (not superadmin) can manage customers
+  // Check if user has permission - only superadmin can manage customers
   useEffect(() => {
-    if (user && isSuperAdmin) {
+    if (user && !isSuperAdmin) {
       console.log(
-        "[UserManagement] Access check: SuperAdmin cannot access customer management"
+        "[UserManagement] Access check: Only SuperAdmin can access customer management",
       );
-      toast.error("Access Denied: This page is for Restaurant Admin only");
-      navigate("/admin/super_admin/users");
+      toast.error("Access Denied: This page is for Super Admin only");
+      navigate("/admin/dashboard");
     }
   }, [user, navigate, isSuperAdmin, toast]);
 
@@ -67,10 +67,10 @@ export default function UserManagement() {
   };
 
   useEffect(() => {
-    if (isAdmin) {
+    if (isSuperAdmin) {
       loadUsers();
     }
-  }, [roleFilter, user, isAdmin]);
+  }, [roleFilter, user, isSuperAdmin]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,7 +132,7 @@ export default function UserManagement() {
   const handleDelete = async (id: string, email: string) => {
     const confirmed = await confirm(
       "Delete User",
-      `Are you sure you want to delete user "${email}"?`
+      `Are you sure you want to delete user "${email}"?`,
     );
     if (!confirmed) return;
 
@@ -166,8 +166,8 @@ export default function UserManagement() {
     }));
   };
 
-  // Only admin (not superadmin) can access customer management
-  if (!isAdmin) {
+  // Only superadmin can access customer management
+  if (!isSuperAdmin) {
     return (
       <div className="app">
         <div
@@ -183,7 +183,7 @@ export default function UserManagement() {
             🚫 Access Denied
           </h2>
           <p style={{ color: "#cbd5e1" }}>
-            Only Restaurant Admins can access customer management.
+            Only Super Admins can access customer management.
           </p>
           <button
             className="btn btn-secondary"

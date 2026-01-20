@@ -3,9 +3,10 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import UsersTab from "./tabs/UsersTab";
 import RestaurantsTab from "./tabs/RestaurantsTab";
+import CustomersTab from "./tabs/CustomersTab";
 import "../../App.css";
 
-type TabType = "users" | "restaurants";
+type TabType = "users" | "restaurants" | "customers";
 
 export default function SystemAdminPage() {
   const [activeTab, setActiveTab] = useState<TabType>("users");
@@ -91,35 +92,58 @@ export default function SystemAdminPage() {
                 : "3px solid transparent",
           }}
         >
-          {isSuperAdmin ? "👥 All Users" : "👥 Staff (Waiter/Kitchen)"}
+          {isSuperAdmin ? "👥 Staff & Admins" : "👥 Staff (Waiter/Kitchen)"}
         </button>
         {isSuperAdmin && (
-          <button
-            onClick={() => setActiveTab("restaurants")}
-            style={{
-              padding: "12px 24px",
-              fontSize: "16px",
-              fontWeight: "600",
-              border: "none",
-              borderRadius: "8px 8px 0 0",
-              cursor: "pointer",
-              background: activeTab === "restaurants" ? "#6366f1" : "#1e293b",
-              color: activeTab === "restaurants" ? "white" : "#94a3b8",
-              transition: "all 0.3s ease",
-              borderBottom:
-                activeTab === "restaurants"
-                  ? "3px solid #6366f1"
-                  : "3px solid transparent",
-            }}
-          >
-            🏪 Restaurants
-          </button>
+          <>
+            <button
+              onClick={() => setActiveTab("customers")}
+              style={{
+                padding: "12px 24px",
+                fontSize: "16px",
+                fontWeight: "600",
+                border: "none",
+                borderRadius: "8px 8px 0 0",
+                cursor: "pointer",
+                background: activeTab === "customers" ? "#6366f1" : "#1e293b",
+                color: activeTab === "customers" ? "white" : "#94a3b8",
+                transition: "all 0.3s ease",
+                borderBottom:
+                  activeTab === "customers"
+                    ? "3px solid #6366f1"
+                    : "3px solid transparent",
+              }}
+            >
+              🛒 Customers
+            </button>
+            <button
+              onClick={() => setActiveTab("restaurants")}
+              style={{
+                padding: "12px 24px",
+                fontSize: "16px",
+                fontWeight: "600",
+                border: "none",
+                borderRadius: "8px 8px 0 0",
+                cursor: "pointer",
+                background: activeTab === "restaurants" ? "#6366f1" : "#1e293b",
+                color: activeTab === "restaurants" ? "white" : "#94a3b8",
+                transition: "all 0.3s ease",
+                borderBottom:
+                  activeTab === "restaurants"
+                    ? "3px solid #6366f1"
+                    : "3px solid transparent",
+              }}
+            >
+              🏪 Restaurants
+            </button>
+          </>
         )}
       </div>
 
       {/* Tab Content */}
       <div>
         {activeTab === "users" && <UsersTab />}
+        {activeTab === "customers" && isSuperAdmin && <CustomersTab />}
         {activeTab === "restaurants" && isSuperAdmin && <RestaurantsTab />}
       </div>
     </div>

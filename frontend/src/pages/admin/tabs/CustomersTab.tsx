@@ -3,48 +3,17 @@ import { usersApi } from "../../../api/usersApi";
 import type { User, CreateUserData } from "../../../types/user.types";
 import { useToast } from "../../../contexts/ToastContext";
 import { useConfirm } from "../../../components/ConfirmDialog";
-import { useAuth } from "../../../contexts/AuthContext";
-import { useRestaurant } from "../../../contexts/RestaurantContext";
 
-// All possible roles with restrictions (excluding customer as it has its own tab)
-const ALL_ROLES = [
-  {
-    value: "admin",
-    label: "Admin - Restaurant Administrator",
-    forSuperAdminOnly: true,
-  },
-  {
-    value: "waiter",
-    label: "Waiter - Service Staff",
-    forSuperAdminOnly: false,
-  },
-  {
-    value: "kitchen",
-    label: "Kitchen - Kitchen Staff",
-    forSuperAdminOnly: false,
-  },
-];
+// Only customer role
+const AVAILABLE_ROLES = [{ value: "customer", label: "Customer - End User" }];
 
-export default function UsersTab() {
+export default function CustomersTab() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const toast = useToast();
   const { confirm, ConfirmDialogComponent } = useConfirm();
-  const { user } = useAuth();
-  const { selectedRestaurant } = useRestaurant();
-
-  const isSuperAdmin = user?.roles?.includes("super_admin");
-  const isAdmin = user?.roles?.includes("admin") && !isSuperAdmin;
-
-  // Filter available roles based on user type
-  const AVAILABLE_ROLES = isSuperAdmin
-    ? ALL_ROLES // SuperAdmin sees admin, waiter, kitchen (customer has its own tab)
-    : ALL_ROLES.filter((r) => r.value === "waiter" || r.value === "kitchen"); // Admin sees only waiter and kitchen
-
-  // Filters
-  const [roleFilter, setRoleFilter] = useState<string>("");
 
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -57,19 +26,19 @@ export default function UsersTab() {
     password: "",
     full_name: "",
     phone: "",
-    roles: [],
+    roles: ["customer"], // Default to customer
   });
 
-  // Load users
+  // Load users with customer role
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const data = await usersApi.getAll(roleFilter || undefined);
+      const data = await usersApi.getAll("customer");
       setUsers(data);
       setError(null);
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to load users");
-      toast.error("Failed to load users");
+      toast.error("Failed to load customers");
     } finally {
       setLoading(false);
     }
@@ -77,48 +46,31 @@ export default function UsersTab() {
 
   useEffect(() => {
     loadUsers();
-  }, [roleFilter]);
+  }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (formData.roles.length === 0) {
-      toast.error("Please select at least one role");
-      return;
-    }
-
     try {
-      // For admin creating waiter/kitchen, include restaurant_id
-      const dataToSend = {
-        ...formData,
-        restaurant_id:
-          isAdmin && selectedRestaurant ? selectedRestaurant.id : undefined,
-      };
-
-      await usersApi.create(dataToSend);
+      await usersApi.create(formData);
       setShowCreateModal(false);
       setFormData({
         email: "",
         password: "",
         full_name: "",
         phone: "",
-        roles: [],
+        roles: ["customer"],
       });
-      toast.success("User created successfully!");
+      toast.success("Customer created successfully!");
       loadUsers();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to create user");
+      toast.error(err.response?.data?.message || "Failed to create customer");
     }
   };
 
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUser) return;
-
-    if (formData.roles.length === 0) {
-      toast.error("User must have at least one role");
-      return;
-    }
 
     try {
       await usersApi.update(selectedUser.id, {
@@ -133,28 +85,28 @@ export default function UsersTab() {
         password: "",
         full_name: "",
         phone: "",
-        roles: [],
+        roles: ["customer"],
       });
-      toast.success("User updated successfully!");
+      toast.success("Customer updated successfully!");
       loadUsers();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to update user");
+      toast.error(err.response?.data?.message || "Failed to update customer");
     }
   };
 
   const handleDelete = async (id: string, email: string) => {
     const confirmed = await confirm(
-      "Delete User",
-      `Are you sure you want to delete user "${email}"?`,
+      "Delete Customer",
+      `Are you sure you want to delete customer "${email}"?`,
     );
     if (!confirmed) return;
 
     try {
       await usersApi.delete(id);
-      toast.success("User deleted successfully!");
+      toast.success("Customer deleted successfully!");
       loadUsers();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to delete user");
+      toast.error(err.response?.data?.message || "Failed to delete customer");
     }
   };
 
@@ -170,46 +122,24 @@ export default function UsersTab() {
     setShowEditModal(true);
   };
 
-  const toggleRole = (role: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      roles: prev.roles.includes(role)
-        ? prev.roles.filter((r) => r !== role)
-        : [...prev.roles, role],
-    }));
-  };
-
   return (
     <>
-      {/* Filters & Actions */}
+      {/* Actions */}
       <div className="filters">
-        <div className="filter-group">
-          <label>Role Filter:</label>
-          <select
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-          >
-            <option value="">All Roles</option>
-            {AVAILABLE_ROLES.map((role) => (
-              <option key={role.value} value={role.value}>
-                {role.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <div style={{ color: "#94a3b8" }}>Total: {users.length} customers</div>
         <div style={{ marginLeft: "auto" }}>
           <button
             className="btn btn-primary"
             onClick={() => setShowCreateModal(true)}
           >
-            + Add User
+            + Add Customer
           </button>
         </div>
       </div>
 
       {/* Users Grid */}
       {loading ? (
-        <div className="loading">Loading users...</div>
+        <div className="loading">Loading customers...</div>
       ) : error ? (
         <div className="error">{error}</div>
       ) : (
@@ -284,7 +214,7 @@ export default function UsersTab() {
 
       {users.length === 0 && !loading && !error && (
         <div className="empty-state">
-          <p>No users found. Create your first user!</p>
+          <p>No customers found. Create your first customer!</p>
         </div>
       )}
 
@@ -295,7 +225,7 @@ export default function UsersTab() {
           onClick={() => setShowCreateModal(false)}
         >
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>Create New User</h2>
+            <h2>Create New Customer</h2>
             <form onSubmit={handleCreate}>
               <div className="form-group">
                 <label>Email *</label>
@@ -306,7 +236,7 @@ export default function UsersTab() {
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
                   }
-                  placeholder="user@example.com"
+                  placeholder="customer@example.com"
                 />
               </div>
               <div className="form-group">
@@ -344,40 +274,6 @@ export default function UsersTab() {
                   placeholder="Optional"
                 />
               </div>
-              <div className="form-group">
-                <label>Roles * (Select at least one)</label>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "8px",
-                  }}
-                >
-                  {AVAILABLE_ROLES.map((role) => (
-                    <label
-                      key={role.value}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        cursor: "pointer",
-                        padding: "8px",
-                        background: formData.roles.includes(role.value)
-                          ? "#6366f120"
-                          : "transparent",
-                        borderRadius: "6px",
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={formData.roles.includes(role.value)}
-                        onChange={() => toggleRole(role.value)}
-                      />
-                      <span>{role.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
               <div className="modal-actions">
                 <button
                   type="button"
@@ -386,12 +282,8 @@ export default function UsersTab() {
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={formData.roles.length === 0}
-                >
-                  Create User
+                <button type="submit" className="btn btn-primary">
+                  Create Customer
                 </button>
               </div>
             </form>
@@ -403,7 +295,7 @@ export default function UsersTab() {
       {showEditModal && selectedUser && (
         <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>Edit User</h2>
+            <h2>Edit Customer</h2>
             <form onSubmit={handleEdit}>
               <div className="form-group">
                 <label>Email (Read-only)</label>
@@ -434,40 +326,6 @@ export default function UsersTab() {
                   }
                 />
               </div>
-              <div className="form-group">
-                <label>Roles</label>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "8px",
-                  }}
-                >
-                  {AVAILABLE_ROLES.map((role) => (
-                    <label
-                      key={role.value}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        cursor: "pointer",
-                        padding: "8px",
-                        background: formData.roles.includes(role.value)
-                          ? "#6366f120"
-                          : "transparent",
-                        borderRadius: "6px",
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={formData.roles.includes(role.value)}
-                        onChange={() => toggleRole(role.value)}
-                      />
-                      <span>{role.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
               <div className="modal-actions">
                 <button
                   type="button"
@@ -476,12 +334,8 @@ export default function UsersTab() {
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={formData.roles.length === 0}
-                >
-                  Update User
+                <button type="submit" className="btn btn-primary">
+                  Update Customer
                 </button>
               </div>
             </form>
