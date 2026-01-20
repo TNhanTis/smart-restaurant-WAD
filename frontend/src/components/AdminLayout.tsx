@@ -130,16 +130,20 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 <span className="nav-icon">👨‍🍳</span>
                 Kitchen Display
               </Link>
-              <Link
-                to="/admin/users"
-                className={`nav-link ${
-                  isActive("/admin/users") ? "active" : ""
-                }`}
-              >
-                <span className="nav-icon">👥</span>
-                Users
-              </Link>
             </>
+          )}
+
+          {/* Users Management - Only for SuperAdmin */}
+          {isSuperAdmin && (
+            <Link
+              to="/admin/system"
+              className={`nav-link ${
+                isActive("/admin/system") ? "active" : ""
+              }`}
+            >
+              <span className="nav-icon">👥</span>
+              Users
+            </Link>
           )}
 
           {/* Reports - Both Admin and SuperAdmin */}
@@ -151,14 +155,16 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             Reports
           </Link>
 
-          {/* System - Both Admin and SuperAdmin but different functions */}
-          <Link
-            to="/admin/system"
-            className={`nav-link ${isActive("/admin/system") ? "active" : ""}`}
-          >
-            <span className="nav-icon">⚙️</span>
-            System
-          </Link>
+          {/* System - Only for Admin */}
+          {isAdmin && (
+            <Link
+              to="/admin/system"
+              className={`nav-link ${isActive("/admin/system") ? "active" : ""}`}
+            >
+              <span className="nav-icon">⚙️</span>
+              System
+            </Link>
+          )}
         </nav>
 
         <div className="sidebar-footer">
