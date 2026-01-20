@@ -1,30 +1,19 @@
 import { useState, useEffect } from "react";
-import { usersApi } from "../../api/usersApi";
-import type { User, CreateUserData } from "../../types/user.types";
-import { useToast } from "../../contexts/ToastContext";
-import { useConfirm } from "../../components/ConfirmDialog";
-import { useAuth } from "../../contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
-import "../../App.css";
+import { usersApi } from "../../../api/usersApi";
+import type { User, CreateUserData } from "../../../types/user.types";
+import { useToast } from "../../../contexts/ToastContext";
+import { useConfirm } from "../../../components/ConfirmDialog";
 
-// Only customer role - this page is for admin to manage customers
+// Only customer role
 const AVAILABLE_ROLES = [{ value: "customer", label: "Customer - End User" }];
 
-export default function UserManagement() {
+export default function CustomersTab() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const toast = useToast();
   const { confirm, ConfirmDialogComponent } = useConfirm();
-  const { user } = useAuth();
-  const navigate = useNavigate();
-
-  const isSuperAdmin = user?.roles?.includes("super_admin");
-  const isAdmin = user?.roles?.includes("admin") && !isSuperAdmin;
-
-  // Filters
-  const [roleFilter, setRoleFilter] = useState<string>("customer"); // Default filter to customer
 
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -40,45 +29,27 @@ export default function UserManagement() {
     roles: ["customer"], // Default to customer
   });
 
-  // Check if user has permission - only superadmin can manage customers
-  useEffect(() => {
-    if (user && !isSuperAdmin) {
-      console.log(
-        "[UserManagement] Access check: Only SuperAdmin can access customer management",
-      );
-      toast.error("Access Denied: This page is for Super Admin only");
-      navigate("/admin/dashboard");
-    }
-  }, [user, navigate, isSuperAdmin, toast]);
-
-  // Load users
+  // Load users with customer role
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const data = await usersApi.getAll(roleFilter || undefined);
+      const data = await usersApi.getAll("customer");
       setUsers(data);
       setError(null);
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to load users");
-      toast.error("Failed to load users");
+      toast.error("Failed to load customers");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (isSuperAdmin) {
-      loadUsers();
-    }
-  }, [roleFilter, user, isSuperAdmin]);
+    loadUsers();
+  }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (formData.roles.length === 0) {
-      toast.error("Please select at least one role");
-      return;
-    }
 
     try {
       await usersApi.create(formData);
@@ -88,24 +59,18 @@ export default function UserManagement() {
         password: "",
         full_name: "",
         phone: "",
-        roles: [],
+        roles: ["customer"],
       });
-      toast.success("User created successfully!");
+      toast.success("Customer created successfully!");
       loadUsers();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to create user");
+      toast.error(err.response?.data?.message || "Failed to create customer");
     }
   };
 
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUser) return;
-
-    // Validation: User must have at least one role
-    if (formData.roles.length === 0) {
-      toast.error("User must have at least one role");
-      return;
-    }
 
     try {
       await usersApi.update(selectedUser.id, {
@@ -120,28 +85,28 @@ export default function UserManagement() {
         password: "",
         full_name: "",
         phone: "",
-        roles: [],
+        roles: ["customer"],
       });
-      toast.success("User updated successfully!");
+      toast.success("Customer updated successfully!");
       loadUsers();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to update user");
+      toast.error(err.response?.data?.message || "Failed to update customer");
     }
   };
 
   const handleDelete = async (id: string, email: string) => {
     const confirmed = await confirm(
-      "Delete User",
-      `Are you sure you want to delete user "${email}"?`,
+      "Delete Customer",
+      `Are you sure you want to delete customer "${email}"?`,
     );
     if (!confirmed) return;
 
     try {
       await usersApi.delete(id);
-      toast.success("User deleted successfully!");
+      toast.success("Customer deleted successfully!");
       loadUsers();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to delete user");
+      toast.error(err.response?.data?.message || "Failed to delete customer");
     }
   };
 
@@ -157,87 +122,24 @@ export default function UserManagement() {
     setShowEditModal(true);
   };
 
-  const toggleRole = (role: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      roles: prev.roles.includes(role)
-        ? prev.roles.filter((r) => r !== role)
-        : [...prev.roles, role],
-    }));
-  };
-
-  // Only superadmin can access customer management
-  if (!isSuperAdmin) {
-    return (
-      <div className="app">
-        <div
-          style={{
-            textAlign: "center",
-            padding: "50px",
-            background: "#1e293b",
-            borderRadius: "12px",
-            border: "2px solid #ef4444",
-          }}
-        >
-          <h2 style={{ color: "#ef4444", marginBottom: "20px" }}>
-            🚫 Access Denied
-          </h2>
-          <p style={{ color: "#cbd5e1" }}>
-            Only Super Admins can access customer management.
-          </p>
-          <button
-            className="btn btn-secondary"
-            onClick={() => navigate("/")}
-            style={{ marginTop: "20px" }}
-          >
-            ← Back to Home
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="app">
-      <header className="header">
-        <h1>👥 User Management</h1>
-        <div style={{ display: "flex", gap: "10px" }}>
-          <button className="btn btn-secondary" onClick={() => navigate("/")}>
-            ← Back to Home
-          </button>
+    <>
+      {/* Actions */}
+      <div className="filters">
+        <div style={{ color: "#94a3b8" }}>Total: {users.length} customers</div>
+        <div style={{ marginLeft: "auto" }}>
           <button
             className="btn btn-primary"
             onClick={() => setShowCreateModal(true)}
           >
-            + Add User
+            + Add Customer
           </button>
-        </div>
-      </header>
-
-      {/* Filters */}
-      <div className="filters">
-        <div className="filter-group">
-          <label>Role Filter:</label>
-          <select
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-          >
-            <option value="">All Roles</option>
-            {AVAILABLE_ROLES.map((role) => (
-              <option key={role.value} value={role.value}>
-                {role.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div style={{ marginLeft: "auto", color: "#666" }}>
-          Total: {users.length} users
         </div>
       </div>
 
-      {/* Users Table */}
+      {/* Users Grid */}
       {loading ? (
-        <div className="loading">Loading users...</div>
+        <div className="loading">Loading customers...</div>
       ) : error ? (
         <div className="error">{error}</div>
       ) : (
@@ -312,7 +214,7 @@ export default function UserManagement() {
 
       {users.length === 0 && !loading && !error && (
         <div className="empty-state">
-          <p>No users found. Create your first user!</p>
+          <p>No customers found. Create your first customer!</p>
         </div>
       )}
 
@@ -323,7 +225,7 @@ export default function UserManagement() {
           onClick={() => setShowCreateModal(false)}
         >
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>Create New User</h2>
+            <h2>Create New Customer</h2>
             <form onSubmit={handleCreate}>
               <div className="form-group">
                 <label>Email *</label>
@@ -334,7 +236,7 @@ export default function UserManagement() {
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
                   }
-                  placeholder="user@example.com"
+                  placeholder="customer@example.com"
                 />
               </div>
               <div className="form-group">
@@ -372,40 +274,6 @@ export default function UserManagement() {
                   placeholder="Optional"
                 />
               </div>
-              <div className="form-group">
-                <label>Roles * (Select at least one)</label>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "8px",
-                  }}
-                >
-                  {AVAILABLE_ROLES.map((role) => (
-                    <label
-                      key={role.value}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        cursor: "pointer",
-                        padding: "8px",
-                        background: formData.roles.includes(role.value)
-                          ? "#6366f120"
-                          : "transparent",
-                        borderRadius: "6px",
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={formData.roles.includes(role.value)}
-                        onChange={() => toggleRole(role.value)}
-                      />
-                      <span>{role.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
               <div className="modal-actions">
                 <button
                   type="button"
@@ -414,12 +282,8 @@ export default function UserManagement() {
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={formData.roles.length === 0}
-                >
-                  Create User
+                <button type="submit" className="btn btn-primary">
+                  Create Customer
                 </button>
               </div>
             </form>
@@ -431,7 +295,7 @@ export default function UserManagement() {
       {showEditModal && selectedUser && (
         <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>Edit User</h2>
+            <h2>Edit Customer</h2>
             <form onSubmit={handleEdit}>
               <div className="form-group">
                 <label>Email (Read-only)</label>
@@ -462,40 +326,6 @@ export default function UserManagement() {
                   }
                 />
               </div>
-              <div className="form-group">
-                <label>Roles</label>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "8px",
-                  }}
-                >
-                  {AVAILABLE_ROLES.map((role) => (
-                    <label
-                      key={role.value}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        cursor: "pointer",
-                        padding: "8px",
-                        background: formData.roles.includes(role.value)
-                          ? "#6366f120"
-                          : "transparent",
-                        borderRadius: "6px",
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={formData.roles.includes(role.value)}
-                        onChange={() => toggleRole(role.value)}
-                      />
-                      <span>{role.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
               <div className="modal-actions">
                 <button
                   type="button"
@@ -504,12 +334,8 @@ export default function UserManagement() {
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={formData.roles.length === 0}
-                >
-                  Update User
+                <button type="submit" className="btn btn-primary">
+                  Update Customer
                 </button>
               </div>
             </form>
@@ -519,6 +345,6 @@ export default function UserManagement() {
 
       {/* Confirm Dialog */}
       <ConfirmDialogComponent />
-    </div>
+    </>
   );
 }

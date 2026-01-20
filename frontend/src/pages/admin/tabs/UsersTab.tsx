@@ -6,7 +6,7 @@ import { useConfirm } from "../../../components/ConfirmDialog";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useRestaurant } from "../../../contexts/RestaurantContext";
 
-// All possible roles with restrictions
+// All possible roles with restrictions (excluding customer as it has its own tab)
 const ALL_ROLES = [
   {
     value: "admin",
@@ -23,7 +23,6 @@ const ALL_ROLES = [
     label: "Kitchen - Kitchen Staff",
     forSuperAdminOnly: false,
   },
-  { value: "customer", label: "Customer", forSuperAdminOnly: false },
 ];
 
 export default function UsersTab() {
@@ -41,7 +40,7 @@ export default function UsersTab() {
 
   // Filter available roles based on user type
   const AVAILABLE_ROLES = isSuperAdmin
-    ? ALL_ROLES // SuperAdmin sees all roles (admin, waiter, kitchen, customer)
+    ? ALL_ROLES // SuperAdmin sees admin, waiter, kitchen (customer has its own tab)
     : ALL_ROLES.filter((r) => r.value === "waiter" || r.value === "kitchen"); // Admin sees only waiter and kitchen
 
   // Filters
@@ -146,7 +145,7 @@ export default function UsersTab() {
   const handleDelete = async (id: string, email: string) => {
     const confirmed = await confirm(
       "Delete User",
-      `Are you sure you want to delete user "${email}"?`
+      `Are you sure you want to delete user "${email}"?`,
     );
     if (!confirmed) return;
 

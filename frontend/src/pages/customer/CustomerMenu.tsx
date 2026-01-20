@@ -269,7 +269,6 @@ export default function CustomerMenu() {
       {/* Search Section */}
       <div className="search-section">
         <div className="search-bar">
-          <span className="search-icon">🔍</span>
           <input
             type="text"
             placeholder="Search menu items..."

@@ -1,9 +1,48 @@
-/* ========================================
-   SMART RESTAURANT - DESIGN SYSTEM
-   Modern Admin Dashboard Theme
-   ======================================== */
+/* Global Styles & Variables - Mockup Palette */
+:root {
+  /* Core Colors */
+  --primary: #d32f2f;
+  --primary-dark: #b71c1c;
+  --secondary: #1a202c;
+  --accent: #2980b9;
 
-/* CSS Reset */
+  /* Status Colors */
+  --success: #2e7d32;
+  --warning: #f57f17;
+  --danger: #c62828;
+  --info: #0288d1;
+
+  /* Neutrals */
+  --bg-color: #f8f9fa;
+  --white: #ffffff;
+  --text-primary: #111827;
+  /* Darker, almost black */
+  --text-secondary: #374151;
+  /* Dark gray, high contrast */
+  --text-light: #6b7280;
+  /* Medium gray */
+  --border-color: #d1d5db;
+
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  --gradient-premium: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --transition-fast: all 0.2s ease;
+  --transition-normal: all 0.3s ease;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -163,14 +202,17 @@ body {
   line-height: 1.5;
   color: var(--text-primary);
   background-color: var(--bg-secondary);
+  margin: 0;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: var(--bg-color);
+  color: var(--text-primary);
 }
 
 #root {
   width: 100%;
   min-height: 100vh;
-  background: transparent;
 }
 
 /* ========================================

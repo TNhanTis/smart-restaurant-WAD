@@ -4,6 +4,7 @@ import publicApi from '../../api/publicApi';
 import RelatedItems from '../../components/RelatedItems';
 import { ReviewsList } from '../../components/ReviewsList';
 import { ReviewModal } from '../../components/ReviewModal';
+import ImageGallery from '../../components/ImageGallery';
 import './ItemDetailView.css';
 
 interface ModifierOption {
@@ -76,7 +77,7 @@ function ItemDetailView() {
   if (error) return <div className="error">{error}</div>;
   if (!item) return <div className="error">Item not found</div>;
 
-  const primaryPhoto = item.photos?.find(p => p.isPrimary) || item.photos?.[0];
+
 
   return (
     <div className="mobile-container">
@@ -89,17 +90,12 @@ function ItemDetailView() {
         <span className="header-spacer"></span>
       </div>
 
-      {/* Hero Image */}
+      {/* Hero Image / Gallery */}
       <div className="item-hero">
-        {primaryPhoto ? (
-          <img
-            src={primaryPhoto.url}
-            alt={item.name}
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          />
-        ) : (
-          <div className="hero-emoji">🍽️</div>
-        )}
+        <ImageGallery
+          photos={item.photos || []}
+          altText={item.name}
+        />
       </div>
 
       {/* Item Content */}
@@ -121,7 +117,7 @@ function ItemDetailView() {
           <div className="item-meta">
             <span className="meta-item">
               <span className="meta-icon">⏱️</span>
-              ~{item.preparationTime} min
+              {item.preparationTime} - minutes
             </span>
             <span className={`availability-badge ${item.isAvailable ? 'available' : 'unavailable'}`}>
               {item.isAvailable ? '✓ Available' : '✗ Unavailable'}
