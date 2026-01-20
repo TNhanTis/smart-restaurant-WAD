@@ -34,7 +34,7 @@ export default function WaiterBillRequests() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [processing, setProcessing] = useState<string | null>(null);
-  
+
   // Discount modal states
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [selectedBillForDiscount, setSelectedBillForDiscount] = useState<BillRequest | null>(null);
@@ -90,7 +90,7 @@ export default function WaiterBillRequests() {
 
   const openDiscountModal = (bill: BillRequest) => {
     setSelectedBillForDiscount(bill);
-    setDiscountType(bill.discount_type || "none");
+    setDiscountType((bill.discount_type as "percentage" | "fixed" | "none") || "none");
     setDiscountValue(bill.discount_value || 0);
     setTaxRate(bill.tax_rate || 0);
     setShowDiscountModal(true);
@@ -109,7 +109,7 @@ export default function WaiterBillRequests() {
 
     try {
       setError("");
-      
+
       // Debug: Log user info
       const authUser = localStorage.getItem('auth_user');
       const authToken = localStorage.getItem('auth_token');
@@ -128,13 +128,13 @@ export default function WaiterBillRequests() {
       console.log("✅ Discount applied:", result);
       closeDiscountModal();
       await loadBillRequests();
-      
+
       alert(`Discount applied successfully!\nFinal Amount: ${Math.round(result.data?.final_amount || 0).toLocaleString()}₫`);
     } catch (err: any) {
       console.error("❌ Error applying discount:", err);
       console.error("Response data:", err.response?.data);
       console.error("Status:", err.response?.status);
-      
+
       if (err.response?.status === 403) {
         setError("You don't have permission. Please login as Waiter/Admin.");
         alert("⚠️ Permission Denied\n\nYou need to login as Waiter or Admin to apply discounts.\n\nPlease go to /waiter/login");
@@ -685,7 +685,7 @@ export default function WaiterBillRequests() {
                               : Number(discountValue)) +
                             Number(selectedBillForDiscount.tips_amount)) *
                             Number(taxRate)) /
-                            100
+                          100
                         )}
                       </span>
                     </div>
@@ -698,7 +698,7 @@ export default function WaiterBillRequests() {
                         const tips = Number(selectedBillForDiscount.tips_amount) || 0;
                         const discountVal = Number(discountValue) || 0;
                         const taxRateVal = Number(taxRate) || 0;
-                        
+
                         const discount =
                           discountType === "percentage"
                             ? (subtotal * discountVal) / 100

@@ -64,7 +64,7 @@ export default function WaiterOrders() {
       const pending = await getPendingOrders({ restaurant_id: restaurantId });
       console.log("Pending orders response:", pending);
       // Handle both response formats: array or {data: array}
-      setPendingOrders(Array.isArray(pending) ? pending : pending?.data || []);
+      setPendingOrders(Array.isArray(pending) ? pending : (pending as any)?.data || []);
 
       const accepted = await getRestaurantOrders(
         restaurantId,
@@ -72,18 +72,18 @@ export default function WaiterOrders() {
       );
       console.log("Accepted orders response:", accepted);
       setAcceptedOrders(
-        Array.isArray(accepted) ? accepted : accepted?.data || [],
+        Array.isArray(accepted) ? accepted : (accepted as any)?.data || [],
       );
 
       const ready = await getRestaurantOrders(restaurantId, "ready");
       console.log("Ready orders response:", ready);
-      setReadyOrders(Array.isArray(ready) ? ready : ready?.data || []);
+      setReadyOrders(Array.isArray(ready) ? ready : (ready as any)?.data || []);
 
       // Only load orders with status "completed" (already paid)
       const completed = await getRestaurantOrders(restaurantId, "completed");
       console.log("Completed orders response:", completed);
       setCompletedOrders(
-        Array.isArray(completed) ? completed : completed?.data || [],
+        Array.isArray(completed) ? completed : (completed as any)?.data || [],
       );
     } catch (error) {
       console.error("Error loading orders:", error);
