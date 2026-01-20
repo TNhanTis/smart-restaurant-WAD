@@ -15,15 +15,13 @@ export class ModifierGroupsService {
 
   async create(dto: CreateModifierGroupDto) {
     // ━━━ Business Rule Validation ━━━
-    // Rule 1: Single-select không cần min/max
+    // Rule 1: Single-select doesn't use min/max, force to 0
     if (dto.selection_type === 'single') {
-      if (dto.min_selections || dto.max_selections) {
-        throw new BadRequestException(
-          'Single-select type does not use min/max selections',
-        );
-      }
+      dto.min_selections = 0;
+      dto.max_selections = 0;
     }
-    // Rule 2: Multiple-select cần validate min <= max
+    
+    // Rule 2: Multiple-select needs validate min <= max
     if (dto.selection_type === 'multiple') {
       const min = dto.min_selections ?? 0;
       const max = dto.max_selections ?? 0;
@@ -33,7 +31,8 @@ export class ModifierGroupsService {
         );
       }
     }
-    // Rule 3: Required group phải có min >= 1
+    
+    // Rule 3: Required group must have min >= 1
     if (dto.is_required && dto.selection_type === 'multiple') {
       const min = dto.min_selections ?? 0;
       if (min < 1) {
@@ -166,13 +165,17 @@ export class ModifierGroupsService {
     if (!group) {
       throw new NotFoundException('Modifier group not found');
     }
-    // Validate business rules (giống create)
+    
+    // Validate business rules
     const newType = dto.selection_type ?? group.selection_type;
-    if (newType === 'single' && (dto.min_selections || dto.max_selections)) {
-      throw new BadRequestException(
-        'Single-select type does not use min/max selections',
-      );
+    
+    // If changing to single type, reset min/max to 0
+    if (newType === 'single') {
+      dto.min_selections = 0;
+      dto.max_selections = 0;
     }
+    
+    // Validate multiple type
     if (newType === 'multiple') {
       const min = dto.min_selections ?? group.min_selections;
       const max = dto.max_selections ?? group.max_selections;
@@ -180,10 +183,60 @@ export class ModifierGroupsService {
         throw new BadRequestException('min_selections > max_selections');
       }
     }
-    return this.prisma.modifierGroup.update({
+
+    // Extract initialOptions and remove read-only fields
+    const { initialOptions, restaurant_id, ...updateData } = dto;
+
+    // Update group (restaurant_id is excluded)
+    const updatedGroup = await this.prisma.modifierGroup.update({
       where: { id },
-      data: dto,
+      data: updateData,
     });
+
+    // Handle initialOptions if provided
+    if (initialOptions && initialOptions.length > 0) {
+      // Get existing option IDs
+      const existingOptions = await this.prisma.modifierOption.findMany({
+        where: { group_id: id },
+        select: { id: true },
+      });
+      const existingIds = existingOptions.map((opt) => opt.id);
+      const providedIds = initialOptions
+        .filter((opt) => opt.id)
+        .map((opt) => opt.id);
+
+      // Delete options not in the new list
+      const toDelete = existingIds.filter((eid) => !providedIds.includes(eid));
+      if (toDelete.length > 0) {
+        await this.prisma.modifierOption.deleteMany({
+          where: { id: { in: toDelete } },
+        });
+      }
+
+      // Update or create options
+      for (const optionDto of initialOptions) {
+        const { id: optId, group_id, created_at, ...optionData } = optionDto;
+        
+        if (optId && existingIds.includes(optId)) {
+          // Update existing option
+          await this.prisma.modifierOption.update({
+            where: { id: optId },
+            data: optionData,
+          });
+        } else {
+          // Create new option
+          await this.prisma.modifierOption.create({
+            data: {
+              group_id: id,
+              ...optionData,
+              status: optionData.status ?? 'active',
+            },
+          });
+        }
+      }
+    }
+
+    return updatedGroup;
   }
   async createOption(groupId: string, dto: CreateModifierOptionDto) {
     // Validate group exists

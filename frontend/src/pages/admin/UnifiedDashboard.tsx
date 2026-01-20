@@ -30,6 +30,43 @@ import {
 } from "recharts";
 import "./UnifiedDashboard.css";
 
+// SVG Icon Components
+const BuildingIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+  </svg>
+);
+
+const UsersGroupIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+  </svg>
+);
+
+const ShoppingBagIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+  </svg>
+);
+
+const CurrencyDollarIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+const ClockIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+const ChefHatIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+  </svg>
+);
+
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
 export default function UnifiedDashboard() {
@@ -198,10 +235,32 @@ export default function UnifiedDashboard() {
   }, [selectedRestaurant, dateRange]);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(amount);
+    // Format with Vietnamese locale and ₫ symbol
+    return new Intl.NumberFormat("vi-VN").format(amount) + " ₫";
+  };
+
+  // Render trend indicator with arrow and percentage
+  const renderTrendIndicator = (growthPercent: number | undefined, label: string = "so với hôm qua") => {
+    if (growthPercent === undefined || growthPercent === null) return null;
+    
+    const isPositive = growthPercent >= 0;
+    const color = isPositive ? "#10b981" : "#ef4444";
+    const arrow = isPositive ? "↑" : "↓";
+    
+    return (
+      <div className="stat-trend" style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "4px",
+        fontSize: "0.8rem",
+        fontWeight: "600",
+        color: color,
+        marginTop: "6px"
+      }}>
+        <span style={{ fontSize: "1rem" }}>{arrow}</span>
+        <span>{Math.abs(growthPercent).toFixed(1)}% {label}</span>
+      </div>
+    );
   };
 
   const handleDateChange = (field: "start" | "end", value: string) => {
@@ -231,12 +290,43 @@ export default function UnifiedDashboard() {
   return (
     <div className="unified-dashboard">
       {/* Header */}
-      <div className="dashboard-header">
-        <div>
-          <h1 className="page-title">
+      <header className="header" style={{
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        borderRadius: '1.5rem',
+        padding: '2.5rem 3rem',
+        marginBottom: '2rem',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+        position: 'relative',
+        overflow: 'hidden',
+        flexWrap: 'wrap',
+        gap: '20px'
+      }}>
+        {/* Decorative Circles */}
+        <div style={{ position: 'absolute', top: '-20%', right: '-5%', width: '300px', height: '300px', background: 'rgba(255,255,255,0.1)', borderRadius: '50%' }}></div>
+        <div style={{ position: 'absolute', bottom: '-40%', left: '-10%', width: '400px', height: '400px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%' }}></div>
+
+        <div style={{ position: 'relative', zIndex: 1, color: 'white' }}>
+          <h1 style={{
+            fontSize: '2.5rem',
+            fontWeight: '800',
+            color: 'white',
+            margin: '0 0 0.5rem 0',
+            lineHeight: 1.2,
+            letterSpacing: '-0.025em',
+            textShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            WebkitTextFillColor: 'white'
+          }}>
             {isSuperAdmin ? "Super Admin Dashboard" : "Dashboard"}
           </h1>
-          <p className="page-subtitle">
+          <p style={{
+            color: 'rgba(255, 255, 255, 0.9)',
+            margin: 0,
+            fontSize: '1.1rem',
+            fontWeight: '500'
+          }}>
             {selectedRestaurant
               ? `${selectedRestaurant.name} - Analytics & Reports`
               : restaurantLoading
@@ -245,31 +335,59 @@ export default function UnifiedDashboard() {
           </p>
         </div>
 
-        {/* Restaurant Selector - Only for non-super-admin */}
-        {!isSuperAdmin && (
-          <div style={{ marginRight: "20px" }}>
-            <RestaurantSelector />
-          </div>
-        )}
+        <div style={{ position: 'relative', zIndex: 1, display: "flex", gap: "20px", alignItems: "center", flexWrap: 'wrap' }}>
+          {/* Restaurant Selector - Only for non-super-admin */}
+          {!isSuperAdmin && (
+            <div className="header-selector">
+              <RestaurantSelector />
+            </div>
+          )}
 
-        <div className="date-range-filter">
-          <label>From:</label>
-          <input
-            type="date"
-            value={dateRange.start}
-            onChange={(e) => handleDateChange("start", e.target.value)}
-            max={dateRange.end}
-          />
-          <label>To:</label>
-          <input
-            type="date"
-            value={dateRange.end}
-            onChange={(e) => handleDateChange("end", e.target.value)}
-            min={dateRange.start}
-            max={new Date().toISOString().split("T")[0]}
-          />
+          <div className="date-range-filter" style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            background: 'rgba(255, 255, 255, 0.2)',
+            padding: '0.6rem 1rem',
+            borderRadius: '12px',
+            border: '1px solid rgba(255, 255, 255, 0.3)',
+            backdropFilter: 'blur(4px)'
+          }}>
+            <label style={{ color: 'white', fontWeight: 'bold', fontSize: '0.875rem' }}>FROM:</label>
+            <input
+              type="date"
+              value={dateRange.start}
+              onChange={(e) => handleDateChange("start", e.target.value)}
+              max={dateRange.end}
+              style={{
+                background: 'rgba(255, 255, 255, 0.9)',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '4px 8px',
+                color: '#334155',
+                fontWeight: '500',
+                outline: 'none'
+              }}
+            />
+            <label style={{ color: 'white', fontWeight: 'bold', fontSize: '0.875rem' }}>TO:</label>
+            <input
+              type="date"
+              value={dateRange.end}
+              onChange={(e) => handleDateChange("end", e.target.value)}
+              min={dateRange.start}
+              style={{
+                background: 'rgba(255, 255, 255, 0.9)',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '4px 8px',
+                color: '#334155',
+                fontWeight: '500',
+                outline: 'none'
+              }}
+            />
+          </div>
         </div>
-      </div>
+      </header>
 
       {/* Error Message */}
       {error && (
@@ -294,8 +412,8 @@ export default function UnifiedDashboard() {
           <h2 className="section-title">System-Wide Statistics</h2>
           <div className="stats-grid">
             <div className="stat-card">
-              <div className="stat-icon" style={{ background: "#e8f8f5" }}>
-                🏢
+              <div className="stat-icon" style={{ background: "#e8f8f5", color: "#27ae60" }}>
+                <BuildingIcon />
               </div>
               <div className="stat-content">
                 <div className="stat-value">
@@ -309,8 +427,8 @@ export default function UnifiedDashboard() {
             </div>
 
             <div className="stat-card">
-              <div className="stat-icon" style={{ background: "#ebf5fb" }}>
-                👥
+              <div className="stat-icon" style={{ background: "#ebf5fb", color: "#3498db" }}>
+                <UsersGroupIcon />
               </div>
               <div className="stat-content">
                 <div className="stat-value">{systemStats.users.total}</div>
@@ -322,18 +440,17 @@ export default function UnifiedDashboard() {
             </div>
 
             <div className="stat-card">
-              <div className="stat-icon" style={{ background: "#fef9e7" }}>
-                📦
+              <div className="stat-icon" style={{ background: "#fef9e7", color: "#f39c12" }}>
+                <ShoppingBagIcon />
               </div>
               <div className="stat-content">
                 <div className="stat-value">{systemStats.orders.total}</div>
                 <div className="stat-label">Total Orders</div>
                 <div
-                  className={`stat-change ${
-                    systemStats.orders.growth_vs_yesterday >= 0
+                  className={`stat-change ${systemStats.orders.growth_vs_yesterday >= 0
                       ? "positive"
                       : "negative"
-                  }`}
+                    }`}
                 >
                   {systemStats.orders.today} today (
                   {systemStats.orders.growth_vs_yesterday > 0 ? "+" : ""}
@@ -343,8 +460,8 @@ export default function UnifiedDashboard() {
             </div>
 
             <div className="stat-card">
-              <div className="stat-icon" style={{ background: "#fdedec" }}>
-                💰
+              <div className="stat-icon" style={{ background: "#fdedec", color: "#e74c3c" }}>
+                <CurrencyDollarIcon />
               </div>
               <div className="stat-content">
                 <div className="stat-value">
@@ -352,11 +469,10 @@ export default function UnifiedDashboard() {
                 </div>
                 <div className="stat-label">Total Revenue</div>
                 <div
-                  className={`stat-change ${
-                    systemStats.revenue.growth_vs_yesterday >= 0
+                  className={`stat-change ${systemStats.revenue.growth_vs_yesterday >= 0
                       ? "positive"
                       : "negative"
-                  }`}
+                    }`}
                 >
                   {formatCurrency(systemStats.revenue.today)} today (
                   {systemStats.revenue.growth_vs_yesterday > 0 ? "+" : ""}
@@ -392,11 +508,10 @@ export default function UnifiedDashboard() {
                         </td>
                         <td>
                           <span
-                            className={`badge ${
-                              restaurant.status === "active"
+                            className={`badge ${restaurant.status === "active"
                                 ? "badge-success"
                                 : "badge-danger"
-                            }`}
+                              }`}
                           >
                             {restaurant.status}
                           </span>
@@ -438,13 +553,14 @@ export default function UnifiedDashboard() {
                     className="stat-icon"
                     style={{ background: "#e8f8f5", color: "#27ae60" }}
                   >
-                    💵
+                    <CurrencyDollarIcon />
                   </div>
                   <div className="stat-content">
                     <div className="stat-value">
                       {formatCurrency(summary.today_revenue)}
                     </div>
                     <div className="stat-label">Today's Revenue</div>
+                    {renderTrendIndicator(summary.revenue_growth_percent)}
                   </div>
                 </div>
 
@@ -453,13 +569,14 @@ export default function UnifiedDashboard() {
                     className="stat-icon"
                     style={{ background: "#ebf5fb", color: "#3498db" }}
                   >
-                    📦
+                    <ShoppingBagIcon />
                   </div>
                   <div className="stat-content">
                     <div className="stat-value">
                       {summary.today_orders_count}
                     </div>
                     <div className="stat-label">Orders Today</div>
+                    {renderTrendIndicator(summary.orders_growth_percent)}
                   </div>
                 </div>
 
@@ -468,11 +585,14 @@ export default function UnifiedDashboard() {
                     className="stat-icon"
                     style={{ background: "#fef9e7", color: "#f39c12" }}
                   >
-                    ⏳
+                    <ClockIcon />
                   </div>
                   <div className="stat-content">
                     <div className="stat-value">{summary.pending_orders}</div>
                     <div className="stat-label">Pending Orders</div>
+                    <div className="stat-sublabel" style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "4px" }}>
+                      Đang chờ xử lý
+                    </div>
                   </div>
                 </div>
 
@@ -481,11 +601,14 @@ export default function UnifiedDashboard() {
                     className="stat-icon"
                     style={{ background: "#fdedec", color: "#e74c3c" }}
                   >
-                    🍳
+                    <ChefHatIcon />
                   </div>
                   <div className="stat-content">
                     <div className="stat-value">{summary.preparing_orders}</div>
                     <div className="stat-label">Preparing Orders</div>
+                    <div className="stat-sublabel" style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "4px" }}>
+                      Đang chế biến
+                    </div>
                   </div>
                 </div>
               </div>
@@ -497,143 +620,253 @@ export default function UnifiedDashboard() {
             <div className="advanced-reports">
               <h2 className="section-title">Advanced Analytics</h2>
 
-              <div className="charts-grid">
-                {/* Revenue by Category */}
+              <div className="charts-grid" style={{ gap: "24px" }}>
+                {/* Revenue by Category - Donut Chart */}
                 {revenueByCategory &&
                   revenueByCategory.categories.length > 0 && (
-                    <div className="card chart-card">
-                      <h3>Revenue by Category</h3>
-                      <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={revenueByCategory.categories}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="category_name" />
-                          <YAxis />
+                    <div className="card chart-card" style={{
+                      background: "white",
+                      borderRadius: "16px",
+                      padding: "24px",
+                      boxShadow: "0 4px 20px rgba(0,0,0,0.08)"
+                    }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                        <h3 style={{ margin: 0, color: "#1e293b", fontWeight: "700" }}>Revenue by Category</h3>
+                        <div style={{ 
+                          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                          color: "white",
+                          padding: "8px 16px",
+                          borderRadius: "20px",
+                          fontSize: "0.9rem",
+                          fontWeight: "700"
+                        }}>
+                          {formatCurrency(revenueByCategory.total_revenue)}
+                        </div>
+                      </div>
+                      <ResponsiveContainer width="100%" height={280}>
+                        <PieChart>
+                          <Pie
+                            data={revenueByCategory.categories as any[]}
+                            dataKey="total_revenue"
+                            nameKey="category_name"
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={100}
+                            paddingAngle={3}
+                            label={({ name, percent }: { name?: string; percent?: number }) => 
+                              `${name || ''} (${((percent || 0) * 100).toFixed(0)}%)`
+                            }
+                            labelLine={{ stroke: "#64748b", strokeWidth: 1 }}
+                          >
+                            {revenueByCategory.categories.map((_, index) => (
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={COLORS[index % COLORS.length]}
+                              />
+                            ))}
+                          </Pie>
                           <Tooltip
                             formatter={(value) => formatCurrency(Number(value))}
+                            contentStyle={{ 
+                              borderRadius: "8px", 
+                              border: "none",
+                              boxShadow: "0 4px 12px rgba(0,0,0,0.15)" 
+                            }}
                           />
-                          <Legend />
-                          <Bar
-                            dataKey="total_revenue"
-                            fill="#3b82f6"
-                            name="Revenue"
-                          />
-                        </BarChart>
+                        </PieChart>
                       </ResponsiveContainer>
-                      <div className="chart-summary">
-                        <strong>Total:</strong>{" "}
-                        {formatCurrency(revenueByCategory.total_revenue)}
-                      </div>
                     </div>
                   )}
 
-                {/* Kitchen Efficiency */}
+                {/* Kitchen Efficiency - with proper legend labels */}
                 {kitchenEfficiency &&
                   kitchenEfficiency.orders_by_prep_time.length > 0 && (
-                    <div className="card chart-card">
-                      <h3>Kitchen Efficiency</h3>
-                      <ResponsiveContainer width="100%" height={300}>
-                        <PieChart>
-                          <Pie
-                            data={kitchenEfficiency.orders_by_prep_time as any}
-                            dataKey="order_count"
-                            nameKey="time_range"
-                            cx="50%"
-                            cy="50%"
-                            outerRadius={100}
-                            label
+                    <div className="card chart-card" style={{
+                      background: "white",
+                      borderRadius: "16px",
+                      padding: "24px",
+                      boxShadow: "0 4px 20px rgba(0,0,0,0.08)"
+                    }}>
+                      <h3 style={{ margin: "0 0 16px 0", color: "#1e293b", fontWeight: "700" }}>Kitchen Efficiency</h3>
+                      <ResponsiveContainer width="100%" height={280}>
+                        <BarChart 
+                          data={kitchenEfficiency.orders_by_prep_time.map(item => ({
+                            ...item,
+                            // Translate time_range to Vietnamese for better readability
+                            display_name: (item.time_range || '')
+                              .replace("Under", "Dưới")
+                              .replace("Over", "Trên")
+                              .replace("min", "phút")
+                              .replace("-", " - ")
+                          }))}
+                          layout="vertical"
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                          <XAxis type="number" />
+                          <YAxis 
+                            type="category" 
+                            dataKey="display_name" 
+                            width={100}
+                            tick={{ fontSize: 12 }}
+                          />
+                          <Tooltip 
+                            formatter={(value, _name) => [`${value} đơn hàng`, "Số lượng"]}
+                            contentStyle={{ 
+                              borderRadius: "8px", 
+                              border: "none",
+                              boxShadow: "0 4px 12px rgba(0,0,0,0.15)" 
+                            }}
+                          />
+                          <Bar 
+                            dataKey="order_count" 
+                            fill="#3b82f6"
+                            radius={[0, 4, 4, 0]}
+                            name="Số đơn hàng"
                           >
-                            {kitchenEfficiency.orders_by_prep_time.map(
-                              (_, index) => (
-                                <Cell
-                                  key={`cell-${index}`}
-                                  fill={COLORS[index % COLORS.length]}
-                                />
-                              ),
-                            )}
-                          </Pie>
-                          <Tooltip />
-                          <Legend />
-                        </PieChart>
+                            {kitchenEfficiency.orders_by_prep_time.map((_, index) => (
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={COLORS[index % COLORS.length]}
+                              />
+                            ))}
+                          </Bar>
+                        </BarChart>
                       </ResponsiveContainer>
-                      <div className="chart-summary">
-                        <strong>Avg Prep Time:</strong>{" "}
-                        {kitchenEfficiency.average_prep_time_minutes.toFixed(1)}{" "}
-                        min
+                      <div className="chart-summary" style={{
+                        marginTop: "16px",
+                        padding: "12px 16px",
+                        background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                        borderRadius: "10px",
+                        color: "white",
+                        fontWeight: "600",
+                        display: "inline-block"
+                      }}>
+                        ⏱️ Avg Prep Time: {kitchenEfficiency.average_prep_time_minutes.toFixed(1)} min
                       </div>
                     </div>
                   )}
 
                 {/* Peak Hours */}
                 {peakHours && peakHours.hourly_breakdown.length > 0 && (
-                  <div className="card chart-card full-width">
-                    <h3>Peak Hours Analysis</h3>
+                  <div className="card chart-card full-width" style={{
+                    background: "white",
+                    borderRadius: "16px",
+                    padding: "24px",
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.08)"
+                  }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                      <h3 style={{ margin: 0, color: "#1e293b", fontWeight: "700" }}>Peak Hours Analysis</h3>
+                      <div style={{ 
+                        background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                        color: "white",
+                        padding: "8px 16px",
+                        borderRadius: "20px",
+                        fontSize: "0.85rem",
+                        fontWeight: "600"
+                      }}>
+                        🔥 Peak: {peakHours.peak_hour.hour}:00
+                      </div>
+                    </div>
                     <ResponsiveContainer width="100%" height={300}>
                       <LineChart data={peakHours.hourly_breakdown}>
-                        <CartesianGrid strokeDasharray="3 3" />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                         <XAxis
                           dataKey="hour"
                           tickFormatter={(hour) => `${hour}:00`}
+                          tick={{ fontSize: 12 }}
                         />
-                        <YAxis />
+                        <YAxis tick={{ fontSize: 12 }} />
                         <Tooltip
                           labelFormatter={(hour) => `${hour}:00`}
                           formatter={(value, name) =>
-                            name === "total_revenue"
+                            name === "Revenue"
                               ? formatCurrency(Number(value))
-                              : value
+                              : [`${value} đơn`, name]
                           }
+                          contentStyle={{ 
+                            borderRadius: "8px", 
+                            border: "none",
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.15)" 
+                          }}
                         />
                         <Legend />
                         <Line
                           type="monotone"
                           dataKey="order_count"
                           stroke="#3b82f6"
-                          name="Orders"
+                          strokeWidth={3}
+                          dot={{ fill: "#3b82f6", strokeWidth: 2, r: 4 }}
+                          name="Đơn hàng"
                         />
                         <Line
                           type="monotone"
                           dataKey="total_revenue"
                           stroke="#10b981"
-                          name="Revenue"
+                          strokeWidth={3}
+                          dot={{ fill: "#10b981", strokeWidth: 2, r: 4 }}
+                          name="Doanh thu"
                         />
                       </LineChart>
                     </ResponsiveContainer>
-                    <div className="chart-summary">
-                      <strong>Peak Hour:</strong> {peakHours.peak_hour.hour}:00
-                      ({peakHours.peak_hour.order_count} orders,{" "}
-                      {formatCurrency(peakHours.peak_hour.total_revenue)})
+                    <div className="chart-summary" style={{
+                      marginTop: "16px",
+                      padding: "12px 20px",
+                      background: "#f8fafc",
+                      borderRadius: "10px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px"
+                    }}>
+                      <span style={{ fontWeight: "600", color: "#475569" }}>📊 Giờ cao điểm:</span>
+                      <span style={{ color: "#1e293b", fontWeight: "700" }}>{peakHours.peak_hour.hour}:00</span>
+                      <span style={{ color: "#64748b" }}>|</span>
+                      <span style={{ color: "#3b82f6", fontWeight: "600" }}>{peakHours.peak_hour.order_count} đơn</span>
+                      <span style={{ color: "#64748b" }}>|</span>
+                      <span style={{ color: "#10b981", fontWeight: "600" }}>{formatCurrency(peakHours.peak_hour.total_revenue)}</span>
                     </div>
                   </div>
                 )}
 
                 {/* Waiter Performance */}
                 {waiterPerformance && waiterPerformance.waiters.length > 0 && (
-                  <div className="card chart-card full-width">
-                    <h3>Waiter Performance</h3>
+                  <div className="card chart-card full-width" style={{
+                    background: "white",
+                    borderRadius: "16px",
+                    padding: "24px",
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.08)"
+                  }}>
+                    <h3 style={{ margin: "0 0 16px 0", color: "#1e293b", fontWeight: "700" }}>Waiter Performance</h3>
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={waiterPerformance.waiters}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="waiter_name" />
-                        <YAxis />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <XAxis dataKey="waiter_name" tick={{ fontSize: 12 }} />
+                        <YAxis tick={{ fontSize: 12 }} />
                         <Tooltip
                           formatter={(value, name) => {
                             const nameStr = String(name);
-                            return nameStr.includes("revenue") ||
-                              nameStr.includes("value")
+                            return nameStr.includes("Doanh thu")
                               ? formatCurrency(Number(value))
-                              : value;
+                              : [`${value} đơn`, nameStr];
+                          }}
+                          contentStyle={{ 
+                            borderRadius: "8px", 
+                            border: "none",
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.15)" 
                           }}
                         />
                         <Legend />
                         <Bar
                           dataKey="total_orders"
                           fill="#3b82f6"
-                          name="Orders"
+                          name="Số đơn"
+                          radius={[4, 4, 0, 0]}
                         />
                         <Bar
                           dataKey="total_revenue"
                           fill="#10b981"
-                          name="Revenue"
+                          name="Doanh thu"
+                          radius={[4, 4, 0, 0]}
                         />
                       </BarChart>
                     </ResponsiveContainer>
@@ -691,22 +924,22 @@ export default function UnifiedDashboard() {
                       <div className="retention-card">
                         <div className="retention-value">
                           {typeof customerRetention.summary.retention_rate ===
-                          "string"
+                            "string"
                             ? customerRetention.summary.retention_rate
                             : `${customerRetention.summary.retention_rate.toFixed(
-                                1,
-                              )}%`}
+                              1,
+                            )}%`}
                         </div>
                         <div className="retention-label">Retention Rate</div>
                       </div>
                       <div className="retention-card">
                         <div className="retention-value">
                           {typeof customerRetention.average_orders_per_customer ===
-                          "string"
+                            "string"
                             ? customerRetention.average_orders_per_customer
                             : customerRetention.average_orders_per_customer.toFixed(
-                                1,
-                              )}
+                              1,
+                            )}
                         </div>
                         <div className="retention-label">
                           Avg Orders/Customer

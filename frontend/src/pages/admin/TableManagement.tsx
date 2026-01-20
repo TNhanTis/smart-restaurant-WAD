@@ -244,16 +244,76 @@ export default function TableManagement() {
 
   return (
     <div className="app">
-      <header className="header">
-        <h1>🍽️ Table Management</h1>
-        <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
-          <RestaurantSelector />
+      {/* Refined Header - Consistent with Categories/Modifiers */}
+      <header className="header" style={{
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        borderRadius: '1.5rem',
+        padding: '2.5rem 3rem',
+        marginBottom: '2rem',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        {/* Decorative Circles */}
+        <div style={{ position: 'absolute', top: '-20%', right: '-5%', width: '300px', height: '300px', background: 'rgba(255,255,255,0.1)', borderRadius: '50%' }}></div>
+        <div style={{ position: 'absolute', bottom: '-40%', left: '-10%', width: '400px', height: '400px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%' }}></div>
+
+        <div style={{ position: 'relative', zIndex: 1, color: 'white' }}>
+          <h1 style={{
+            fontSize: '2.5rem',
+            fontWeight: '800',
+            color: 'white',
+            margin: '0 0 0.5rem 0',
+            lineHeight: 1.2,
+            letterSpacing: '-0.025em',
+            textShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            WebkitTextFillColor: 'white'
+          }}>Table Management</h1>
+          <p style={{
+            color: 'rgba(255, 255, 255, 0.9)',
+            margin: 0,
+            fontSize: '1.1rem',
+            fontWeight: '500'
+          }}>Manage your restaurant tables and QR codes</p>
+        </div>
+
+        <div style={{ position: 'relative', zIndex: 1, display: "flex", gap: "16px", alignItems: "center" }}>
+          <div style={{ background: 'rgba(255,255,255,0.15)', padding: '6px', borderRadius: '14px', backdropFilter: 'blur(4px)' }}>
+            <RestaurantSelector />
+          </div>
           <button
-            className="btn btn-primary"
+            className="btn"
             onClick={() => setShowCreateModal(true)}
             disabled={!selectedRestaurant}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '0.875rem 1.75rem',
+              fontSize: '1rem',
+              fontWeight: '700',
+              color: '#667eea',
+              background: 'white',
+              border: 'none',
+              borderRadius: '14px',
+              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              whiteSpace: 'nowrap'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
+            }}
           >
-            + Add New Table
+            <span style={{ fontSize: '1.2em' }}>+</span> Add New Table
           </button>
         </div>
       </header>
@@ -417,8 +477,15 @@ export default function TableManagement() {
 
                 {/* ━━━ EXISTING BUTTONS ━━━ */}
                 <button
-                  className="btn btn-sm btn-secondary"
+                  className="btn btn-sm"
                   onClick={() => openEditModal(table)}
+                  style={{
+                    background: '#6366f1',
+                    color: 'white',
+                    border: 'none',
+                    fontWeight: '600',
+                    boxShadow: '0 2px 4px rgba(99, 102, 241, 0.3)'
+                  }}
                 >
                   ✏️ Edit
                 </button>

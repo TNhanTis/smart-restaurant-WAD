@@ -278,28 +278,111 @@ export default function ModifiersManagement() {
 
   return (
     <div className="app">
-      <header className="header">
-        <h1>🎛️ Modifiers Management</h1>
-        <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
-          <RestaurantSelector />
+      {/* Refined Header - Consistent with Categories */}
+      <header className="header" style={{
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        borderRadius: '1.5rem',
+        padding: '2.5rem 3rem',
+        marginBottom: '2rem',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        {/* Decorative Circles */}
+        <div style={{ position: 'absolute', top: '-20%', right: '-5%', width: '300px', height: '300px', background: 'rgba(255,255,255,0.1)', borderRadius: '50%' }}></div>
+        <div style={{ position: 'absolute', bottom: '-40%', left: '-10%', width: '400px', height: '400px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%' }}></div>
+
+        <div style={{ position: 'relative', zIndex: 1, color: 'white' }}>
+          <h1 style={{
+            fontSize: '2.5rem',
+            fontWeight: '800',
+            color: 'white',
+            margin: '0 0 0.5rem 0',
+            lineHeight: 1.2,
+            letterSpacing: '-0.025em',
+            textShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            WebkitTextFillColor: 'white'
+          }}>Modifiers Management</h1>
+          <p style={{
+            color: 'rgba(255, 255, 255, 0.9)',
+            margin: 0,
+            fontSize: '1.1rem',
+            fontWeight: '500'
+          }}>Manage modification options for your menu items</p>
+        </div>
+
+        <div style={{ position: 'relative', zIndex: 1, display: "flex", gap: "16px", alignItems: "center" }}>
+          <div style={{ background: 'rgba(255,255,255,0.15)', padding: '6px', borderRadius: '14px', backdropFilter: 'blur(4px)' }}>
+            <RestaurantSelector />
+          </div>
           <button
-            className="btn btn-secondary"
-            onClick={() => (window.location.href = "/")}
-          >
-            ← Back to Tables
-          </button>
-          <button
-            className="btn btn-primary"
+            className="btn"
             onClick={() => {
               resetGroupForm();
               setShowGroupModal(true);
             }}
             disabled={!selectedRestaurant}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '0.875rem 1.75rem',
+              fontSize: '1rem',
+              fontWeight: '700',
+              color: '#667eea',
+              background: 'white',
+              border: 'none',
+              borderRadius: '14px',
+              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              whiteSpace: 'nowrap'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
+            }}
           >
-            + Add Modifier Group
+            <span style={{ fontSize: '1.2em' }}>+</span> Add Modifier Group
           </button>
         </div>
       </header>
+
+      {/* Info Bar - Clean Layout */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '2rem',
+        padding: '0 0.5rem'
+      }}>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#334155', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ width: '8px', height: '24px', background: '#667eea', borderRadius: '4px', display: 'inline-block' }}></span>
+          All Groups
+        </h2>
+
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '1rem',
+          background: '#1e293b',
+          padding: '8px 16px',
+          borderRadius: '12px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+          border: '1px solid #334155'
+        }}>
+          <div style={{ color: '#94a3b8', fontWeight: '500', fontSize: '0.9rem' }}>
+            Showing <strong>{groups.length}</strong> groups
+          </div>
+        </div>
+      </div>
 
       {/* Groups & Options */}
       {!selectedRestaurant ? (
@@ -615,7 +698,7 @@ export default function ModifiersManagement() {
                 </div>
 
                 {groupFormData.initialOptions &&
-                groupFormData.initialOptions.length > 0 ? (
+                  groupFormData.initialOptions.length > 0 ? (
                   <div
                     style={{
                       display: "flex",

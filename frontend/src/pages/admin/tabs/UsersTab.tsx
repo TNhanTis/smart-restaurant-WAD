@@ -209,76 +209,177 @@ export default function UsersTab() {
 
       {/* Users Grid */}
       {loading ? (
-        <div className="loading">Loading users...</div>
+        <div className="loading" style={{ padding: '4rem', textAlign: 'center', color: '#64748b' }}>
+          <div className="spinner" style={{ margin: '0 auto 1rem' }}></div>
+          Loading users...
+        </div>
       ) : error ? (
-        <div className="error">{error}</div>
+        <div className="error" style={{ padding: '1rem', background: '#fee2e2', color: '#991b1b', borderRadius: '8px' }}>{error}</div>
       ) : (
-        <div className="tables-grid">
-          {users.map((user) => (
-            <div key={user.id} className="table-card">
-              <div className="table-header">
-                <h3>{user.email}</h3>
-                <span className={`status-badge ${user.status}`}>
-                  {user.status}
-                </span>
-              </div>
-              <div className="table-body">
-                {user.full_name && (
-                  <p>
-                    <strong>Name:</strong> {user.full_name}
-                  </p>
-                )}
-                {user.phone && (
-                  <p>
-                    <strong>Phone:</strong> {user.phone}
-                  </p>
-                )}
-                <p>
-                  <strong>Roles:</strong>{" "}
-                  <span
-                    style={{
-                      display: "flex",
-                      gap: "5px",
-                      flexWrap: "wrap",
-                      marginTop: "5px",
-                    }}
-                  >
-                    {user.roles.map((role) => (
-                      <span
-                        key={role}
-                        style={{
-                          background: "#6366f1",
-                          color: "white",
-                          padding: "3px 8px",
-                          borderRadius: "4px",
-                          fontSize: "12px",
-                        }}
-                      >
+        <div className="tables-grid" style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+          gap: '1.5rem',
+          marginTop: '1.5rem'
+        }}>
+          {users.map((user) => {
+            // Get initials for avatar
+            const initials = user.full_name
+              ? user.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+              : user.email.slice(0, 2).toUpperCase();
+
+            // Deterministic color for avatar based on name
+            const colors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'];
+            const colorIndex = (user.full_name || user.email).length % colors.length;
+            const avatarColor = colors[colorIndex];
+
+            return (
+              <div key={user.id} className="table-card" style={{
+                background: 'white',
+                borderRadius: '20px',
+                padding: '1.5rem',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+                border: '1px solid #e2e8f0',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1.25rem',
+                transition: 'all 0.3s ease'
+              }}>
+                {/* Header: Avatar + Info */}
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                  {/* Avatar */}
+                  <div style={{
+                    width: '56px',
+                    height: '56px',
+                    borderRadius: '50%',
+                    background: `${avatarColor}15`, // 15% opacity
+                    color: avatarColor,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.25rem',
+                    fontWeight: '700',
+                    flexShrink: 0
+                  }}>
+                    {initials}
+                  </div>
+
+                  {/* Name & Email (Hierarchy Reversed) */}
+                  <div style={{ overflow: 'hidden' }}>
+                    <h3 style={{
+                      fontSize: '1.125rem',
+                      fontWeight: '700',
+                      color: '#1e293b',
+                      margin: '0 0 0.25rem 0',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    }}>
+                      {user.full_name || "Unnamed User"}
+                    </h3>
+                    <p style={{
+                      fontSize: '0.875rem',
+                      color: '#64748b',
+                      margin: 0,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    }}>
+                      {user.email}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Role Badges */}
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {user.roles.map(role => {
+                    let badgeStyle = { bg: '#f1f5f9', text: '#475569', border: '#e2e8f0' };
+
+                    if (role === 'kitchen') badgeStyle = { bg: '#fff7ed', text: '#c2410c', border: '#ffedd5' }; // Orange
+                    else if (role === 'waiter') badgeStyle = { bg: '#eff6ff', text: '#1d4ed8', border: '#dbeafe' }; // Blue
+                    else if (role === 'admin' || role === 'super_admin') badgeStyle = { bg: '#f3e8ff', text: '#7e22ce', border: '#e9d5ff' }; // Purple
+
+                    return (
+                      <span key={role} style={{
+                        background: badgeStyle.bg,
+                        color: badgeStyle.text,
+                        border: `1px solid ${badgeStyle.border}`,
+                        padding: '4px 10px',
+                        borderRadius: '20px',
+                        fontSize: '0.75rem',
+                        fontWeight: '600',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.025em'
+                      }}>
                         {role}
                       </span>
-                    ))}
-                  </span>
-                </p>
-                <p style={{ fontSize: "12px", color: "#94a3b8" }}>
-                  Created: {new Date(user.created_at).toLocaleDateString()}
-                </p>
+                    );
+                  })}
+                </div>
+
+                {/* Divider */}
+                <div style={{ height: '1px', background: '#f1f5f9' }}></div>
+
+                {/* Actions */}
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                  <button
+                    onClick={() => openEditModal(user)}
+                    className="btn"
+                    style={{
+                      flex: 1,
+                      padding: '0.625rem',
+                      background: 'white',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '10px',
+                      color: '#334155',
+                      fontWeight: '600',
+                      fontSize: '0.875rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      transition: 'all 0.2s',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.borderColor = '#94a3b8';
+                      e.currentTarget.style.background = '#f8fafc';
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.borderColor = '#cbd5e1';
+                      e.currentTarget.style.background = 'white';
+                    }}
+                  >
+                    ✏️ Edit Details
+                  </button>
+
+                  <button
+                    onClick={() => handleDelete(user.id, user.email)}
+                    className="btn"
+                    style={{
+                      padding: '0.625rem',
+                      background: '#fee2e2',
+                      border: 'none',
+                      borderRadius: '10px',
+                      color: '#ef4444',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.2s',
+                      width: '40px'
+                    }}
+                    title="Delete User"
+                    onMouseOver={(e) => e.currentTarget.style.background = '#fecaca'}
+                    onMouseOut={(e) => e.currentTarget.style.background = '#fee2e2'}
+                  >
+                    🗑️
+                  </button>
+                </div>
               </div>
-              <div className="table-actions">
-                <button
-                  className="btn btn-sm btn-secondary"
-                  onClick={() => openEditModal(user)}
-                >
-                  ✏️ Edit
-                </button>
-                <button
-                  className="btn btn-sm btn-danger"
-                  onClick={() => handleDelete(user.id, user.email)}
-                >
-                  🗑️ Delete
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
