@@ -126,7 +126,30 @@ export class BillRequestsService {
         order_count: orders.length,
       });
 
-      // 7. Return bill request with full details
+      // 7. Emit notification to waiter
+      console.log('📡 [Bill Request] Broadcasting new_bill_request event');
+      this.notificationsGateway.emitToRole('waiter', 'new_bill_request', {
+        bill_request_id: billRequest.id,
+        table_id: createDto.table_id,
+        table_number: table.table_number,
+        restaurant_name: table.restaurant.name,
+        total_amount: totalAmount,
+        payment_method: createDto.payment_method_code,
+        order_count: orders.length,
+      });
+
+      // Also notify admin
+      this.notificationsGateway.emitToRole('admin', 'new_bill_request', {
+        bill_request_id: billRequest.id,
+        table_id: createDto.table_id,
+        table_number: table.table_number,
+        restaurant_name: table.restaurant.name,
+        total_amount: totalAmount,
+        payment_method: createDto.payment_method_code,
+        order_count: orders.length,
+      });
+
+      // 8. Return bill request with full details
       return this.findOne(billRequest.id);
     } catch (error) {
       console.error('❌ [Bill Request] Create error:', {

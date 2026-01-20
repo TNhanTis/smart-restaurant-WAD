@@ -147,3 +147,65 @@
     margin-left: 0;
   }
 }
+
+/* Waiter Notifications */
+.waiter-notification {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: white;
+  padding: 16px 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  min-width: 280px;
+  border-left: 4px solid #667eea;
+  animation: slideIn 0.3s ease-out;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.waiter-notification:hover {
+  transform: translateX(-5px);
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.2);
+}
+
+.waiter-notification.bill-request {
+  border-left-color: #10b981;
+}
+
+.waiter-notification.order-ready {
+  border-left-color: #f59e0b;
+}
+
+.waiter-notification .notification-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.waiter-notification .notification-content {
+  flex: 1;
+}
+
+.waiter-notification .notification-content strong {
+  display: block;
+  font-size: 15px;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.waiter-notification .notification-content p {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
