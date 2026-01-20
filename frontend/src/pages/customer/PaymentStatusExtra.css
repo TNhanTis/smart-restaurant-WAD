@@ -54,3 +54,116 @@
 .bill-detail-row.tax .bill-detail-value {
     color: #f59e0b;
 }
+
+/* Cash Waiting Card */
+.cash-waiting-card {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border-radius: 16px;
+    padding: 30px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    margin-top: 20px;
+}
+
+.cash-icon {
+    font-size: 64px;
+    margin-bottom: 20px;
+}
+
+.cash-waiting-card h3 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 12px 0;
+}
+
+.cash-waiting-card p {
+    font-size: 15px;
+    margin: 0 0 20px 0;
+    opacity: 0.95;
+    line-height: 1.6;
+}
+
+.waiting-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.pulse-dot {
+    width: 10px;
+    height: 10px;
+    background: white;
+    border-radius: 50%;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.5;
+        transform: scale(0.8);
+    }
+}
+
+/* VNPay Redirect Card */
+.vnpay-redirect-card {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    border-radius: 16px;
+    padding: 30px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+    margin-top: 20px;
+}
+
+.vnpay-icon {
+    font-size: 64px;
+    margin-bottom: 20px;
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.vnpay-redirect-card h3 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 12px 0;
+}
+
+.vnpay-redirect-card p {
+    font-size: 15px;
+    margin: 0 0 20px 0;
+    opacity: 0.95;
+    line-height: 1.6;
+}
+
+.vnpay-redirect-card .open-payment-btn {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 2px solid white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.vnpay-redirect-card .open-payment-btn:hover {
+    background: white;
+    color: #1d4ed8;
+}

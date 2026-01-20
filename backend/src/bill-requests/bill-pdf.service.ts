@@ -203,15 +203,18 @@ export class BillPdfService {
       align: 'right',
     });
 
-    // Tips
-    if (billData.tips_amount > 0) {
-      y = doc.y + 3;
-      doc.text('Tips:', 60, y, { width: labelWidth, align: 'right' });
-      doc.text(`+${this.formatCurrency(billData.tips_amount)}`, rightCol, y, {
+    // Tips (always show)
+    y = doc.y + 3;
+    doc.text('Tips:', 60, y, { width: labelWidth, align: 'right' });
+    doc.text(
+      billData.tips_amount > 0 
+        ? `+${this.formatCurrency(billData.tips_amount)}`
+        : this.formatCurrency(0),
+      rightCol, y, {
         width: valueWidth,
         align: 'right',
-      });
-    }
+      }
+    );
 
     // Discount
     if (billData.discount_amount && billData.discount_amount > 0) {

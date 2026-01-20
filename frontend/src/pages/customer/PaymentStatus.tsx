@@ -285,84 +285,34 @@ function PaymentStatus() {
           )}
         </div>
 
-        {/* Bill Details - Only show when accepted or completed */}
-        {(status === "accepted" || status === "completed") && (
-          <div className="bill-details-card">
-            <h3 className="bill-details-title">Bill Details</h3>
-            <div className="bill-detail-row">
-              <span className="bill-detail-label">Restaurant</span>
-              <span className="bill-detail-value">
-                {displayBill.restaurant?.name || "N/A"}
-              </span>
+        {/* Cash payment - waiting for waiter confirmation */}
+        {status === "accepted" && bill?.payment_method_code?.toUpperCase() === "CASH" && (
+          <div className="cash-waiting-card">
+            <div className="cash-icon">💵</div>
+            <h3>Cash Payment</h3>
+            <p>Please pay at the counter. Waiter will confirm your payment.</p>
+            <div className="waiting-indicator">
+              <span className="pulse-dot"></span>
+              Waiting for confirmation...
             </div>
-            <div className="bill-detail-row">
-              <span className="bill-detail-label">Table</span>
-              <span className="bill-detail-value">
-                {displayBill.table?.table_number || "N/A"}
-              </span>
-            </div>
-            <div className="bill-detail-row">
-              <span className="bill-detail-label">Subtotal</span>
-              <span className="bill-detail-value">
-                {Math.round(displayBill.subtotal || 0).toLocaleString("vi-VN")}₫
-              </span>
-            </div>
-            {bill?.discount_amount && bill.discount_amount > 0 && (
-              <div className="bill-detail-row discount">
-                <span className="bill-detail-label">
-                  Discount ({bill.discount_type === 'percentage' ? `${bill.discount_value}%` : 'Fixed'})
-                </span>
-                <span className="bill-detail-value discount-value">
-                  -{Math.round(bill.discount_amount).toLocaleString("vi-VN")}₫
-                </span>
-              </div>
+          </div>
+        )}
+
+        {/* VNPay - redirecting message */}
+        {status === "accepted" && bill?.payment_method_code?.toUpperCase() === "VNPAY" && (
+          <div className="vnpay-redirect-card">
+            <div className="vnpay-icon">🔄</div>
+            <h3>Redirecting to VNPay...</h3>
+            <p>You will be redirected to the payment page automatically.</p>
+            {paymentUrl && (
+              <button className="open-payment-btn" onClick={handleOpenPayment}>
+                Click here if not redirected
+              </button>
             )}
-            <div className="bill-detail-row">
-              <span className="bill-detail-label">Tips</span>
-              <span className="bill-detail-value">
-                {Math.round(displayBill.tips_amount || 0).toLocaleString("vi-VN")}
-                ₫
-              </span>
-            </div>
-            {bill?.tax_amount && bill.tax_amount > 0 && (
-              <div className="bill-detail-row tax">
-                <span className="bill-detail-label">Tax ({bill.tax_rate}%)</span>
-                <span className="bill-detail-value">
-                  +{Math.round(bill.tax_amount).toLocaleString("vi-VN")}₫
-                </span>
-              </div>
-            )}
-            <div className="bill-detail-row total">
-              <span className="bill-detail-label">Total</span>
-              <span className="bill-detail-value">
-                {Math.round((bill?.final_amount || displayBill.total_amount) || 0).toLocaleString(
-                  "vi-VN",
-                )}
-                ₫
-              </span>
-            </div>
           </div>
         )}
 
         {/* Pending - Show info message instead */}
-        {status === "pending" && (
-          <div className="pending-info-card">
-            <div className="pending-info-icon">👨‍🍳</div>
-            <h3>Your request is being processed</h3>
-            <p>Our waiter will review your order and finalize the bill amount shortly.</p>
-          </div>
-        )}
-
-        {/* QR Code Section (only show when accepted) */}
-        {status === "accepted" && bill?.payment_method_code === "CASH" && (
-          <div className="qr-section">
-            <h3 className="qr-title">Cash Payment</h3>
-            <div className="qr-code-placeholder">💵</div>
-            <p className="qr-instruction">
-              Please prepare cash payment. Waiter will confirm receipt shortly.
-            </p>
-          </div>
-        )}
 
         {/* Action Buttons */}
         <div className="action-buttons">
