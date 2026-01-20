@@ -8,6 +8,14 @@ export interface BillRequest {
   subtotal: number;
   tips_amount: number;
   total_amount: number;
+  discount_type?: string;
+  discount_value?: number;
+  discount_amount?: number;
+  tax_rate?: number;
+  tax_amount?: number;
+  final_amount?: number;
+  discount_applied_by?: string;
+  discount_applied_at?: string;
   order_ids: string[];
   customer_note?: string;
   status: string;
@@ -38,6 +46,12 @@ export interface CreateBillRequestDto {
   payment_method_code: string;
   tips_amount?: number;
   customer_note?: string;
+}
+
+export interface ApplyDiscountDto {
+  discount_type: 'percentage' | 'fixed' | 'none';
+  discount_value: number;
+  tax_rate?: number;
 }
 
 export const billRequestsApi = {
@@ -84,6 +98,34 @@ export const billRequestsApi = {
     const response = await api.post(
       `/api/bill-requests/${id}/accept`,
       acceptedBy ? { accepted_by: acceptedBy } : {},
+    );
+    return response.data;
+  },
+
+  /**
+   * Apply discount to bill request (waiter/admin)
+   */
+  applyDiscount: async (
+    id: string,
+    data: ApplyDiscountDto,
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data: {
+      id: string;
+      subtotal: number;
+      discount_type: string;
+      discount_value: number;
+      discount_amount: number;
+      tips_amount: number;
+      tax_rate: number;
+      tax_amount: number;
+      final_amount: number;
+    };
+  }> => {
+    const response = await api.post(
+      `/api/bill-requests/${id}/apply-discount`,
+      data,
     );
     return response.data;
   },

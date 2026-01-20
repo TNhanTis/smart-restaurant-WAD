@@ -8,6 +8,7 @@ import { PaymentsService } from '../payments/payments.service';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
 import { CreateBillRequestDto } from './dto/create-bill-request.dto';
 import { AcceptBillRequestDto } from './dto/accept-bill-request.dto';
+import { ApplyDiscountDto } from './dto/apply-discount.dto';
 
 @Injectable()
 export class BillRequestsService {
@@ -278,6 +279,104 @@ export class BillRequestsService {
   }
 
   /**
+   * Apply discount to bill request (before accept)
+   */
+  async applyDiscount(
+    billRequestId: string,
+    discountDto: ApplyDiscountDto,
+    staffId: string,
+  ) {
+    console.log('🎁 [Bill Request] Applying discount:', {
+      billRequestId,
+      ...discountDto,
+      staffId,
+    });
+
+    // 1. Find bill request
+    const billRequest = await this.prisma.bill_requests.findUnique({
+      where: { id: billRequestId },
+    });
+
+    if (!billRequest) {
+      throw new NotFoundException('Bill request not found');
+    }
+
+    if (billRequest.status !== 'pending') {
+      throw new BadRequestException(
+        'Can only apply discount to pending bill requests',
+      );
+    }
+
+    // 2. Calculate discount amount
+    const subtotal = Number(billRequest.subtotal);
+    const tipsAmount = Number(billRequest.tips_amount || 0);
+    let discountAmount = 0;
+
+    if (discountDto.discount_type === 'percentage') {
+      discountAmount = subtotal * (discountDto.discount_value / 100);
+    } else if (discountDto.discount_type === 'fixed') {
+      discountAmount = discountDto.discount_value;
+    }
+
+    // Ensure discount doesn't exceed subtotal
+    if (discountAmount > subtotal) {
+      throw new BadRequestException('Discount amount cannot exceed subtotal');
+    }
+
+    // 3. Calculate tax (applied after discount)
+    const taxRate = discountDto.tax_rate || 0;
+    const amountAfterDiscount = subtotal - discountAmount + tipsAmount;
+    const taxAmount = amountAfterDiscount * (taxRate / 100);
+
+    // 4. Calculate final amount
+    const finalAmount = amountAfterDiscount + taxAmount;
+
+    console.log('💰 [Bill Request] Calculation:', {
+      subtotal,
+      tipsAmount,
+      discountAmount,
+      amountAfterDiscount,
+      taxRate,
+      taxAmount,
+      finalAmount,
+    });
+
+    // 5. Update bill request
+    const updated = await this.prisma.bill_requests.update({
+      where: { id: billRequestId },
+      data: {
+        discount_type: discountDto.discount_type,
+        discount_value: discountDto.discount_value,
+        discount_amount: discountAmount,
+        tax_rate: taxRate,
+        tax_amount: taxAmount,
+        final_amount: finalAmount,
+        total_amount: finalAmount, // Keep total_amount in sync for backward compatibility
+        discount_applied_by: staffId,
+        discount_applied_at: new Date(),
+      },
+    });
+
+    console.log('✅ [Bill Request] Discount applied successfully');
+
+    return {
+      success: true,
+      message: 'Discount applied successfully',
+      data: {
+        id: updated.id,
+        subtotal: updated.subtotal,
+        discount_type: updated.discount_type,
+        discount_value: updated.discount_value,
+        discount_amount: updated.discount_amount,
+        tips_amount: updated.tips_amount,
+        tax_rate: updated.tax_rate,
+        tax_amount: updated.tax_amount,
+        final_amount: updated.final_amount,
+      },
+    };
+  }
+
+  /**
    * Waiter accepts bill request
    */
   async accept(id: string) {
@@ -324,18 +423,20 @@ export class BillRequestsService {
 
       console.log('🔄 [Bill Request] Creating payment with:', {
         bill_request_id: id,
-        amount: billRequest.subtotal, // Use subtotal, not total_amount
+        amount: billRequest.final_amount || billRequest.total_amount, // Use final_amount if discount applied
         payment_method: billRequest.payment_method_code,
         tips_amount: billRequest.tips_amount || 0,
         order_ids: billRequest.order_ids || [],
         restaurant_id: billRequest.tables.restaurant_id,
       });
 
-      // Create payment record
+      // Create payment record - use final_amount if discount was applied, otherwise total_amount
+      const paymentAmount = billRequest.final_amount || billRequest.total_amount;
+      
       const payment = await this.paymentsService.initiatePaymentFromBillRequest(
         {
           bill_request_id: id,
-          amount: billRequest.subtotal, // Use subtotal, not total_amount
+          amount: paymentAmount, // Use final amount after discount/tax
           payment_method: billRequest.payment_method_code,
           tips_amount: billRequest.tips_amount || 0,
           order_ids: billRequest.order_ids || [],
@@ -352,6 +453,8 @@ export class BillRequestsService {
 
       // Emit payment URL to customer via Socket.IO
       // Use broadcast since customer may be anonymous (no customer_id)
+      const finalAmount = billRequest.final_amount || billRequest.total_amount;
+      
       if (payment.payment_url) {
         console.log(
           '📡 [Bill Request] Broadcasting payment_ready event for bill:',
@@ -362,7 +465,7 @@ export class BillRequestsService {
           payment_id: payment.payment_id,
           payment_url: payment.payment_url,
           payment_method: billRequest.payment_method_code,
-          amount: billRequest.total_amount,
+          amount: finalAmount,
         });
       } else {
         // For CASH payment (no URL), notify customer that bill is accepted
@@ -374,7 +477,7 @@ export class BillRequestsService {
           bill_request_id: id,
           payment_id: payment.payment_id,
           payment_method: billRequest.payment_method_code,
-          amount: billRequest.total_amount,
+          amount: finalAmount,
         });
       }
 

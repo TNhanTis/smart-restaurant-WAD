@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import "./WaiterBillRequests.css";
-import billRequestsApi from "../../api/billRequestsApi";
+import billRequestsApi, { ApplyDiscountDto } from "../../api/billRequestsApi";
 import { useRestaurant } from "../../contexts/RestaurantContext";
 
 interface BillRequest {
@@ -10,6 +10,12 @@ interface BillRequest {
   subtotal: number;
   tips_amount: number;
   total_amount: number;
+  discount_type?: string;
+  discount_value?: number;
+  discount_amount?: number;
+  tax_rate?: number;
+  tax_amount?: number;
+  final_amount?: number;
   payment_method_code: string;
   customer_note?: string;
   created_at: string;
@@ -28,6 +34,13 @@ export default function WaiterBillRequests() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [processing, setProcessing] = useState<string | null>(null);
+  
+  // Discount modal states
+  const [showDiscountModal, setShowDiscountModal] = useState(false);
+  const [selectedBillForDiscount, setSelectedBillForDiscount] = useState<BillRequest | null>(null);
+  const [discountType, setDiscountType] = useState<"percentage" | "fixed" | "none">("none");
+  const [discountValue, setDiscountValue] = useState<number>(0);
+  const [taxRate, setTaxRate] = useState<number>(0);
 
   const restaurantId = restaurants.length > 0 ? restaurants[0].id : null;
 
@@ -72,6 +85,44 @@ export default function WaiterBillRequests() {
       setError(err.response?.data?.message || "Failed to load bill requests");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const openDiscountModal = (bill: BillRequest) => {
+    setSelectedBillForDiscount(bill);
+    setDiscountType(bill.discount_type || "none");
+    setDiscountValue(bill.discount_value || 0);
+    setTaxRate(bill.tax_rate || 0);
+    setShowDiscountModal(true);
+  };
+
+  const closeDiscountModal = () => {
+    setShowDiscountModal(false);
+    setSelectedBillForDiscount(null);
+    setDiscountType("none");
+    setDiscountValue(0);
+    setTaxRate(0);
+  };
+
+  const handleApplyDiscount = async () => {
+    if (!selectedBillForDiscount) return;
+
+    try {
+      setError("");
+      const result = await billRequestsApi.applyDiscount(selectedBillForDiscount.id, {
+        discount_type: discountType,
+        discount_value: discountValue,
+        tax_rate: taxRate > 0 ? taxRate : undefined,
+      });
+
+      console.log("Discount applied:", result);
+      closeDiscountModal();
+      await loadBillRequests();
+      
+      alert(`Discount applied successfully!\nFinal Amount: ${result.final_amount?.toLocaleString()}₫`);
+    } catch (err: any) {
+      console.error("Error applying discount:", err);
+      setError(err.response?.data?.message || "Failed to apply discount");
     }
   };
 
@@ -302,10 +353,22 @@ export default function WaiterBillRequests() {
                         <span>+{formatCurrency(billRequest.tips_amount)}</span>
                       </div>
                     )}
+                    {billRequest.discount_amount && billRequest.discount_amount > 0 && (
+                      <div className="amount-row discount">
+                        <span>Discount ({billRequest.discount_type === 'percentage' ? `${billRequest.discount_value}%` : 'Fixed'}):</span>
+                        <span>-{formatCurrency(billRequest.discount_amount)}</span>
+                      </div>
+                    )}
+                    {billRequest.tax_amount && billRequest.tax_amount > 0 && (
+                      <div className="amount-row tax">
+                        <span>Tax ({billRequest.tax_rate}%):</span>
+                        <span>+{formatCurrency(billRequest.tax_amount)}</span>
+                      </div>
+                    )}
                     <div className="amount-row total">
                       <span>Total:</span>
                       <span className="total-amount">
-                        {formatCurrency(billRequest.total_amount)}
+                        {formatCurrency(billRequest.final_amount || billRequest.total_amount)}
                       </span>
                     </div>
                   </div>
@@ -324,6 +387,13 @@ export default function WaiterBillRequests() {
                   </div>
 
                   <div className="bill-actions">
+                    <button
+                      className="btn-discount"
+                      onClick={() => openDiscountModal(billRequest)}
+                      disabled={processing === billRequest.id}
+                    >
+                      🏷️ Apply Discount
+                    </button>
                     <button
                       className="btn-reject"
                       onClick={() => handleReject(billRequest.id)}
@@ -410,10 +480,22 @@ export default function WaiterBillRequests() {
                           <span>+{formatCurrency(billRequest.tips_amount)}</span>
                         </div>
                       )}
+                      {billRequest.discount_amount && billRequest.discount_amount > 0 && (
+                        <div className="amount-row discount">
+                          <span>Discount ({billRequest.discount_type === 'percentage' ? `${billRequest.discount_value}%` : 'Fixed'}):</span>
+                          <span>-{formatCurrency(billRequest.discount_amount)}</span>
+                        </div>
+                      )}
+                      {billRequest.tax_amount && billRequest.tax_amount > 0 && (
+                        <div className="amount-row tax">
+                          <span>Tax ({billRequest.tax_rate}%):</span>
+                          <span>+{formatCurrency(billRequest.tax_amount)}</span>
+                        </div>
+                      )}
                       <div className="amount-row total">
                         <span>Total:</span>
                         <span className="total-amount">
-                          {formatCurrency(billRequest.total_amount)}
+                          {formatCurrency(billRequest.final_amount || billRequest.total_amount)}
                         </span>
                       </div>
                     </div>
@@ -465,6 +547,148 @@ export default function WaiterBillRequests() {
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Discount Modal */}
+      {showDiscountModal && selectedBillForDiscount && (
+        <div className="modal-overlay" onClick={closeDiscountModal}>
+          <div className="modal-content discount-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>🏷️ Apply Discount</h2>
+              <button className="modal-close" onClick={closeDiscountModal}>✕</button>
+            </div>
+
+            <div className="modal-body">
+              <div className="bill-summary">
+                <h3>Bill for Table {selectedBillForDiscount.tables?.table_number}</h3>
+                <div className="summary-row">
+                  <span>Subtotal:</span>
+                  <span>{formatCurrency(selectedBillForDiscount.subtotal)}</span>
+                </div>
+                {selectedBillForDiscount.tips_amount > 0 && (
+                  <div className="summary-row">
+                    <span>Tips:</span>
+                    <span>+{formatCurrency(selectedBillForDiscount.tips_amount)}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label>Discount Type</label>
+                <select
+                  value={discountType}
+                  onChange={(e) => setDiscountType(e.target.value as "percentage" | "fixed" | "none")}
+                  className="form-control"
+                >
+                  <option value="none">No Discount</option>
+                  <option value="percentage">Percentage (%)</option>
+                  <option value="fixed">Fixed Amount (₫)</option>
+                </select>
+              </div>
+
+              {discountType !== "none" && (
+                <div className="form-group">
+                  <label>
+                    {discountType === "percentage" ? "Discount Percentage" : "Discount Amount"}
+                  </label>
+                  <input
+                    type="number"
+                    value={discountValue}
+                    onChange={(e) => setDiscountValue(Number(e.target.value))}
+                    min="0"
+                    max={discountType === "percentage" ? "100" : undefined}
+                    step={discountType === "percentage" ? "1" : "1000"}
+                    className="form-control"
+                    placeholder={discountType === "percentage" ? "Enter %" : "Enter amount"}
+                  />
+                </div>
+              )}
+
+              <div className="form-group">
+                <label>Tax Rate (%)</label>
+                <input
+                  type="number"
+                  value={taxRate}
+                  onChange={(e) => setTaxRate(Number(e.target.value))}
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  className="form-control"
+                  placeholder="Optional (e.g., 10)"
+                />
+              </div>
+
+              {/* Preview calculation */}
+              {discountType !== "none" && discountValue > 0 && (
+                <div className="discount-preview">
+                  <h4>Preview:</h4>
+                  <div className="preview-row">
+                    <span>Subtotal:</span>
+                    <span>{formatCurrency(selectedBillForDiscount.subtotal)}</span>
+                  </div>
+                  <div className="preview-row discount">
+                    <span>Discount:</span>
+                    <span>
+                      -{formatCurrency(
+                        discountType === "percentage"
+                          ? (selectedBillForDiscount.subtotal * discountValue) / 100
+                          : discountValue
+                      )}
+                    </span>
+                  </div>
+                  {selectedBillForDiscount.tips_amount > 0 && (
+                    <div className="preview-row">
+                      <span>Tips:</span>
+                      <span>+{formatCurrency(selectedBillForDiscount.tips_amount)}</span>
+                    </div>
+                  )}
+                  {taxRate > 0 && (
+                    <div className="preview-row tax">
+                      <span>Tax ({taxRate}%):</span>
+                      <span>
+                        +{formatCurrency(
+                          ((selectedBillForDiscount.subtotal -
+                            (discountType === "percentage"
+                              ? (selectedBillForDiscount.subtotal * discountValue) / 100
+                              : discountValue) +
+                            selectedBillForDiscount.tips_amount) *
+                            taxRate) /
+                            100
+                        )}
+                      </span>
+                    </div>
+                  )}
+                  <div className="preview-row total">
+                    <span>Final Amount:</span>
+                    <span className="final-amount">
+                      {formatCurrency(
+                        (() => {
+                          const discount =
+                            discountType === "percentage"
+                              ? (selectedBillForDiscount.subtotal * discountValue) / 100
+                              : discountValue;
+                          const afterDiscount =
+                            selectedBillForDiscount.subtotal - discount + selectedBillForDiscount.tips_amount;
+                          const tax = taxRate > 0 ? (afterDiscount * taxRate) / 100 : 0;
+                          return afterDiscount + tax;
+                        })()
+                      )}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={closeDiscountModal}>
+                Cancel
+              </button>
+              <button className="btn-primary" onClick={handleApplyDiscount}>
+                Apply Discount
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -431,3 +431,294 @@
     align-items: flex-start;
   }
 }
+
+/* Discount Button */
+.btn-discount {
+  padding: 0.75rem 1.25rem;
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-discount:hover:not(:disabled) {
+  background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+}
+
+.btn-discount:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Discount and Tax display in bill amounts */
+.amount-row.discount {
+  color: #10b981;
+  font-weight: 500;
+}
+
+.amount-row.tax {
+  color: #f59e0b;
+  font-weight: 500;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-content {
+  background: white;
+  border-radius: 16px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #1f2937;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #9ca3af;
+  transition: color 0.2s;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+.modal-close:hover {
+  color: #1f2937;
+  background: #f3f4f6;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-footer {
+  padding: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+/* Bill Summary in Modal */
+.bill-summary {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.bill-summary h3 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.1rem;
+  color: #374151;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  font-size: 0.95rem;
+}
+
+.summary-row span:first-child {
+  color: #6b7280;
+}
+
+.summary-row span:last-child {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+/* Form Groups */
+.form-group {
+  margin-bottom: 1.25rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.9rem;
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s;
+  box-sizing: border-box;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+/* Discount Preview */
+.discount-preview {
+  background: linear-gradient(135deg, #eff6ff 0%, #f3e8ff 100%);
+  border: 2px solid #ddd6fe;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-top: 1.5rem;
+}
+
+.discount-preview h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  color: #6d28d9;
+}
+
+.preview-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  font-size: 0.95rem;
+}
+
+.preview-row span:first-child {
+  color: #6b7280;
+}
+
+.preview-row span:last-child {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.preview-row.discount span:last-child {
+  color: #10b981;
+}
+
+.preview-row.tax span:last-child {
+  color: #f59e0b;
+}
+
+.preview-row.total {
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 2px solid #ddd6fe;
+  font-size: 1.1rem;
+}
+
+.preview-row.total .final-amount {
+  color: #8b5cf6;
+  font-size: 1.25rem;
+}
+
+/* Modal Buttons */
+.btn-primary,
+.btn-secondary {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+}
+
+.btn-secondary {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.btn-secondary:hover {
+  background: #e5e7eb;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .modal-content {
+    margin: 1rem;
+  }
+
+  .modal-footer {
+    flex-direction: column-reverse;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    width: 100%;
+  }
+}
