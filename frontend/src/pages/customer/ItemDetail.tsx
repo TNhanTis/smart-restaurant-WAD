@@ -79,7 +79,7 @@ function ItemDetail() {
       console.log("Item details received:", data);
       console.log(
         "Modifier groups:",
-        data.modifierGroups?.map((g) => ({
+        data.modifierGroups?.map((g: ModifierGroup) => ({
           name: g.name,
           minSelection: g.minSelection,
           maxSelection: g.maxSelection,
