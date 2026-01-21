@@ -274,7 +274,9 @@ function Profile() {
                 </button>
                 <button
                   className="btn-login"
-                  onClick={() => navigate("/", { state: { from: location } })}
+                  onClick={() =>
+                    navigate("/customer/login", { state: { from: location } })
+                  }
                 >
                   Login
                 </button>
