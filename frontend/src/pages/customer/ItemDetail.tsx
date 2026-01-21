@@ -77,6 +77,15 @@ function ItemDetail() {
       console.log("Fetching item details for ID:", id);
       const data = await publicApi.getMenuItem(id!);
       console.log("Item details received:", data);
+      console.log(
+        "Modifier groups:",
+        data.modifierGroups?.map((g) => ({
+          name: g.name,
+          minSelection: g.minSelection,
+          maxSelection: g.maxSelection,
+          isRequired: g.isRequired,
+        })),
+      );
       setItem(data);
     } catch (err: any) {
       console.error("Error fetching item details:", err);
@@ -90,31 +99,39 @@ function ItemDetail() {
     group: ModifierGroup,
     option: ModifierOption,
   ) => {
+    console.log("🖱️ Click handler called!", {
+      groupName: group.name,
+      optionName: option.name,
+      maxSelection: group.maxSelection,
+      currentSize: selectedModifiers.get(group.id)?.size || 0,
+    });
+
     const newSelections = new Map(selectedModifiers);
     const groupSelections = newSelections.get(group.id) || new Set<string>();
 
     if (group.maxSelection === 1) {
-      // Radio button behavior
+      // Radio button behavior - always clear and select new
+      console.log("📻 Radio mode - clearing and selecting:", option.name);
       groupSelections.clear();
       groupSelections.add(option.id);
     } else {
       // Checkbox behavior
       if (groupSelections.has(option.id)) {
+        console.log("✅ Deselecting:", option.name);
         groupSelections.delete(option.id);
       } else {
-        if (groupSelections.size < group.maxSelection) {
-          groupSelections.add(option.id);
-        } else {
-          setToast({
-            message: `You can only select up to ${group.maxSelection} options`,
-            type: "warning",
-          });
-          return;
+        // For radio-like groups, clear first if already at max
+        if (groupSelections.size >= group.maxSelection) {
+          console.log("🔄 At max, clearing first");
+          groupSelections.clear();
         }
+        console.log("✅ Selecting:", option.name);
+        groupSelections.add(option.id);
       }
     }
 
     newSelections.set(group.id, groupSelections);
+    console.log("💾 Updated selections:", Array.from(groupSelections));
     setSelectedModifiers(newSelections);
   };
 
@@ -142,10 +159,29 @@ function ItemDetail() {
   const validateModifiers = () => {
     if (!item) return { valid: false, message: "" };
 
+    console.log("🔍 Validating modifiers...");
+    console.log(
+      "Current selections:",
+      Array.from(selectedModifiers.entries()).map(([groupId, optionIds]) => ({
+        groupId,
+        options: Array.from(optionIds),
+      })),
+    );
+
     for (const group of item.modifierGroups) {
       const selections = selectedModifiers.get(group.id) || new Set();
 
+      console.log(`Checking group: ${group.name}`, {
+        isRequired: group.isRequired,
+        minSelection: group.minSelection,
+        maxSelection: group.maxSelection,
+        currentSelections: selections.size,
+      });
+
       if (group.isRequired && selections.size < group.minSelection) {
+        console.log(
+          `❌ Validation failed for ${group.name}: not enough selections`,
+        );
         return {
           valid: false,
           message: `Please select at least ${group.minSelection} option(s) for ${group.name}`,
@@ -153,6 +189,9 @@ function ItemDetail() {
       }
 
       if (selections.size > group.maxSelection) {
+        console.log(
+          `❌ Validation failed for ${group.name}: too many selections`,
+        );
         return {
           valid: false,
           message: `You can only select up to ${group.maxSelection} option(s) for ${group.name}`,
@@ -160,6 +199,7 @@ function ItemDetail() {
       }
     }
 
+    console.log("✅ Validation passed!");
     return { valid: true, message: "" };
   };
 
@@ -305,19 +345,20 @@ function ItemDetail() {
                   <div
                     key={option.id}
                     className={`modifier-option ${isSelected ? "selected" : ""}`}
-                    onClick={() => handleModifierToggle(group, option)}
-                    style={{ cursor: "pointer" }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleModifierToggle(group, option);
+                    }}
                   >
-                    <label className="modifier-label">
+                    <div className="modifier-label">
                       <input
                         type={inputType}
                         name={`group-${group.id}`}
                         checked={isSelected}
-                        onChange={() => handleModifierToggle(group, option)}
-                        style={{ pointerEvents: "none" }}
+                        readOnly
                       />
                       <span>{option.name}</span>
-                    </label>
+                    </div>
                     <span className="modifier-price">
                       {parseFloat(option.priceAdjustment) >= 0 ? "+" : ""}
                       {Math.round(

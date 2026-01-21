@@ -169,10 +169,13 @@
   margin-bottom: 10px;
   transition: all 0.2s;
   border: 2px solid transparent;
+  cursor: pointer;
+  user-select: none;
 }
 
 .modifier-option:hover {
   background: #f8f9fa;
+  border-color: var(--primary);
 }
 
 .modifier-option.selected {
@@ -201,6 +204,7 @@
   flex-shrink: 0;
   margin: 0;
   accent-color: var(--primary);
+  pointer-events: none;
 }
 
 .modifier-price {
