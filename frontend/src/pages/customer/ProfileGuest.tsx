@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ordersApi } from "../../api/ordersApi";
+import { useConfirm, useAlert } from "../../components/ConfirmDialog";
 import "./ProfileGuest.css";
 
 interface SessionStats {
@@ -19,6 +20,8 @@ interface UserInfo {
 function Profile() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { confirm, ConfirmDialogComponent } = useConfirm();
+  const { showAlert, AlertDialogComponent } = useAlert();
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
@@ -103,8 +106,12 @@ function Profile() {
     return name.substring(0, 2).toUpperCase();
   };
 
-  const handleLogout = () => {
-    if (confirm("Are you sure you want to logout?")) {
+  const handleLogout = async () => {
+    const confirmed = await confirm(
+      "Đăng xuất",
+      "Bạn có chắc chắn muốn đăng xuất?",
+    );
+    if (confirmed) {
       localStorage.removeItem("auth_token");
       localStorage.removeItem("auth_user");
       // Reload page to continue as guest - preserves cart and session
@@ -221,7 +228,12 @@ function Profile() {
             </button>
             <button
               className="account-btn"
-              onClick={() => alert("Change password feature coming soon!")}
+              onClick={() =>
+                showAlert("Tính năng đổi mật khẩu sắp ra mắt!", {
+                  title: "Thông báo",
+                  type: "alert",
+                })
+              }
             >
               <span className="account-icon">🔒</span>
               <span className="account-text">Change Password</span>
@@ -300,6 +312,10 @@ function Profile() {
       </div>
 
       {/* Bottom Navigation - handled by BottomNavigation component */}
+
+      {/* Dialog Components */}
+      <ConfirmDialogComponent />
+      <AlertDialogComponent />
     </div>
   );
 }

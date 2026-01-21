@@ -1,5 +1,6 @@
 import { useState } from "react";
 import "./OrderDetailModal.css";
+import { useAlert } from "./ConfirmDialog";
 
 export interface OrderDetailItem {
   id: string;
@@ -66,6 +67,7 @@ export default function OrderDetailModal({
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const { showAlert, AlertDialogComponent } = useAlert();
 
   const handleAction = async (action: () => Promise<void>) => {
     setIsLoading(true);
@@ -74,7 +76,7 @@ export default function OrderDetailModal({
       onClose();
     } catch (error) {
       console.error("Action failed:", error);
-      alert("Action failed. Please try again.");
+      showAlert("Thao tác thất bại. Vui lòng thử lại.", { type: "error" });
     } finally {
       setIsLoading(false);
     }
@@ -82,7 +84,7 @@ export default function OrderDetailModal({
 
   const handleReject = async () => {
     if (!rejectionReason.trim()) {
-      alert("Please provide a rejection reason");
+      showAlert("Vui lòng nhập lý do từ chối", { type: "warning" });
       return;
     }
     if (onReject) {
@@ -438,6 +440,9 @@ export default function OrderDetailModal({
           </div>
         </div>
       )}
+
+      {/* Dialog Components */}
+      <AlertDialogComponent />
     </>
   );
 }

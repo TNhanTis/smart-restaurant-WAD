@@ -16,12 +16,14 @@ import OrderDetailModal, {
 import { useStaffRestaurant } from "../../hooks/useStaffRestaurant";
 import { useRestaurant } from "../../contexts/RestaurantContext";
 import { useAuth } from "../../contexts/AuthContext";
+import { useAlert } from "../../components/ConfirmDialog";
 
 type OrderColumn = "received" | "preparing" | "ready";
 
 export default function KitchenDisplay() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { showAlert, AlertDialogComponent } = useAlert();
 
   // For kitchen/waiter staff - get restaurant from restaurant_staff table
   const {
@@ -181,7 +183,9 @@ export default function KitchenDisplay() {
       await loadOrders();
     } catch (error) {
       console.error("Error starting preparation:", error);
-      alert("Failed to start preparing order. Please try again.");
+      showAlert("Không thể bắt đầu chuẩn bị. Vui lòng thử lại.", {
+        type: "error",
+      });
     }
   };
 
@@ -195,7 +199,9 @@ export default function KitchenDisplay() {
       await loadOrders();
     } catch (error) {
       console.error("Error marking order ready:", error);
-      alert("Failed to mark order as ready. Please try again.");
+      showAlert("Không thể đánh dấu sẵn sàng. Vui lòng thử lại.", {
+        type: "error",
+      });
     }
   };
 
@@ -203,7 +209,9 @@ export default function KitchenDisplay() {
     if (!restaurantId) return;
 
     if (selectedOrderIds.size === 0) {
-      alert("Please select at least one order to batch prepare");
+      showAlert("Vui lòng chọn ít nhất một đơn để chuẩn bị", {
+        type: "warning",
+      });
       return;
     }
 
@@ -212,10 +220,14 @@ export default function KitchenDisplay() {
       await batchStartPreparing(orderIdsArray, restaurantId);
       setSelectedOrderIds(new Set());
       await loadOrders();
-      alert(`Successfully started preparing ${orderIdsArray.length} orders`);
+      showAlert(`Đã bắt đầu chuẩn bị ${orderIdsArray.length} đơn hàng`, {
+        type: "success",
+      });
     } catch (error) {
       console.error("Error batch preparing orders:", error);
-      alert("Failed to batch prepare orders. Please try again.");
+      showAlert("Không thể chuẩn bị hàng loạt. Vui lòng thử lại.", {
+        type: "error",
+      });
     }
   };
 
@@ -618,7 +630,9 @@ export default function KitchenDisplay() {
   const printOrderTicket = (order: KitchenOrder) => {
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
-      alert("Please allow popups to print order tickets");
+      showAlert("Vui lòng cho phép popup để in phiếu order", {
+        type: "warning",
+      });
       return;
     }
 
@@ -1086,6 +1100,9 @@ export default function KitchenDisplay() {
           }}
         />
       )}
+
+      {/* Dialog Components */}
+      <AlertDialogComponent />
     </div>
   );
 }

@@ -168,6 +168,16 @@
   border-radius: 8px;
   margin-bottom: 10px;
   transition: all 0.2s;
+  border: 2px solid transparent;
+}
+
+.modifier-option:hover {
+  background: #f8f9fa;
+}
+
+.modifier-option.selected {
+  background: #f0f7ff;
+  border-color: var(--primary);
 }
 
 .modifier-label {

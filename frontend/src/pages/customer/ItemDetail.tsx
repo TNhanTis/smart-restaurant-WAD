@@ -304,23 +304,17 @@ function ItemDetail() {
                 return (
                   <div
                     key={option.id}
-                    className="modifier-option"
+                    className={`modifier-option ${isSelected ? "selected" : ""}`}
                     onClick={() => handleModifierToggle(group, option)}
                     style={{ cursor: "pointer" }}
                   >
-                    <label
-                      className="modifier-label"
-                      onClick={(e) => e.stopPropagation()}
-                    >
+                    <label className="modifier-label">
                       <input
                         type={inputType}
                         name={`group-${group.id}`}
                         checked={isSelected}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          handleModifierToggle(group, option);
-                        }}
-                        onClick={(e) => e.stopPropagation()}
+                        onChange={() => handleModifierToggle(group, option)}
+                        style={{ pointerEvents: "none" }}
                       />
                       <span>{option.name}</span>
                     </label>

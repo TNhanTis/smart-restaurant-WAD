@@ -16,6 +16,7 @@ import OrderDetailModal, {
 } from "../../components/OrderDetailModal";
 import { useRestaurant } from "../../contexts/RestaurantContext";
 import { useAuth } from "../../contexts/AuthContext";
+import { useAlert } from "../../components/ConfirmDialog";
 
 type TabType = "pending" | "accepted" | "ready" | "completed";
 
@@ -23,6 +24,7 @@ export default function WaiterOrders() {
   const navigate = useNavigate();
   const { restaurants } = useRestaurant();
   const { user } = useAuth();
+  const { showAlert, AlertDialogComponent } = useAlert();
   const [activeTab, setActiveTab] = useState<TabType>("pending");
   const [pendingOrders, setPendingOrders] = useState<WaiterOrder[]>([]);
   const [acceptedOrders, setAcceptedOrders] = useState<WaiterOrder[]>([]);
@@ -64,7 +66,9 @@ export default function WaiterOrders() {
       const pending = await getPendingOrders({ restaurant_id: restaurantId });
       console.log("Pending orders response:", pending);
       // Handle both response formats: array or {data: array}
-      setPendingOrders(Array.isArray(pending) ? pending : (pending as any)?.data || []);
+      setPendingOrders(
+        Array.isArray(pending) ? pending : (pending as any)?.data || [],
+      );
 
       const accepted = await getRestaurantOrders(
         restaurantId,
@@ -103,7 +107,9 @@ export default function WaiterOrders() {
       await loadOrders();
     } catch (error) {
       console.error("Error accepting order:", error);
-      alert("Failed to accept order. Please try again.");
+      showAlert("Không thể chấp nhận đơn hàng. Vui lòng thử lại.", {
+        type: "error",
+      });
     }
   };
 
@@ -114,7 +120,7 @@ export default function WaiterOrders() {
 
   const handleRejectConfirm = async () => {
     if (!selectedOrder || !rejectionReason.trim()) {
-      alert("Please provide a reason for rejection");
+      showAlert("Vui lòng nhập lý do từ chối", { type: "warning" });
       return;
     }
 
@@ -130,7 +136,9 @@ export default function WaiterOrders() {
       await loadOrders();
     } catch (error) {
       console.error("Error rejecting order:", error);
-      alert("Failed to reject order. Please try again.");
+      showAlert("Không thể từ chối đơn hàng. Vui lòng thử lại.", {
+        type: "error",
+      });
     }
   };
 
@@ -326,7 +334,9 @@ export default function WaiterOrders() {
                               await loadOrders();
                             } catch (error) {
                               console.error("Error rejecting item:", error);
-                              alert("Failed to reject item");
+                              showAlert("Không thể từ chối món", {
+                                type: "error",
+                              });
                             }
                           }
                         }}
@@ -367,7 +377,10 @@ export default function WaiterOrders() {
                   await loadOrders();
                 } catch (error) {
                   console.error("Error serving order:", error);
-                  alert("Failed to mark order as served. Please try again.");
+                  showAlert(
+                    "Không thể đánh dấu đã phục vụ. Vui lòng thử lại.",
+                    { type: "error" },
+                  );
                 }
               }}
             >
@@ -549,6 +562,9 @@ export default function WaiterOrders() {
           onServe={handleServeOrder}
         />
       )}
+
+      {/* Dialog Components */}
+      <AlertDialogComponent />
     </div>
   );
 }

@@ -7,12 +7,14 @@ import {
   TableStatusOverview,
 } from "../../api/waiterTablesApi";
 import { useRestaurant } from "../../contexts/RestaurantContext";
+import { useAlert } from "../../components/ConfirmDialog";
 
 type FilterType = "all" | "available" | "occupied" | "reserved";
 
 export default function WaiterTables() {
   const navigate = useNavigate();
   const { restaurants } = useRestaurant();
+  const { showAlert, AlertDialogComponent } = useAlert();
   const [tables, setTables] = useState<TableStatusOverview[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<FilterType>("all");
@@ -53,7 +55,7 @@ export default function WaiterTables() {
 
   const handleStatusChange = async (
     tableId: string,
-    newStatus: "available" | "occupied" | "reserved"
+    newStatus: "available" | "occupied" | "reserved",
   ) => {
     try {
       if (!restaurantId) return;
@@ -65,7 +67,9 @@ export default function WaiterTables() {
       setShowDetailModal(false);
     } catch (error) {
       console.error("Error updating table status:", error);
-      alert("Failed to update table status. Please try again.");
+      showAlert("Không thể cập nhật trạng thái bàn. Vui lòng thử lại.", {
+        type: "error",
+      });
     }
   };
 
@@ -325,8 +329,9 @@ export default function WaiterTables() {
                 <h3>Update Status</h3>
                 <div className="status-buttons">
                   <button
-                    className={`status-btn ${selectedTable.status === "available" ? "active" : ""
-                      }`}
+                    className={`status-btn ${
+                      selectedTable.status === "available" ? "active" : ""
+                    }`}
                     style={{ borderColor: "#10b981" }}
                     onClick={() =>
                       handleStatusChange(selectedTable.id, "available")
@@ -335,8 +340,9 @@ export default function WaiterTables() {
                     <span style={{ color: "#10b981" }}>✓</span> Available
                   </button>
                   <button
-                    className={`status-btn ${selectedTable.status === "occupied" ? "active" : ""
-                      }`}
+                    className={`status-btn ${
+                      selectedTable.status === "occupied" ? "active" : ""
+                    }`}
                     style={{ borderColor: "#ef4444" }}
                     onClick={() =>
                       handleStatusChange(selectedTable.id, "occupied")
@@ -345,8 +351,9 @@ export default function WaiterTables() {
                     <span style={{ color: "#ef4444" }}>👥</span> Occupied
                   </button>
                   <button
-                    className={`status-btn ${selectedTable.status === "reserved" ? "active" : ""
-                      }`}
+                    className={`status-btn ${
+                      selectedTable.status === "reserved" ? "active" : ""
+                    }`}
                     style={{ borderColor: "#f59e0b" }}
                     onClick={() =>
                       handleStatusChange(selectedTable.id, "reserved")
@@ -360,6 +367,9 @@ export default function WaiterTables() {
           </div>
         </div>
       )}
+
+      {/* Dialog Components */}
+      <AlertDialogComponent />
     </div>
   );
 }

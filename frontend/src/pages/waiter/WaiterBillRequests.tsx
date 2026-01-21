@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import "./WaiterBillRequests.css";
 import billRequestsApi, { ApplyDiscountDto } from "../../api/billRequestsApi";
 import { useRestaurant } from "../../contexts/RestaurantContext";
+import { useConfirm, useAlert } from "../../components/ConfirmDialog";
 
 interface BillRequest {
   id: string;
@@ -28,6 +29,8 @@ interface BillRequest {
 
 export default function WaiterBillRequests() {
   const { restaurants } = useRestaurant();
+  const { confirm, ConfirmDialogComponent } = useConfirm();
+  const { showAlert, AlertDialogComponent } = useAlert();
   const [activeTab, setActiveTab] = useState<"pending" | "accepted">("pending");
   const [billRequests, setBillRequests] = useState<BillRequest[]>([]);
   const [acceptedBills, setAcceptedBills] = useState<BillRequest[]>([]);
@@ -37,8 +40,11 @@ export default function WaiterBillRequests() {
 
   // Discount modal states
   const [showDiscountModal, setShowDiscountModal] = useState(false);
-  const [selectedBillForDiscount, setSelectedBillForDiscount] = useState<BillRequest | null>(null);
-  const [discountType, setDiscountType] = useState<"percentage" | "fixed" | "none">("none");
+  const [selectedBillForDiscount, setSelectedBillForDiscount] =
+    useState<BillRequest | null>(null);
+  const [discountType, setDiscountType] = useState<
+    "percentage" | "fixed" | "none"
+  >("none");
   const [discountValue, setDiscountValue] = useState<number>(0);
   const [taxRate, setTaxRate] = useState<number>(0);
 
@@ -61,21 +67,33 @@ export default function WaiterBillRequests() {
       setError("");
 
       const response = await billRequestsApi.getByRestaurant(restaurantId);
-      const data: BillRequest[] = Array.isArray(response) ? response : (response as any)?.data || [];
+      const data: BillRequest[] = Array.isArray(response)
+        ? response
+        : (response as any)?.data || [];
 
       console.log("📋 [WaiterBillRequests] Loaded bills:", data);
 
       // Filter pending and accepted requests
       const pending = data.filter((br: BillRequest) => br.status === "pending");
-      const accepted = data.filter((br: BillRequest) => br.status === "accepted");
+      const accepted = data.filter(
+        (br: BillRequest) => br.status === "accepted",
+      );
 
-      console.log("📋 [WaiterBillRequests] Pending:", pending.length, "Accepted:", accepted.length);
+      console.log(
+        "📋 [WaiterBillRequests] Pending:",
+        pending.length,
+        "Accepted:",
+        accepted.length,
+      );
       if (accepted.length > 0) {
-        console.log("📋 [WaiterBillRequests] Accepted bills:", accepted.map(b => ({
-          id: b.id,
-          payment_method_code: b.payment_method_code,
-          status: b.status
-        })));
+        console.log(
+          "📋 [WaiterBillRequests] Accepted bills:",
+          accepted.map((b) => ({
+            id: b.id,
+            payment_method_code: b.payment_method_code,
+            status: b.status,
+          })),
+        );
       }
 
       setBillRequests(pending);
@@ -90,7 +108,9 @@ export default function WaiterBillRequests() {
 
   const openDiscountModal = (bill: BillRequest) => {
     setSelectedBillForDiscount(bill);
-    setDiscountType((bill.discount_type as "percentage" | "fixed" | "none") || "none");
+    setDiscountType(
+      (bill.discount_type as "percentage" | "fixed" | "none") || "none",
+    );
     setDiscountValue(bill.discount_value || 0);
     setTaxRate(bill.tax_rate || 0);
     setShowDiscountModal(true);
@@ -111,25 +131,31 @@ export default function WaiterBillRequests() {
       setError("");
 
       // Debug: Log user info
-      const authUser = localStorage.getItem('auth_user');
-      const authToken = localStorage.getItem('auth_token');
-      console.log('🔐 Auth Debug:', {
+      const authUser = localStorage.getItem("auth_user");
+      const authToken = localStorage.getItem("auth_token");
+      console.log("🔐 Auth Debug:", {
         user: authUser ? JSON.parse(authUser) : null,
         hasToken: !!authToken,
-        tokenPreview: authToken ? authToken.substring(0, 50) + '...' : null
+        tokenPreview: authToken ? authToken.substring(0, 50) + "..." : null,
       });
 
-      const result = await billRequestsApi.applyDiscount(selectedBillForDiscount.id, {
-        discount_type: discountType,
-        discount_value: discountValue,
-        tax_rate: taxRate > 0 ? taxRate : undefined,
-      });
+      const result = await billRequestsApi.applyDiscount(
+        selectedBillForDiscount.id,
+        {
+          discount_type: discountType,
+          discount_value: discountValue,
+          tax_rate: taxRate > 0 ? taxRate : undefined,
+        },
+      );
 
       console.log("✅ Discount applied:", result);
       closeDiscountModal();
       await loadBillRequests();
 
-      alert(`Discount applied successfully!\nFinal Amount: ${Math.round(result.data?.final_amount || 0).toLocaleString()}₫`);
+      showAlert(
+        `Đã áp dụng giảm giá thành công!\nTổng tiền: ${Math.round(result.data?.final_amount || 0).toLocaleString()}đ`,
+        { type: "success" },
+      );
     } catch (err: any) {
       console.error("❌ Error applying discount:", err);
       console.error("Response data:", err.response?.data);
@@ -137,7 +163,10 @@ export default function WaiterBillRequests() {
 
       if (err.response?.status === 403) {
         setError("You don't have permission. Please login as Waiter/Admin.");
-        alert("⚠️ Permission Denied\n\nYou need to login as Waiter or Admin to apply discounts.\n\nPlease go to /waiter/login");
+        showAlert(
+          "⚠️ Quyền bị từ chối\n\nBạn cần đăng nhập với vai trò Waiter hoặc Admin.",
+          { type: "error" },
+        );
       } else {
         setError(err.response?.data?.message || "Failed to apply discount");
       }
@@ -159,20 +188,21 @@ export default function WaiterBillRequests() {
 
       // If VNPay, also show payment URL
       if (result.payment_url) {
-        setTimeout(() => {
-          const openUrl = window.confirm(
-            `Bill PDF opened!\n\nPayment URL generated.\nClick OK to open VNPay payment page, or Cancel to copy URL.`,
+        setTimeout(async () => {
+          const openUrl = await confirm(
+            "Thanh toán VNPay",
+            "Bill PDF đã mở!\n\nClick Xác nhận để mở trang thanh toán VNPay, hoặc Hủy để copy URL.",
           );
 
           if (openUrl) {
             window.open(result.payment_url, "_blank");
           } else {
             navigator.clipboard.writeText(result.payment_url);
-            alert("Payment URL copied to clipboard!");
+            showAlert("Đã copy URL thanh toán!", { type: "success" });
           }
         }, 500);
       } else {
-        alert("Bill accepted & PDF generated!");
+        showAlert("Đã chấp nhận bill & tạo PDF!", { type: "success" });
       }
 
       // Reload list
@@ -180,15 +210,18 @@ export default function WaiterBillRequests() {
     } catch (err: any) {
       console.error("Error accepting bill request:", err);
       setError(err.response?.data?.message || "Failed to accept bill request");
-      alert("Failed to accept bill request. Please try again.");
+      showAlert("Không thể chấp nhận yêu cầu thanh toán. Vui lòng thử lại.", {
+        type: "error",
+      });
     } finally {
       setProcessing(null);
     }
   };
 
   const handleCompleteCashPayment = async (billRequestId: string) => {
-    const confirmed = window.confirm(
-      "Confirm cash payment received? This will mark the bill as paid and complete all orders."
+    const confirmed = await confirm(
+      "Xác nhận thanh toán",
+      "Xác nhận đã nhận tiền mặt? Điều này sẽ đánh dấu bill đã thanh toán và hoàn thành tất cả đơn hàng.",
     );
     if (!confirmed) return;
 
@@ -197,7 +230,7 @@ export default function WaiterBillRequests() {
       setError("");
 
       // Get the bill request to find total_amount
-      const billRequest = acceptedBills.find(br => br.id === billRequestId);
+      const billRequest = acceptedBills.find((br) => br.id === billRequestId);
       if (!billRequest) {
         throw new Error("Bill request not found");
       }
@@ -205,26 +238,27 @@ export default function WaiterBillRequests() {
       // Call the complete cash payment endpoint
       await billRequestsApi.completeCashPayment(
         billRequestId,
-        billRequest.total_amount
+        billRequest.total_amount,
       );
 
-      alert("Payment completed successfully!");
+      showAlert("Thanh toán thành công!", { type: "success" });
 
       // Reload list
       await loadBillRequests();
     } catch (err: any) {
       console.error("Error completing cash payment:", err);
       console.error("Error response:", err.response?.data);
-      const errorMsg = err.response?.data?.message || "Failed to complete payment";
+      const errorMsg =
+        err.response?.data?.message || "Failed to complete payment";
       setError(errorMsg);
-      alert(`Failed to complete payment: ${errorMsg}`);
+      showAlert(`Thanh toán thất bại: ${errorMsg}`, { type: "error" });
     } finally {
       setProcessing(null);
     }
   };
 
   const handleReject = async (billRequestId: string) => {
-    const reason = window.prompt("Enter rejection reason:");
+    const reason = window.prompt("Nhập lý do từ chối:");
     if (!reason) return;
 
     try {
@@ -232,14 +266,16 @@ export default function WaiterBillRequests() {
       setError("");
 
       await billRequestsApi.reject(billRequestId, reason);
-      alert("Bill request rejected.");
+      showAlert("Đã từ chối yêu cầu thanh toán.", { type: "success" });
 
       // Reload list
       await loadBillRequests();
     } catch (err: any) {
       console.error("Error rejecting bill request:", err);
       setError(err.response?.data?.message || "Failed to reject bill request");
-      alert("Failed to reject bill request. Please try again.");
+      showAlert("Không thể từ chối yêu cầu. Vui lòng thử lại.", {
+        type: "error",
+      });
     } finally {
       setProcessing(null);
     }
@@ -289,10 +325,14 @@ export default function WaiterBillRequests() {
         <p className="page-subtitle">Review and process payment requests</p>
         <div className="header-badges">
           {billRequests.length > 0 && (
-            <div className="bill-count-badge pending">{billRequests.length} pending</div>
+            <div className="bill-count-badge pending">
+              {billRequests.length} pending
+            </div>
           )}
           {acceptedBills.length > 0 && (
-            <div className="bill-count-badge accepted">{acceptedBills.length} accepted</div>
+            <div className="bill-count-badge accepted">
+              {acceptedBills.length} accepted
+            </div>
           )}
         </div>
       </div>
@@ -376,12 +416,21 @@ export default function WaiterBillRequests() {
                         <span>+{formatCurrency(billRequest.tips_amount)}</span>
                       </div>
                     )}
-                    {billRequest.discount_amount && billRequest.discount_amount > 0 && (
-                      <div className="amount-row discount">
-                        <span>Discount ({billRequest.discount_type === 'percentage' ? `${billRequest.discount_value}%` : 'Fixed'}):</span>
-                        <span>-{formatCurrency(billRequest.discount_amount)}</span>
-                      </div>
-                    )}
+                    {billRequest.discount_amount &&
+                      billRequest.discount_amount > 0 && (
+                        <div className="amount-row discount">
+                          <span>
+                            Discount (
+                            {billRequest.discount_type === "percentage"
+                              ? `${billRequest.discount_value}%`
+                              : "Fixed"}
+                            ):
+                          </span>
+                          <span>
+                            -{formatCurrency(billRequest.discount_amount)}
+                          </span>
+                        </div>
+                      )}
                     {billRequest.tax_amount && billRequest.tax_amount > 0 && (
                       <div className="amount-row tax">
                         <span>Tax ({billRequest.tax_rate}%):</span>
@@ -391,7 +440,9 @@ export default function WaiterBillRequests() {
                     <div className="amount-row total">
                       <span>Total:</span>
                       <span className="total-amount">
-                        {formatCurrency(billRequest.final_amount || billRequest.total_amount)}
+                        {formatCurrency(
+                          billRequest.final_amount || billRequest.total_amount,
+                        )}
                       </span>
                     </div>
                   </div>
@@ -399,7 +450,9 @@ export default function WaiterBillRequests() {
                   {billRequest.customer_note && (
                     <div className="customer-note">
                       <div className="note-label">📝 Customer Note:</div>
-                      <div className="note-text">{billRequest.customer_note}</div>
+                      <div className="note-text">
+                        {billRequest.customer_note}
+                      </div>
                     </div>
                   )}
 
@@ -453,18 +506,27 @@ export default function WaiterBillRequests() {
             <div className="empty-state">
               <div className="empty-icon">✅</div>
               <h3>No Accepted Bills</h3>
-              <p>Accepted bills waiting for payment completion will appear here</p>
+              <p>
+                Accepted bills waiting for payment completion will appear here
+              </p>
             </div>
           ) : (
             <div className="bill-requests-grid">
               {acceptedBills.map((billRequest) => {
-                console.log("💳 [WaiterBillRequests] Rendering accepted bill:", {
-                  id: billRequest.id,
-                  payment_method_code: billRequest.payment_method_code,
-                  is_cash: billRequest.payment_method_code?.toLowerCase() === "cash",
-                });
+                console.log(
+                  "💳 [WaiterBillRequests] Rendering accepted bill:",
+                  {
+                    id: billRequest.id,
+                    payment_method_code: billRequest.payment_method_code,
+                    is_cash:
+                      billRequest.payment_method_code?.toLowerCase() === "cash",
+                  },
+                );
                 return (
-                  <div key={billRequest.id} className="bill-request-card accepted-card">
+                  <div
+                    key={billRequest.id}
+                    className="bill-request-card accepted-card"
+                  >
                     <div className="bill-request-header">
                       <div className="table-info">
                         <div className="table-number">
@@ -484,10 +546,14 @@ export default function WaiterBillRequests() {
                         className={`payment-method-badge ${billRequest.payment_method_code}`}
                       >
                         <span className="payment-icon">
-                          {getPaymentMethodIcon(billRequest.payment_method_code)}
+                          {getPaymentMethodIcon(
+                            billRequest.payment_method_code,
+                          )}
                         </span>
                         <span className="payment-name">
-                          {getPaymentMethodName(billRequest.payment_method_code)}
+                          {getPaymentMethodName(
+                            billRequest.payment_method_code,
+                          )}
                         </span>
                       </div>
                     </div>
@@ -500,15 +566,26 @@ export default function WaiterBillRequests() {
                       {billRequest.tips_amount > 0 && (
                         <div className="amount-row tips">
                           <span>Tips:</span>
-                          <span>+{formatCurrency(billRequest.tips_amount)}</span>
+                          <span>
+                            +{formatCurrency(billRequest.tips_amount)}
+                          </span>
                         </div>
                       )}
-                      {billRequest.discount_amount && billRequest.discount_amount > 0 && (
-                        <div className="amount-row discount">
-                          <span>Discount ({billRequest.discount_type === 'percentage' ? `${billRequest.discount_value}%` : 'Fixed'}):</span>
-                          <span>-{formatCurrency(billRequest.discount_amount)}</span>
-                        </div>
-                      )}
+                      {billRequest.discount_amount &&
+                        billRequest.discount_amount > 0 && (
+                          <div className="amount-row discount">
+                            <span>
+                              Discount (
+                              {billRequest.discount_type === "percentage"
+                                ? `${billRequest.discount_value}%`
+                                : "Fixed"}
+                              ):
+                            </span>
+                            <span>
+                              -{formatCurrency(billRequest.discount_amount)}
+                            </span>
+                          </div>
+                        )}
                       {billRequest.tax_amount && billRequest.tax_amount > 0 && (
                         <div className="amount-row tax">
                           <span>Tax ({billRequest.tax_rate}%):</span>
@@ -518,7 +595,10 @@ export default function WaiterBillRequests() {
                       <div className="amount-row total">
                         <span>Total:</span>
                         <span className="total-amount">
-                          {formatCurrency(billRequest.final_amount || billRequest.total_amount)}
+                          {formatCurrency(
+                            billRequest.final_amount ||
+                              billRequest.total_amount,
+                          )}
                         </span>
                       </div>
                     </div>
@@ -526,7 +606,9 @@ export default function WaiterBillRequests() {
                     {billRequest.customer_note && (
                       <div className="customer-note">
                         <div className="note-label">📝 Customer Note:</div>
-                        <div className="note-text">{billRequest.customer_note}</div>
+                        <div className="note-text">
+                          {billRequest.customer_note}
+                        </div>
                       </div>
                     )}
 
@@ -547,10 +629,13 @@ export default function WaiterBillRequests() {
                       </button>
 
                       {/* Only show Complete button for CASH payments */}
-                      {billRequest.payment_method_code?.toLowerCase() === "cash" && (
+                      {billRequest.payment_method_code?.toLowerCase() ===
+                        "cash" && (
                         <button
                           className="btn-complete-payment"
-                          onClick={() => handleCompleteCashPayment(billRequest.id)}
+                          onClick={() =>
+                            handleCompleteCashPayment(billRequest.id)
+                          }
                           disabled={processing === billRequest.id}
                         >
                           {processing === billRequest.id
@@ -561,7 +646,8 @@ export default function WaiterBillRequests() {
                     </div>
 
                     {/* For VNPay, show waiting message */}
-                    {billRequest.payment_method_code?.toLowerCase() === "vnpay" && (
+                    {billRequest.payment_method_code?.toLowerCase() ===
+                      "vnpay" && (
                       <div className="bill-info">
                         <p className="info-text">
                           ⏳ Waiting for customer to complete VNPay payment...
@@ -570,7 +656,13 @@ export default function WaiterBillRequests() {
                     )}
 
                     {/* Debug: show payment method code */}
-                    <div style={{ fontSize: '0.75rem', color: '#999', marginTop: '0.5rem' }}>
+                    <div
+                      style={{
+                        fontSize: "0.75rem",
+                        color: "#999",
+                        marginTop: "0.5rem",
+                      }}
+                    >
                       Payment method: {billRequest.payment_method_code}
                     </div>
                   </div>
@@ -584,23 +676,34 @@ export default function WaiterBillRequests() {
       {/* Discount Modal */}
       {showDiscountModal && selectedBillForDiscount && (
         <div className="modal-overlay" onClick={closeDiscountModal}>
-          <div className="modal-content discount-modal" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="modal-content discount-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h2>🏷️ Apply Discount</h2>
-              <button className="modal-close" onClick={closeDiscountModal}>✕</button>
+              <button className="modal-close" onClick={closeDiscountModal}>
+                ✕
+              </button>
             </div>
 
             <div className="modal-body">
               <div className="bill-summary">
-                <h3>Bill for Table {selectedBillForDiscount.tables?.table_number}</h3>
+                <h3>
+                  Bill for Table {selectedBillForDiscount.tables?.table_number}
+                </h3>
                 <div className="summary-row">
                   <span>Subtotal:</span>
-                  <span>{formatCurrency(selectedBillForDiscount.subtotal)}</span>
+                  <span>
+                    {formatCurrency(selectedBillForDiscount.subtotal)}
+                  </span>
                 </div>
                 {selectedBillForDiscount.tips_amount > 0 && (
                   <div className="summary-row">
                     <span>Tips:</span>
-                    <span>+{formatCurrency(selectedBillForDiscount.tips_amount)}</span>
+                    <span>
+                      +{formatCurrency(selectedBillForDiscount.tips_amount)}
+                    </span>
                   </div>
                 )}
               </div>
@@ -609,7 +712,11 @@ export default function WaiterBillRequests() {
                 <label>Discount Type</label>
                 <select
                   value={discountType}
-                  onChange={(e) => setDiscountType(e.target.value as "percentage" | "fixed" | "none")}
+                  onChange={(e) =>
+                    setDiscountType(
+                      e.target.value as "percentage" | "fixed" | "none",
+                    )
+                  }
                   className="form-control"
                 >
                   <option value="none">No Discount</option>
@@ -621,7 +728,9 @@ export default function WaiterBillRequests() {
               {discountType !== "none" && (
                 <div className="form-group">
                   <label>
-                    {discountType === "percentage" ? "Discount Percentage" : "Discount Amount"}
+                    {discountType === "percentage"
+                      ? "Discount Percentage"
+                      : "Discount Amount"}
                   </label>
                   <input
                     type="number"
@@ -631,7 +740,9 @@ export default function WaiterBillRequests() {
                     max={discountType === "percentage" ? "100" : undefined}
                     step={discountType === "percentage" ? "1" : "1000"}
                     className="form-control"
-                    placeholder={discountType === "percentage" ? "Enter %" : "Enter amount"}
+                    placeholder={
+                      discountType === "percentage" ? "Enter %" : "Enter amount"
+                    }
                   />
                 </div>
               )}
@@ -656,36 +767,51 @@ export default function WaiterBillRequests() {
                   <h4>Preview:</h4>
                   <div className="preview-row">
                     <span>Subtotal:</span>
-                    <span>{formatCurrency(Number(selectedBillForDiscount.subtotal) || 0)}</span>
+                    <span>
+                      {formatCurrency(
+                        Number(selectedBillForDiscount.subtotal) || 0,
+                      )}
+                    </span>
                   </div>
                   <div className="preview-row discount">
                     <span>Discount:</span>
                     <span>
-                      -{formatCurrency(
+                      -
+                      {formatCurrency(
                         discountType === "percentage"
-                          ? (Number(selectedBillForDiscount.subtotal) * Number(discountValue)) / 100
-                          : Number(discountValue)
+                          ? (Number(selectedBillForDiscount.subtotal) *
+                              Number(discountValue)) /
+                              100
+                          : Number(discountValue),
                       )}
                     </span>
                   </div>
                   {selectedBillForDiscount.tips_amount > 0 && (
                     <div className="preview-row">
                       <span>Tips:</span>
-                      <span>+{formatCurrency(Number(selectedBillForDiscount.tips_amount) || 0)}</span>
+                      <span>
+                        +
+                        {formatCurrency(
+                          Number(selectedBillForDiscount.tips_amount) || 0,
+                        )}
+                      </span>
                     </div>
                   )}
                   {taxRate > 0 && (
                     <div className="preview-row tax">
                       <span>Tax ({taxRate}%):</span>
                       <span>
-                        +{formatCurrency(
+                        +
+                        {formatCurrency(
                           ((Number(selectedBillForDiscount.subtotal) -
                             (discountType === "percentage"
-                              ? (Number(selectedBillForDiscount.subtotal) * Number(discountValue)) / 100
+                              ? (Number(selectedBillForDiscount.subtotal) *
+                                  Number(discountValue)) /
+                                100
                               : Number(discountValue)) +
                             Number(selectedBillForDiscount.tips_amount)) *
                             Number(taxRate)) /
-                          100
+                            100,
                         )}
                       </span>
                     </div>
@@ -694,8 +820,10 @@ export default function WaiterBillRequests() {
                     <span>Final Amount:</span>
                     <span className="final-amount">
                       {(() => {
-                        const subtotal = Number(selectedBillForDiscount.subtotal) || 0;
-                        const tips = Number(selectedBillForDiscount.tips_amount) || 0;
+                        const subtotal =
+                          Number(selectedBillForDiscount.subtotal) || 0;
+                        const tips =
+                          Number(selectedBillForDiscount.tips_amount) || 0;
                         const discountVal = Number(discountValue) || 0;
                         const taxRateVal = Number(taxRate) || 0;
 
@@ -704,7 +832,10 @@ export default function WaiterBillRequests() {
                             ? (subtotal * discountVal) / 100
                             : discountVal;
                         const afterDiscount = subtotal - discount + tips;
-                        const tax = taxRateVal > 0 ? (afterDiscount * taxRateVal) / 100 : 0;
+                        const tax =
+                          taxRateVal > 0
+                            ? (afterDiscount * taxRateVal) / 100
+                            : 0;
                         const finalAmount = afterDiscount + tax;
                         return formatCurrency(finalAmount);
                       })()}
@@ -725,6 +856,10 @@ export default function WaiterBillRequests() {
           </div>
         </div>
       )}
+
+      {/* Dialog Components */}
+      <ConfirmDialogComponent />
+      <AlertDialogComponent />
     </div>
   );
 }

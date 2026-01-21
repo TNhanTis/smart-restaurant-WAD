@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCustomerProfile } from "../../api/customersApi";
 import { ordersApi } from "../../api/ordersApi";
+import { useConfirm } from "../../components/ConfirmDialog";
 import "./ProfileGuest.css"; // Use same CSS as ProfileGuest
 
 interface CustomerProfile {
@@ -26,6 +27,7 @@ interface SessionStats {
 
 const Profile: React.FC = () => {
   const navigate = useNavigate();
+  const { confirm, ConfirmDialogComponent } = useConfirm();
   const [profile, setProfile] = useState<CustomerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [tableInfo, setTableInfo] = useState<TableInfo | null>(null);
@@ -132,8 +134,12 @@ const Profile: React.FC = () => {
       .substring(0, 2);
   };
 
-  const handleLogout = () => {
-    if (confirm("Are you sure you want to logout?")) {
+  const handleLogout = async () => {
+    const confirmed = await confirm(
+      "Đăng xuất",
+      "Bạn có chắc chắn muốn đăng xuất?",
+    );
+    if (confirmed) {
       localStorage.removeItem("auth_token");
       localStorage.removeItem("auth_user");
       window.location.reload();
@@ -237,6 +243,9 @@ const Profile: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Dialog Components */}
+      <ConfirmDialogComponent />
     </div>
   );
 };
