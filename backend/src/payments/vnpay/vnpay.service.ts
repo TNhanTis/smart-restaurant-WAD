@@ -43,11 +43,21 @@ export class VnPayService {
     restaurant_id: string;
   }) {
     const { payment_id, amount, order_info } = dto;
-    const date = new Date();
-    const createDate = this.formatDate(date);
+
+    // IMPORTANT: VNPay server is in Vietnam timezone (UTC+7)
+    // Must convert server time to Vietnam time to avoid timeout error
+    const vietnamOffset = 7 * 60 * 60 * 1000; // 7 hours in milliseconds
+    const vietnamNow = new Date(Date.now() + vietnamOffset);
+
+    const createDate = this.formatDate(vietnamNow);
     const expireDate = this.formatDate(
-      new Date(date.getTime() + 15 * 60 * 1000),
+      new Date(vietnamNow.getTime() + 15 * 60 * 1000),
     );
+
+    console.log('🕐 [VNPay] Server time:', new Date().toISOString());
+    console.log('🕐 [VNPay] Vietnam time:', vietnamNow.toISOString());
+    console.log('📅 [VNPay] CreateDate:', createDate);
+    console.log('📅 [VNPay] ExpireDate:', expireDate);
 
     let vnp_Params: any = {
       vnp_Version: '2.1.0',
@@ -134,12 +144,14 @@ export class VnPayService {
   }
 
   private formatDate(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const seconds = String(date.getSeconds()).padStart(2, '0');
+    // Format for VNPay: yyyyMMddHHmmss
+    // date is already in Vietnam timezone from createPaymentUrl()
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(date.getUTCDate()).padStart(2, '0');
+    const hours = String(date.getUTCHours()).padStart(2, '0');
+    const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+    const seconds = String(date.getUTCSeconds()).padStart(2, '0');
     return `${year}${month}${day}${hours}${minutes}${seconds}`;
   }
 }
