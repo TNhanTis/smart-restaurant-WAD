@@ -6,7 +6,7 @@ export class QrTokenService {
   constructor(
     private jwtService: JwtService,
     private prisma: PrismaService,
-  ) {}
+  ) { }
   async generateToken(tableId: string) {
     // 1. Lấy thông tin bàn từ DB
     const table = await this.prisma.table.findUnique({
@@ -44,7 +44,9 @@ export class QrTokenService {
         'FRONTEND_MENU_URL environment variable is required for QR code generation',
       );
     }
-    const qrUrl = `${frontendUrl}?table=${tableId}&token=${token}`;
+    // Format: /qr/:token
+    const qrUrl = `${frontendUrl}/${token}`;
+    console.log('[QR Debug] Generated QR URL:', qrUrl);
 
     return { token, qrUrl, tableNumber: table.table_number };
   }

@@ -30,12 +30,15 @@ export class QrExportService {
 
     // Sinh ảnh QR từ URL đầy đủ
     const frontendUrl = process.env.FRONTEND_MENU_URL;
+    console.log('[QR Export PDF] FRONTEND_MENU_URL:', frontendUrl);
     if (!frontendUrl) {
       throw new Error(
         'FRONTEND_MENU_URL environment variable is required for QR code generation',
       );
     }
-    const qrUrl = `${frontendUrl}?table=${table.id}&token=${table.qr_token}`;
+    // Format: /qr/:token
+    const qrUrl = `${frontendUrl}/${table.qr_token}`;
+    console.log('[QR Export PDF] Full QR URL:', qrUrl);
     const qrDataUrl = await QRCode.toDataURL(qrUrl, {
       width: 300,
       errorCorrectionLevel: 'H',
@@ -61,12 +64,15 @@ export class QrExportService {
   // 1.1 Tạo 1 file PNG cho 1 bàn
   async generateTablePng(table: Table, res: Response) {
     const frontendUrl = process.env.FRONTEND_MENU_URL;
+    console.log('[QR Export PNG] FRONTEND_MENU_URL:', frontendUrl);
     if (!frontendUrl) {
       throw new Error(
         'FRONTEND_MENU_URL environment variable is required for QR code generation',
       );
     }
-    const qrUrl = `${frontendUrl}?table=${table.id}&token=${table.qr_token}`;
+    // Format: /qr/:token
+    const qrUrl = `${frontendUrl}/${table.qr_token}`;
+    console.log('[QR Export PNG] Full QR URL:', qrUrl);
 
     const buffer = await QRCode.toBuffer(qrUrl, {
       width: 500,
@@ -96,6 +102,7 @@ export class QrExportService {
 
     // Duyệt qua danh sách bàn và thêm file vào zip
     const frontendUrl = process.env.FRONTEND_MENU_URL;
+    console.log('[QR Export ZIP] FRONTEND_MENU_URL:', frontendUrl);
     if (!frontendUrl) {
       throw new Error(
         'FRONTEND_MENU_URL environment variable is required for QR code generation',
@@ -103,8 +110,9 @@ export class QrExportService {
     }
 
     for (const table of tables) {
-      // Tạo QR từ URL đầy đủ
-      const qrUrl = `${frontendUrl}?table=${table.id}&token=${table.qr_token}`;
+      // Tạo QR từ URL đầy đủ - Format: /qr/:token
+      const qrUrl = `${frontendUrl}/${table.qr_token}`;
+      console.log(`[QR Export ZIP] Table ${table.table_number} QR URL:`, qrUrl);
       const buffer = await QRCode.toBuffer(qrUrl, {
         width: 500,
         errorCorrectionLevel: 'H',
