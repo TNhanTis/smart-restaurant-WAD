@@ -19,8 +19,12 @@
 }
 
 @keyframes overlayFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .confirm-dialog {
@@ -48,6 +52,14 @@
 .confirm-header {
   padding: var(--space-5) var(--space-6);
   border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.dialog-icon {
+  font-size: 24px;
+  line-height: 1;
 }
 
 .confirm-header h3 {
@@ -98,24 +110,78 @@
 }
 
 .confirm-footer .btn-primary {
-  background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--primary-500) 0%,
+    var(--primary-600) 100%
+  );
   color: var(--text-on-primary);
   box-shadow: var(--shadow-sm);
 }
 
 .confirm-footer .btn-primary:hover {
-  background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-700) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--primary-600) 0%,
+    var(--primary-700) 100%
+  );
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
 
 .confirm-footer .btn-danger {
-  background: linear-gradient(135deg, var(--error-500) 0%, var(--error-600) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--error-500) 0%,
+    var(--error-600) 100%
+  );
   color: var(--text-on-primary);
 }
 
 .confirm-footer .btn-danger:hover {
   background: linear-gradient(135deg, var(--error-600) 0%, #b91c1c 100%);
+}
+
+.confirm-footer .btn-warning {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+}
+
+.confirm-footer .btn-warning:hover {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+}
+
+/* Dialog type styles */
+.dialog-success .confirm-header {
+  background: linear-gradient(
+    135deg,
+    rgba(34, 197, 94, 0.1) 0%,
+    rgba(22, 163, 74, 0.1) 100%
+  );
+}
+
+.dialog-error .confirm-header {
+  background: linear-gradient(
+    135deg,
+    rgba(239, 68, 68, 0.1) 0%,
+    rgba(220, 38, 38, 0.1) 100%
+  );
+}
+
+.dialog-warning .confirm-header {
+  background: linear-gradient(
+    135deg,
+    rgba(245, 158, 11, 0.1) 0%,
+    rgba(217, 119, 6, 0.1) 100%
+  );
+}
+
+.dialog-alert .confirm-header {
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.1) 0%,
+    rgba(37, 99, 235, 0.1) 100%
+  );
 }
 
 @media (max-width: 480px) {

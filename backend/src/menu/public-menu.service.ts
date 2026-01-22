@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class PublicMenuService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async getMenu(
     categoryId?: string,
@@ -71,10 +71,10 @@ export class PublicMenuService {
         order_items:
           sortBy === 'popularity'
             ? {
-              select: {
-                id: true,
-              },
-            }
+                select: {
+                  id: true,
+                },
+              }
             : false,
       },
       orderBy:
@@ -126,9 +126,9 @@ export class PublicMenuService {
         image: item.photos[0]?.url || null,
         category: item.category
           ? {
-            id: item.category.id,
-            name: item.category.name,
-          }
+              id: item.category.id,
+              name: item.category.name,
+            }
           : null,
         isAvailable: item.status === 'available',
         isChefRecommended: item.is_chef_recommended,
@@ -185,6 +185,10 @@ export class PublicMenuService {
       modifier_groups: item?.modifier_groups?.map((mg) => ({
         id: mg.modifier_group.id,
         name: mg.modifier_group.name,
+        min_selections: mg.modifier_group.min_selections,
+        max_selections: mg.modifier_group.max_selections,
+        is_required: mg.modifier_group.is_required,
+        selection_type: mg.modifier_group.selection_type,
         options_count: mg.modifier_group.options.length,
         options: mg.modifier_group.options.map((opt) => ({
           id: opt.id,
@@ -210,27 +214,37 @@ export class PublicMenuService {
       price: item.price,
       category: item.category
         ? {
-          id: item.category.id,
-          name: item.category.name,
-        }
+            id: item.category.id,
+            name: item.category.name,
+          }
         : null,
       photos: item.photos.map((photo) => ({
         id: photo.id,
         url: photo.url,
         isPrimary: photo.is_primary,
       })),
-      modifierGroups: item.modifier_groups.map((mig) => ({
-        id: mig.modifier_group.id,
-        name: mig.modifier_group.name,
-        isRequired: mig.modifier_group.is_required,
-        minSelection: mig.modifier_group.min_selections,
-        maxSelection: mig.modifier_group.max_selections,
-        options: mig.modifier_group.options.map((option) => ({
-          id: option.id,
-          name: option.name,
-          priceAdjustment: option.price_adjustment,
-        })),
-      })),
+      modifierGroups: item.modifier_groups.map((mig) => {
+        const group = mig.modifier_group;
+        // Default to option count if maxSelection is 0 or null
+        // For radio groups (selection_type = 'single'), default maxSelection to 1
+        const defaultMaxSelection =
+          group.selection_type === 'single'
+            ? 1
+            : group.max_selections || group.options.length;
+
+        return {
+          id: group.id,
+          name: group.name,
+          isRequired: group.is_required,
+          minSelection: group.min_selections || 0,
+          maxSelection: defaultMaxSelection,
+          options: group.options.map((option) => ({
+            id: option.id,
+            name: option.name,
+            priceAdjustment: option.price_adjustment,
+          })),
+        };
+      }),
       isAvailable: item.status === 'available',
       preparationTime: item.prep_time_minutes,
     };

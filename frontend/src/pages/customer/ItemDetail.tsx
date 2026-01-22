@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import publicApi from '../../api/publicApi';
-import cartApi from '../../api/cartApi';
-import Toast, { ToastType } from '../../components/Toast';
-import { useCart } from '../../contexts/CartContext';
-import RelatedItems from '../../components/RelatedItems';
-import { ReviewsList } from '../../components/ReviewsList';
-import { ReviewModal } from '../../components/ReviewModal';
-import ImageGallery from '../../components/ImageGallery';
-import './ItemDetail.css';
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import publicApi from "../../api/publicApi";
+import cartApi from "../../api/cartApi";
+import Toast, { ToastType } from "../../components/Toast";
+import { useCart } from "../../contexts/CartContext";
+import RelatedItems from "../../components/RelatedItems";
+import { ReviewsList } from "../../components/ReviewsList";
+import { ReviewModal } from "../../components/ReviewModal";
+import ImageGallery from "../../components/ImageGallery";
+import "./ItemDetail.css";
 
 interface ModifierOption {
   id: string;
@@ -52,10 +52,15 @@ function ItemDetail() {
   const [item, setItem] = useState<MenuItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedModifiers, setSelectedModifiers] = useState<Map<string, Set<string>>>(new Map());
+  const [selectedModifiers, setSelectedModifiers] = useState<
+    Map<string, Set<string>>
+  >(new Map());
   const [quantity, setQuantity] = useState(1);
-  const [specialRequests, setSpecialRequests] = useState('');
-  const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
+  const [specialRequests, setSpecialRequests] = useState("");
+  const [toast, setToast] = useState<{
+    message: string;
+    type: ToastType;
+  } | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [reviewsKey, setReviewsKey] = useState(0);
 
@@ -69,44 +74,64 @@ function ItemDetail() {
     try {
       setLoading(true);
       setError(null);
-      console.log('Fetching item details for ID:', id);
+      console.log("Fetching item details for ID:", id);
       const data = await publicApi.getMenuItem(id!);
-      console.log('Item details received:', data);
+      console.log("Item details received:", data);
+      console.log(
+        "Modifier groups:",
+        data.modifierGroups?.map((g: ModifierGroup) => ({
+          name: g.name,
+          minSelection: g.minSelection,
+          maxSelection: g.maxSelection,
+          isRequired: g.isRequired,
+        })),
+      );
       setItem(data);
     } catch (err: any) {
-      console.error('Error fetching item details:', err);
-      setError(err.message || 'Failed to load item details');
+      console.error("Error fetching item details:", err);
+      setError(err.message || "Failed to load item details");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleModifierToggle = (group: ModifierGroup, option: ModifierOption) => {
+  const handleModifierToggle = (
+    group: ModifierGroup,
+    option: ModifierOption,
+  ) => {
+    console.log("🖱️ Click handler called!", {
+      groupName: group.name,
+      optionName: option.name,
+      maxSelection: group.maxSelection,
+      currentSize: selectedModifiers.get(group.id)?.size || 0,
+    });
+
     const newSelections = new Map(selectedModifiers);
     const groupSelections = newSelections.get(group.id) || new Set<string>();
 
     if (group.maxSelection === 1) {
-      // Radio button behavior
+      // Radio button behavior - always clear and select new
+      console.log("📻 Radio mode - clearing and selecting:", option.name);
       groupSelections.clear();
       groupSelections.add(option.id);
     } else {
       // Checkbox behavior
       if (groupSelections.has(option.id)) {
+        console.log("✅ Deselecting:", option.name);
         groupSelections.delete(option.id);
       } else {
-        if (groupSelections.size < group.maxSelection) {
-          groupSelections.add(option.id);
-        } else {
-          setToast({
-            message: `You can only select up to ${group.maxSelection} options`,
-            type: 'warning'
-          });
-          return;
+        // For radio-like groups, clear first if already at max
+        if (groupSelections.size >= group.maxSelection) {
+          console.log("🔄 At max, clearing first");
+          groupSelections.clear();
         }
+        console.log("✅ Selecting:", option.name);
+        groupSelections.add(option.id);
       }
     }
 
     newSelections.set(group.id, groupSelections);
+    console.log("💾 Updated selections:", Array.from(groupSelections));
     setSelectedModifiers(newSelections);
   };
 
@@ -117,10 +142,10 @@ function ItemDetail() {
 
     // Add modifier prices
     selectedModifiers.forEach((optionIds, groupId) => {
-      const group = item.modifierGroups.find(mg => mg.id === groupId);
+      const group = item.modifierGroups.find((mg) => mg.id === groupId);
       if (group) {
-        optionIds.forEach(optionId => {
-          const option = group.options.find(o => o.id === optionId);
+        optionIds.forEach((optionId) => {
+          const option = group.options.find((o) => o.id === optionId);
           if (option) {
             total += parseFloat(option.priceAdjustment);
           }
@@ -132,12 +157,31 @@ function ItemDetail() {
   };
 
   const validateModifiers = () => {
-    if (!item) return { valid: false, message: '' };
+    if (!item) return { valid: false, message: "" };
+
+    console.log("🔍 Validating modifiers...");
+    console.log(
+      "Current selections:",
+      Array.from(selectedModifiers.entries()).map(([groupId, optionIds]) => ({
+        groupId,
+        options: Array.from(optionIds),
+      })),
+    );
 
     for (const group of item.modifierGroups) {
       const selections = selectedModifiers.get(group.id) || new Set();
 
+      console.log(`Checking group: ${group.name}`, {
+        isRequired: group.isRequired,
+        minSelection: group.minSelection,
+        maxSelection: group.maxSelection,
+        currentSelections: selections.size,
+      });
+
       if (group.isRequired && selections.size < group.minSelection) {
+        console.log(
+          `❌ Validation failed for ${group.name}: not enough selections`,
+        );
         return {
           valid: false,
           message: `Please select at least ${group.minSelection} option(s) for ${group.name}`,
@@ -145,6 +189,9 @@ function ItemDetail() {
       }
 
       if (selections.size > group.maxSelection) {
+        console.log(
+          `❌ Validation failed for ${group.name}: too many selections`,
+        );
         return {
           valid: false,
           message: `You can only select up to ${group.maxSelection} option(s) for ${group.name}`,
@@ -152,13 +199,14 @@ function ItemDetail() {
       }
     }
 
-    return { valid: true, message: '' };
+    console.log("✅ Validation passed!");
+    return { valid: true, message: "" };
   };
 
   const handleAddToCart = async () => {
     const validation = validateModifiers();
     if (!validation.valid) {
-      setToast({ message: validation.message, type: 'warning' });
+      setToast({ message: validation.message, type: "warning" });
       return;
     }
 
@@ -177,7 +225,7 @@ function ItemDetail() {
         special_requests: specialRequests || undefined,
       };
 
-      console.log('Add to cart payload:', payload);
+      console.log("Add to cart payload:", payload);
 
       await cartApi.addToCart(payload);
 
@@ -185,19 +233,21 @@ function ItemDetail() {
       const updatedCart = await cartApi.getCart();
       updateCartCount(updatedCart.item_count || 0);
 
-      setToast({ message: '✓ Item added to cart!', type: 'success' });
+      setToast({ message: "✓ Item added to cart!", type: "success" });
 
       // Reset form after successful add
       setQuantity(1);
       setSelectedModifiers(new Map());
-      setSpecialRequests('');
-
+      setSpecialRequests("");
     } catch (err: any) {
-      console.error('Add to cart error:', err);
-      console.error('Error response:', err.response?.data);
+      console.error("Add to cart error:", err);
+      console.error("Error response:", err.response?.data);
       setToast({
-        message: err.response?.data?.message || err.message || 'Failed to add item to cart',
-        type: 'error'
+        message:
+          err.response?.data?.message ||
+          err.message ||
+          "Failed to add item to cart",
+        type: "error",
       });
     }
   };
@@ -225,26 +275,23 @@ function ItemDetail() {
         <span className="header-title">Item Details</span>
         <span className="header-table">
           {(() => {
-            const tableInfo = localStorage.getItem('table_info');
+            const tableInfo = localStorage.getItem("table_info");
             if (tableInfo) {
               const { tableNumber } = JSON.parse(tableInfo);
               return `Table ${tableNumber}`;
             }
-            return 'Table';
+            return "Table";
           })()}
         </span>
       </div>
 
       {/* Hero Image / Gallery */}
       <div className="item-hero">
-        <ImageGallery
-          photos={item.photos || []}
-          altText={item.name}
-        />
+        <ImageGallery photos={item.photos || []} altText={item.name} />
       </div>
 
       {/* Item Content */}
-      <div className="item-content" style={{ paddingBottom: '120px' }}>
+      <div className="item-content" style={{ paddingBottom: "120px" }}>
         <div className="item-header">
           <div>
             <div className="item-title">{item.name}</div>
@@ -254,7 +301,9 @@ function ItemDetail() {
               </div>
             )}
           </div>
-          <div className="item-price">{Math.round(parseFloat(item.price)).toLocaleString('vi-VN')}₫</div>
+          <div className="item-price">
+            {Math.round(parseFloat(item.price)).toLocaleString("vi-VN")}₫
+          </div>
         </div>
 
         {/* Meta Info - Preparation Time & Availability */}
@@ -265,8 +314,10 @@ function ItemDetail() {
               {item.preparationTime} - minutes
             </span>
           )}
-          <span className={`availability-badge ${item.isAvailable ? 'available' : 'unavailable'}`}>
-            {item.isAvailable ? '✓ Available' : '✗ Unavailable'}
+          <span
+            className={`availability-badge ${item.isAvailable ? "available" : "unavailable"}`}
+          >
+            {item.isAvailable ? "✓ Available" : "✗ Unavailable"}
           </span>
         </div>
 
@@ -280,25 +331,40 @@ function ItemDetail() {
             <div key={group.id} className="modifier-section">
               <div className="modifier-title">
                 {group.name}
-                {group.isRequired && <span className="required-badge">Required</span>}
+                {group.isRequired && (
+                  <span className="required-badge">Required</span>
+                )}
               </div>
 
               {group.options.map((option) => {
-                const isSelected = selectedModifiers.get(group.id)?.has(option.id) || false;
+                const isSelected =
+                  selectedModifiers.get(group.id)?.has(option.id) || false;
+                const inputType =
+                  group.maxSelection === 1 ? "radio" : "checkbox";
                 return (
-                  <div key={option.id} className="modifier-option">
-                    <label className="modifier-label">
+                  <div
+                    key={option.id}
+                    className={`modifier-option ${isSelected ? "selected" : ""}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleModifierToggle(group, option);
+                    }}
+                  >
+                    <div className="modifier-label">
                       <input
-                        type={group.maxSelection === 1 ? 'radio' : 'checkbox'}
+                        type={inputType}
                         name={`group-${group.id}`}
                         checked={isSelected}
-                        onChange={() => handleModifierToggle(group, option)}
+                        readOnly
                       />
-                      {option.name}
-                    </label>
+                      <span>{option.name}</span>
+                    </div>
                     <span className="modifier-price">
-                      {parseFloat(option.priceAdjustment) >= 0 ? '+' : ''}
-                      {Math.round(Math.abs(parseFloat(option.priceAdjustment))).toLocaleString('vi-VN')}₫
+                      {parseFloat(option.priceAdjustment) >= 0 ? "+" : ""}
+                      {Math.round(
+                        Math.abs(parseFloat(option.priceAdjustment)),
+                      ).toLocaleString("vi-VN")}
+                      ₫
                     </span>
                   </div>
                 );
@@ -319,23 +385,39 @@ function ItemDetail() {
         </div>
       </div>
 
-
       {/* Reviews Section */}
       {id && (
-        <div style={{ marginTop: '30px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', padding: '0 20px' }}>
-            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#2c3e50' }}>Customer Reviews</h3>
+        <div style={{ marginTop: "30px" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "15px",
+              padding: "0 20px",
+            }}
+          >
+            <h3
+              style={{
+                margin: 0,
+                fontSize: "18px",
+                fontWeight: "700",
+                color: "#2c3e50",
+              }}
+            >
+              Customer Reviews
+            </h3>
             <button
               onClick={() => setIsReviewModalOpen(true)}
               style={{
-                padding: '8px 16px',
-                background: '#e74c3c',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                fontSize: '14px'
+                padding: "8px 16px",
+                background: "#e74c3c",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                fontWeight: "600",
+                cursor: "pointer",
+                fontSize: "14px",
               }}
             >
               ✍️ Write Review
@@ -353,8 +435,11 @@ function ItemDetail() {
           isOpen={isReviewModalOpen}
           onClose={() => setIsReviewModalOpen(false)}
           onSuccess={() => {
-            setReviewsKey(prev => prev + 1);
-            setToast({ message: 'Review submitted successfully!', type: 'success' });
+            setReviewsKey((prev) => prev + 1);
+            setToast({
+              message: "Review submitted successfully!",
+              type: "success",
+            });
           }}
         />
       )}
@@ -365,7 +450,10 @@ function ItemDetail() {
       {/* Add to Cart Bar */}
       <div className="add-to-cart-bar">
         <div className="quantity-control">
-          <button className="qty-btn" onClick={() => setQuantity(Math.max(1, quantity - 1))}>
+          <button
+            className="qty-btn"
+            onClick={() => setQuantity(Math.max(1, quantity - 1))}
+          >
             -
           </button>
           <span className="qty-value">{quantity}</span>
@@ -374,7 +462,7 @@ function ItemDetail() {
           </button>
         </div>
         <button className="add-to-cart-btn" onClick={handleAddToCart}>
-          Add to Cart - {Math.round(calculateTotal()).toLocaleString('vi-VN')}₫
+          Add to Cart - {Math.round(calculateTotal()).toLocaleString("vi-VN")}₫
         </button>
       </div>
     </div>

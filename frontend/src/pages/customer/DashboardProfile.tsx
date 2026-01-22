@@ -6,8 +6,9 @@ import {
   changeCustomerPassword,
   uploadCustomerAvatar,
   deleteCustomerAvatar,
-} from '../../api/customersApi';
-import './DashboardProfile.css';
+} from "../../api/customersApi";
+import { useConfirm } from "../../components/ConfirmDialog";
+import "./DashboardProfile.css";
 
 interface CustomerProfile {
   id: string;
@@ -20,6 +21,7 @@ interface CustomerProfile {
 
 const DashboardProfile: React.FC = () => {
   const navigate = useNavigate();
+  const { confirm, ConfirmDialogComponent } = useConfirm();
   const [profile, setProfile] = useState<CustomerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -130,16 +132,16 @@ const DashboardProfile: React.FC = () => {
         const response = await updateCustomerProfile(profile.id, updateData);
 
         // Update localStorage
-        const authUser = JSON.parse(localStorage.getItem('auth_user') || '{}');
+        const authUser = JSON.parse(localStorage.getItem("auth_user") || "{}");
         authUser.full_name = response.data.full_name;
         authUser.email = response.data.email;
-        localStorage.setItem('auth_user', JSON.stringify(authUser));
+        localStorage.setItem("auth_user", JSON.stringify(authUser));
 
         setProfile(response.data);
         setSuccess(response.message);
       } else {
         // If only avatar was uploaded
-        setSuccess('Avatar uploaded successfully');
+        setSuccess("Avatar uploaded successfully");
       }
 
       // Reload profile to get latest data (including avatar)
@@ -198,8 +200,12 @@ const DashboardProfile: React.FC = () => {
     }
   };
 
-  const handleLogout = () => {
-    if (confirm("Are you sure you want to logout?")) {
+  const handleLogout = async () => {
+    const confirmed = await confirm(
+      "Đăng xuất",
+      "Bạn có chắc chắn muốn đăng xuất?",
+    );
+    if (confirmed) {
       localStorage.removeItem("auth_token");
       localStorage.removeItem("auth_user");
       window.location.reload();
@@ -244,7 +250,7 @@ const DashboardProfile: React.FC = () => {
           ) : profile?.avatar_url ? (
             <img src={profile.avatar_url} alt="Profile" />
           ) : (
-            profile?.full_name?.charAt(0).toUpperCase() || 'U'
+            profile?.full_name?.charAt(0).toUpperCase() || "U"
           )}
         </div>
         <h2 className="profile-name">{profile?.full_name}</h2>
@@ -257,27 +263,31 @@ const DashboardProfile: React.FC = () => {
             id="photo-upload"
             accept="image/*"
             onChange={handlePhotoChange}
-            style={{ display: 'none' }}
+            style={{ display: "none" }}
           />
           <label htmlFor="photo-upload" className="upload-photo-btn">
             📸 Upload Photo
           </label>
-          {photoFile && (
-            <p className="upload-hint">Photo ready to save</p>
-          )}
+          {photoFile && <p className="upload-hint">Photo ready to save</p>}
           {profile?.avatar_url && !photoFile && (
             <button
               type="button"
               className="delete-photo-btn"
               onClick={async () => {
-                if (confirm('Are you sure you want to delete your avatar?')) {
+                const confirmed = await confirm(
+                  "Xóa ảnh đại diện",
+                  "Bạn có chắc chắn muốn xóa ảnh đại diện?",
+                );
+                if (confirmed) {
                   try {
                     await deleteCustomerAvatar(profile.id);
-                    setSuccess('Avatar deleted successfully');
+                    setSuccess("Đã xóa ảnh đại diện");
                     await loadProfile();
-                    setTimeout(() => setSuccess(''), 3000);
+                    setTimeout(() => setSuccess(""), 3000);
                   } catch (err: any) {
-                    setError(err.response?.data?.message || 'Failed to delete avatar');
+                    setError(
+                      err.response?.data?.message || "Không thể xóa ảnh",
+                    );
                   }
                 }
               }}
@@ -291,15 +301,15 @@ const DashboardProfile: React.FC = () => {
       {/* Tabs */}
       <div className="profile-tabs">
         <button
-          className={`tab-btn ${activeTab === 'profile' ? 'active' : ''}`}
-          onClick={() => setActiveTab('profile')}
+          className={`tab-btn ${activeTab === "profile" ? "active" : ""}`}
+          onClick={() => setActiveTab("profile")}
         >
           <span className="tab-icon">👤</span>
           Profile Info
         </button>
         <button
-          className={`tab-btn ${activeTab === 'password' ? 'active' : ''}`}
-          onClick={() => setActiveTab('password')}
+          className={`tab-btn ${activeTab === "password" ? "active" : ""}`}
+          onClick={() => setActiveTab("password")}
         >
           <span className="tab-icon">🔒</span>
           Password
@@ -323,7 +333,7 @@ const DashboardProfile: React.FC = () => {
 
       {/* Content */}
       <div className="profile-content">
-        {activeTab === 'profile' && (
+        {activeTab === "profile" && (
           <form className="profile-form" onSubmit={handleUpdateProfile}>
             <div className="form-group">
               <label className="form-label">
@@ -387,7 +397,7 @@ const DashboardProfile: React.FC = () => {
           </form>
         )}
 
-        {activeTab === 'password' && (
+        {activeTab === "password" && (
           <form className="profile-form" onSubmit={handleChangePassword}>
             <div className="form-group">
               <label className="form-label">
@@ -454,6 +464,9 @@ const DashboardProfile: React.FC = () => {
           </form>
         )}
       </div>
+
+      {/* Dialog Components */}
+      <ConfirmDialogComponent />
     </div>
   );
 };
